@@ -1,0 +1,7 @@
+
+http://pages.suddenlink.net/gspears/CONIO.htm
+
+https://docs.microsoft.com/en-us/windows/console/console-functions
+https://docs.microsoft.com/es-es/cpp/c-runtime-library/console-and-port-i-o?view=vs-2017
+
+

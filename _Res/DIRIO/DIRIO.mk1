@@ -1,0 +1,28 @@
+!define BLANK ""
+C:\PROYECTOS\DIRIO\DEMO.obj : C:\PROYECTOS\DIRIO\DEMO.C .AUTODEPEND
+ @C:
+ cd C:\PROYECTOS\DIRIO
+ *wcc386 DEMO.C -i="C:\FICHEROS\OC/h;C:\FICHEROS\OC/h/nt" -w4 -e25 -zq -od -&
+d2 -6r -bt=nt -fo=.obj -mf
+
+C:\PROYECTOS\DIRIO\DIRIO.obj : C:\PROYECTOS\DIRIO\DIRIO.C .AUTODEPEND
+ @C:
+ cd C:\PROYECTOS\DIRIO
+ *wcc386 DIRIO.C -i="C:\FICHEROS\OC/h;C:\FICHEROS\OC/h/nt" -w4 -e25 -zq -od &
+-d2 -6r -bt=nt -fo=.obj -mf
+
+C:\PROYECTOS\DIRIO\DIRIO.exe : C:\PROYECTOS\DIRIO\DEMO.obj C:\PROYECTOS\DIRI&
+O\DIRIO.obj .AUTODEPEND
+ @C:
+ cd C:\PROYECTOS\DIRIO
+ @%write DIRIO.lk1 FIL DEMO.obj,DIRIO.obj
+ @%append DIRIO.lk1 
+!ifneq BLANK ""
+ *wlib -q -n -b DIRIO.imp 
+ @%append DIRIO.lk1 LIBR DIRIO.imp
+!endif
+!ifneq BLANK ""
+ @%append DIRIO.lk1 op resource=
+!endif
+ *wlink name DIRIO d all sys nt op m op maxe=25 op q op symf @DIRIO.lk1
+
