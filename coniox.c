@@ -2243,18 +2243,15 @@ wchar_t getwch(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
-		union REGS r;
+	unsigned int headptr;         // pointer to head of buffer
+	unsigned int tailptr;         // pointer to tail of buffer
 
+	coniox_init(NULL);
 
-		coniox_init(NULL);
-		coniox_idle();
-		r.h.ah = 1;
-		coniox_int86(0x16, &r, &r);
-		#if defined(__WATCOMC__)
-			return(r.w.ax);
-		#else
-			return(r.x.ax);
-		#endif
+	headptr = *(unsigned int coniox_far *) MK_FP(0x0040, 0x001A);
+	tailptr = *(unsigned int coniox_far *) MK_FP(0x0040, 0x001C);
+	coniox_idle();
+	return(headptr != tailptr);
 }
 
 
