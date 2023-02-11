@@ -111,7 +111,8 @@ void normvideo(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textbackground(int __newcolor)
 {
-		textattr(( ti.attribute & 0xFF0F) | (( __newcolor & 0xF ) << 4 ));
+	//textattr((ti.attribute & 0xFF0F) | (( __newcolor & 0xF ) << 4 ));
+	textattr((ti.attribute & 0x0F) | (( __newcolor & 0xF ) << 4 ));
 }
 
 
@@ -119,7 +120,8 @@ void textbackground(int __newcolor)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textcolor(int __newcolor)
 {
-		textattr(( ti.attribute & 0xFFF0) | (__newcolor & 0xF ));
+		//textattr(( ti.attribute & 0xFFF0) | (__newcolor & 0xF ));
+		textattr(( ti.attribute & 0xF0) | (__newcolor & 0xF ));
 }
 
 
@@ -1752,7 +1754,7 @@ void coniox_putchattrcursor(int ch, int attr)
 
 		if (directvideo)
 		{
-			*coniox_currentoffset = (attr << 8) | ch;
+			*coniox_currentoffset = (attr << 8) | (ch & 0xFF);
 		}
 		else
 		{
@@ -1786,7 +1788,7 @@ void coniox_putchxyattr(int x, int y, int ch, int attr)
 		if (directvideo)
 		{
 			p = (unsigned short coniox_far *) coniox_offset(x - 1, y - 1);
-			*p = (attr << 8) | ch;
+			*p = (attr << 8) | (ch & 0xFF);
 		}
 		else
 		{
@@ -1821,7 +1823,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 	if (directvideo)
 	{
-		v = (attr << 8) | ch;
+		v = (attr << 8) | (ch & 0xFF);
 		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		for (y1 = y; y1 < y + h; y1++)
 		{
@@ -2066,7 +2068,7 @@ void _setcursortype(int __cur_t)
 void textattr(int __newattr)
 {
 	coniox_init(NULL);
-	ti.attribute = (unsigned short) __newattr;
+	ti.attribute = (unsigned short) (__newattr & 0xFF);
 }
 
 
