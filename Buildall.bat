@@ -65,7 +65,7 @@ WCL -oneatx -ohirbk -ol -ol+ -oi -ei -zp4 -0 -mt -s -ri -zm /bt=dos /l=com /fhwe
 REN coniox_test.com coniox_ocd16.com
 rem *** DOS32 ***
 DEL coniox_ocd32.exe
-WCL386 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r  -fpi87 -fp6 -mf -s -ri -zm /bt=dos /l=dos32a /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" coniox_test.c coniox.c
+WCL386 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r -fpi87 -fp6 -mf -s -ri -zm /bt=dos /l=dos32a /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" coniox_test.c coniox.c
 REN coniox_test.exe coniox_ocd32.exe
 
 SET WATCOM=
