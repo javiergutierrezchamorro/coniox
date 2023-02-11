@@ -79,7 +79,7 @@ void clreol(void)
 void gettextinfo(struct text_info *__r)
 {
 		coniox_init(NULL);
-		*__r = ti;
+		memcpy(__r, &ti, sizeof(ti));
 }
 
 
@@ -111,7 +111,6 @@ void normvideo(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textbackground(int __newcolor)
 {
-	//textattr((ti.attribute & 0xFF0F) | (( __newcolor & 0xF ) << 4 ));
 	textattr((ti.attribute & 0x0F) | (( __newcolor & 0xF ) << 4 ));
 }
 
@@ -120,8 +119,7 @@ void textbackground(int __newcolor)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textcolor(int __newcolor)
 {
-		//textattr(( ti.attribute & 0xFFF0) | (__newcolor & 0xF ));
-		textattr(( ti.attribute & 0xF0) | (__newcolor & 0xF ));
+	textattr(( ti.attribute & 0xF0) | (__newcolor & 0xF ));
 }
 
 
@@ -320,7 +318,7 @@ int getche(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 char *getpass(const char *__prompt)
 {
-		char str[PASS_MAX + 1];
+		static char str[PASS_MAX + 1];
 		int length = 0;
 		int ch = 0;
 		int x, y;
@@ -345,7 +343,7 @@ char *getpass(const char *__prompt)
 								case '\b': /* backspace */
 										if (length > 0)
 										{
-												coniox_putchxyattr(ti.winleft + x - 1 + --length, ti.wintop + y - 1, ' ', ti.attribute);
+											coniox_putchxyattr(ti.winleft + x - 1 + --length, ti.wintop + y - 1, ' ', ti.attribute);
 										}
 										gotoxy(x + length, y);
 										break;
@@ -930,7 +928,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 
 		if (__right < __left || __bottom < __top)
 		{
-				return(0);
+			return(0);
 		}
 
 		coniox_init(NULL);
@@ -943,20 +941,20 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 		ci = (CHAR_INFO *) malloc(s.X * s.Y * sizeof(CHAR_INFO));
 		if (!ci)
 		{
-				return(0);
+			return(0);
 		}
 		buf = (char_info *) __destin;
 		if (ReadConsoleOutput(coniox_console_output, ci, s, c, &r ))
 		{
-				for (i = 0; i < s.X * s.Y; i++)
-				{
-						#if UNICODE
-								buf[i].letter = (char) ci[i].Char.UnicodeChar;
-						#else
-								buf[i].letter = ci[i].Char.AsciiChar;
-						#endif
-						buf[i].attr = (unsigned char) ci[i].Attributes;
-				}
+			for (i = 0; i < s.X * s.Y; i++)
+			{
+				#if UNICODE
+						buf[i].letter = (char) ci[i].Char.UnicodeChar;
+				#else
+						buf[i].letter = ci[i].Char.AsciiChar;
+				#endif
+				buf[i].attr = (unsigned char) ci[i].Attributes;
+			}
 		}
 		free(ci);
 		return(0);
@@ -1977,7 +1975,7 @@ void textmode(int __newmode)
 				r.x.bx = 0;
 			#endif
 			coniox_int86(0x10, &r, &r);
-
+			pokew(0x40, 0x4C, 8000);	//Correct video buffer size
 		}
 		else
 		{
@@ -2151,6 +2149,11 @@ int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
 
 	coniox_init(NULL);
 
+	if (__right < __left || __bottom < __top)
+	{
+		return(0);
+	}
+	
 	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
@@ -2169,7 +2172,12 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 	int y1;
 
 	coniox_init(NULL);
-
+	
+	if (__right < __left || __bottom < __top)
+	{
+		return(0);
+	}
+	
 	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
@@ -2245,15 +2253,9 @@ wchar_t getwch(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
-	unsigned int headptr;         // pointer to head of buffer
-	unsigned int tailptr;         // pointer to tail of buffer
-
 	coniox_init(NULL);
-
-	headptr = *(unsigned int coniox_far *) MK_FP(0x0040, 0x001A);
-	tailptr = *(unsigned int coniox_far *) MK_FP(0x0040, 0x001C);
 	coniox_idle();
-	return(headptr != tailptr);
+	return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
 }
 
 
@@ -2262,11 +2264,39 @@ int getch(void)
 {
 		union REGS r;
 
+		//ToDo: Implement it by inserting onto the keyboard buffer
 		coniox_init(NULL);
 		coniox_idle();
 		r.h.ah = 0;
 		coniox_int86(0x16, &r, &r);
 		return((int) r.h.al);
 }
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+int ungetch(int __ch)
+{
+	union REGS r;
+
+	//ToDo: Implement it by inserting onto the keyboard buffer
+	coniox_init(NULL);
+
+	r.h.ah = 0x5;
+	#if defined(__WATCOMC__)
+		r.w.cx = (__ch & 0xFF);
+	#else
+		r.x.cx = (__ch & 0xFF);
+	#endif
+	coniox_int86(0x16, &r, &r);
+	if (r.h.al == 0)
+	{
+		return(__ch);
+	}
+	else
+	{
+		return(EOF);
+	}
+}
+
 
 #endif

@@ -88,6 +88,12 @@ VERSION HISTORY
 - Added delay().
 4.95 - 2023/02/08
 - Specialized cputs causing 2x faster cputs/cprintf
+4.96 - 2023/02/11
+- Fixed gettextinfo should return a copy and not a reference.
+- Fixed characters should be casted at c8 bit (char).
+- Optimized kbhit to direct use keyboard buffer instead of BIOS.
+- Added ungetch().
+
 */
 
 
