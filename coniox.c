@@ -1469,7 +1469,9 @@ int coniox_basecrt = 0x3D4;
 		#define coniox_far
 		#define coniox_int86 int386
 		#if defined(__WATCOMC__)
-				unsigned short *coniox_offset(unsigned int piX, unsigned int piY);
+				//ToDo: Optimize with lea eax, [eax*2+coniox_vram]				"\
+
+				unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
 				#pragma aux coniox_offset =										    \
 						"			 .386													   "\
 						"			 movzx eax, byte ptr ti + 16				"\
@@ -1477,7 +1479,7 @@ int coniox_basecrt = 0x3D4;
 						"			 add eax, esi									   "\
 						"			 shl eax, 1												 "\
 						"			 add eax, coniox_vram					   "\
-						parm [ESI][EDI]												   \
+						parm nomemory [ESI][EDI]												   \
 						modify exact nomemory []																	 \
 						value [EAX];
 		#else
@@ -1499,7 +1501,7 @@ int coniox_basecrt = 0x3D4;
 						"			 shl ax, 1												    "\
 						"			 les di, coniox_vram												    "\
 						"			 add di, ax	   "\
-						parm [SI][DI]													 \
+						parm nomemory [SI][DI]													 \
 						modify exact nomemory [AX DX]																	 \
 						value [ES DI];
 		#else
@@ -1519,6 +1521,7 @@ int coniox_basecrt = 0x3D4;
 					"			      pop eax										  "\
 					"			      push ecx										 "\
 					"			      shr ecx, 1										     "\
+					"				  cld											"\
 					"			      rep stosd										       "\
 					"			      pop ecx										   "\
 					"			      and ecx, 1										     "\
@@ -1528,6 +1531,7 @@ int coniox_basecrt = 0x3D4;
 		#else
 			#pragma aux coniox_fmemsetw =										\
 					"			 .8086													    "\
+					"			 cld														"\
 					"			 rep stosw												   "\
 					parm [ES DI][AX][CX]													   \
 					modify exact [DI CX];
