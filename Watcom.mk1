@@ -2,15 +2,15 @@
 D:\PROYECTOS\coniox\coniox.obj : D:\PROYECTOS\coniox\coniox.c .AUTODEPEND
  @D:
  cd D:\PROYECTOS\coniox
- *wcc coniox.c -i="D:\FICHEROS\OC\/h" -w4 -e25 -zq -od -d2 -bt=dos -fo=.obj &
--ml
+ *wcc coniox.c -i="D:\FICHEROS\OC/h" -w4 -e25 -zq -od -d2 -bt=dos -fo=.obj -&
+ml
 
 D:\PROYECTOS\coniox\coniox_test.obj : D:\PROYECTOS\coniox\coniox_test.c .AUT&
 ODEPEND
  @D:
  cd D:\PROYECTOS\coniox
- *wcc coniox_test.c -i="D:\FICHEROS\OC\/h" -w4 -e25 -zq -od -d2 -bt=dos -fo=&
-.obj -ml
+ *wcc coniox_test.c -i="D:\FICHEROS\OC/h" -w4 -e25 -zq -od -d2 -bt=dos -fo=.&
+obj -ml
 
 D:\PROYECTOS\coniox\Watcom.exe : D:\PROYECTOS\coniox\coniox.obj D:\PROYECTOS&
 \coniox\coniox_test.obj .AUTODEPEND

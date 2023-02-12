@@ -26,8 +26,10 @@ int main(void)
 	textmode(C80);
 	
 	clrscr();
-
 	gettextinfo(&ti);
+	cprintf("Screen width: %d\r\n", ti.screenwidth);
+	cprintf("Screen height: %d\r\n", ti.screenheight);
+	getch();
 	
 	_setcursortype(_NOCURSOR);
 	
@@ -131,7 +133,8 @@ int main(void)
 	free(background);
 	getch();
 
-	window(1, 1, 80, 50);
+	//window(1, 1, ti.screenwidth, ti.screenheight);
+	window(1, 1, 80, 25);
 	textattr(LIGHTGRAY);
 	clrscr();
 	_setcursortype(_NORMALCURSOR);

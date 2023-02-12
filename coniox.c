@@ -19,7 +19,7 @@
 void coniox_putchattrcursor(int ch, int attr);
 void coniox_putchxyattr(int x, int y, int ch, int attr);
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
-
+int coniox_setcursortype = _NORMALCURSOR;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 struct text_info ti; /*= { 1, 1, 80, 25, 15, 15, 0, 25, 80, 1, 1 } */;
@@ -837,18 +837,21 @@ void gotoxy(int __x, int __y)
 		}
 		ti.curx = (short) __x;
 		ti.cury = (short) __y;
-		c.X = ti.winleft + ti.curx - 2;
-		c.Y = ti.wintop + ti.cury - 2;
-		SetConsoleCursorPosition(coniox_console_output, c);
+		if (coniox_setcursortype != _NOCURSOR)
+		{
+			c.X = ti.winleft + ti.curx - 2;
+			c.Y = ti.wintop + ti.cury - 2;
+			SetConsoleCursorPosition(coniox_console_output, c);
+		}
 }
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void clrscr(void)
 {
-	coniox_init(NULL);
-	coniox_putchxyattrwh(ti.winleft, ti.wintop, ' ', ti.attribute, ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
+	//coniox_init(NULL);
 	gotoxy(1, 1);
+	coniox_putchxyattrwh(ti.winleft, ti.wintop, ' ', ti.attribute, ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
 }
 
 
@@ -856,7 +859,7 @@ void clrscr(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textattr(int __newattr)
 {
-	coniox_init(NULL);
+	//coniox_init(NULL);
 	ti.attribute = (unsigned short) __newattr;
 	SetConsoleTextAttribute(coniox_console_output, (unsigned short) ti.attribute);
 }
@@ -1421,7 +1424,7 @@ wchar_t ungetwch(wchar_t __ch)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void delay(unsigned int ms)
 {
-	coniox_init(NULL);
+	//coniox_init(NULL);
 	Sleep(ms);
 }
 
@@ -1438,7 +1441,6 @@ void delay(unsigned int ms)
 #include <dos.h>
 #include <bios.h>
 
-int coniox_setcursortype = _NORMALCURSOR;
 int coniox_basecrt = 0x3D4;
 
 #if !defined(__TURBOC__)
@@ -1495,10 +1497,11 @@ int coniox_basecrt = 0x3D4;
 						"			 mul di														 "\
 						"			 add ax, si										 "\
 						"			 shl ax, 1												    "\
-						"			 mov dx, word ptr coniox_vram	   "\
+						"			 les di, coniox_vram												    "\
+						"			 add di, ax	   "\
 						parm [SI][DI]													 \
-						modify exact nomemory []																	 \
-						value [DX AX];
+						modify exact nomemory [AX DX]																	 \
+						value [ES DI];
 		#else
 				#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 		#endif
@@ -1521,15 +1524,13 @@ int coniox_basecrt = 0x3D4;
 					"			      and ecx, 1										     "\
 					"			      rep stosw										       "\
 					parm [EDI][AX][ECX]													     \
-					modify exact []																	 \
-					value [EDI];
+					modify exact [EDI ECX];
 		#else
 			#pragma aux coniox_fmemsetw =										\
 					"			 .8086													    "\
 					"			 rep stosw												   "\
 					parm [ES DI][AX][CX]													   \
-					modify exact []																	 \
-					value [ES DI];
+					modify exact [DI CX];
 		#endif
 #else
 	void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count)
@@ -1696,7 +1697,31 @@ int cputs(const char *__str)
 				}
 				break;
 			default:
-				coniox_putchattrcursor(c, ti.attribute);
+				//coniox_putchattrcursor(c, ti.attribute);
+				if (directvideo)
+				{
+					*coniox_currentoffset = (ti.attribute << 8) | (c & 0xFF);
+				}
+				else
+				{
+					union REGS r;
+					r.h.ah = 2;
+					r.h.bh = 0;
+					r.h.dh = ti.cury - 1;
+					r.h.dl = ti.curx - 1;
+					coniox_int86(0x10, &r, &r);
+
+					r.h.ah = 0x9;
+					r.h.al = c;
+					r.h.bh = 0;
+					r.h.bl = ti.attribute;
+					#if defined(__WATCOMC__)
+						r.w.cx = 1;
+					#else
+						r.x.cx = 1;
+					#endif
+					coniox_int86(0x10, &r, &r);
+				}
 				if (ti.curx + 1 > ti.winright - ti.winleft + 1)
 				{
 					if (_wscroll)
@@ -1738,6 +1763,7 @@ int cputs(const char *__str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+//ToDo: It is manually inlined
 void coniox_putchattrcursor(int ch, int attr)
 {
 	if (directvideo)
@@ -1923,7 +1949,7 @@ void delay (unsigned int ms)
 {
 	unsigned long lTicks;
 
-	coniox_init(NULL);
+	//coniox_init(NULL);
 	if (1 /*directvideo*/)
 	{
 		lTicks = peekl(0, 0x46C);
@@ -1992,7 +2018,7 @@ void textmode(int __newmode)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void _setcursortype(int __cur_t)
 {
-	coniox_init(NULL);
+	//coniox_init(NULL);
 	coniox_setcursortype = __cur_t;
 	if (directvideo)
 	{
@@ -2057,7 +2083,7 @@ void _setcursortype(int __cur_t)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textattr(int __newattr)
 {
-	coniox_init(NULL);
+	//coniox_init(NULL);
 	ti.attribute = (unsigned short) (__newattr & 0xFF);
 }
 
@@ -2135,7 +2161,6 @@ int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
 	int y1;
 
 	coniox_init(NULL);
-
 	if (__right < __left || __bottom < __top)
 	{
 		return(0);
@@ -2159,7 +2184,6 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 	int y1;
 
 	coniox_init(NULL);
-	
 	if (__right < __left || __bottom < __top)
 	{
 		return(0);
@@ -2185,7 +2209,6 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	int y1;
 
 	coniox_init(NULL);
-
 	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	__destin = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __top + __desttop - __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
@@ -2201,12 +2224,11 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 /* ----------------------------------------------------------------------------------------------------------------- */
 void clrscr(void)
 {
-	coniox_init(NULL);
-
+	//coniox_init(NULL);
+	gotoxy(1, 1);
 	if (directvideo)
 	{
 		coniox_putchxyattrwh(ti.winleft, ti.wintop, ' ', ti.attribute, ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
-		gotoxy(1, 1);
 	}
 	else
 	{
@@ -2229,18 +2251,17 @@ void clrscr(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t getwch(void)
 {
-		coniox_init(NULL);
-		coniox_idle();
-		//Todo
-		return(0);
+	coniox_init(NULL);
+	coniox_idle();
+	//Todo
+	return(0);
 }
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
-	coniox_init(NULL);
-
+	//coniox_init(NULL);
 	coniox_idle();
 	if (directvideo)
 	{
@@ -2309,7 +2330,7 @@ int ungetch(int __ch)
 	pBuffer = MK_FP(0x40, 0x1E);
 */
 
-	coniox_init(NULL);
+	//coniox_init(NULL);
 	
 	//ToDo: Implement it by inserting onto the keyboard buffer	
 	if (0 /*directvideo*/)
