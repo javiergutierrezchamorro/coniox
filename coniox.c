@@ -1464,11 +1464,10 @@ int coniox_basecrt = 0x3D4;
 						"			 mul di														 "\
 						"			 add ax, si										 "\
 						"			 shl ax, 1												    "\
-						"			 les di, coniox_vram												    "\
-						"			 add di, ax	   "\
+						"			 mov dx, word ptr coniox_vram+2
 						parm nomemory [SI][DI]													 \
-						modify exact nomemory [AX DX]																	 \
-						value [ES DI];
+						modify exact nomemory []																	 \
+						value [DX AX];
 		#else
 				#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 		#endif

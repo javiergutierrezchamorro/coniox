@@ -3,6 +3,93 @@
 
 #include "coniox.h"
 
+int demo2(void)
+{
+	int x1 = 1, y1 = 1, x2 = 1, y2 = 1, x3 = 1, y3 = 1, x4 = 1, y4 = 1;
+	int i;
+	struct text_info ti;
+	
+	
+	//Optional: Set window caption
+	#ifdef _CONIOX_H_
+		#if UNICODE
+			coniox_init(L"coniox Test");
+		#else
+			coniox_init("coniox Test");
+		#endif
+	#endif
+	
+	directvideo = 1;
+	textattr(7);
+	clrscr();
+	
+	gettextinfo(&ti);
+
+	/* Window 1 */
+	window (2, 2, ti.screenwidth / 2 - 4, ti.screenheight / 2 - 4);
+	textattr(1*16+15);
+	clrscr();
+
+	/* Window 2 */
+	window (ti.screenwidth / 2 + 2, 2, ti.screenwidth / 2 - 4, ti.screenheight / 2 - 4);
+	textattr(2*16+14);
+	clrscr();
+	
+	/* Window 3 */
+	window (2, ti.screenheight / 2 + 2, ti.screenwidth - 4, ti.screenheight - 4);
+	textattr(3*16+15);
+	clrscr();
+
+	/* Window 4 */
+	window (ti.screenwidth / 2 + 2, ti.screenheight / 2 + 2, ti.screenwidth - 4, ti.screenheight - 4);
+	textattr(4*16+15);
+	clrscr();
+	
+	return(0);
+	
+	i = 0;
+	while(!kbhit())
+	{
+		/* Window 1 */
+		window (2, 2, ti.screenwidth / 2 - 4, ti.screenheight / 2 - 4);
+		textattr(1*16+15);
+		gotoxy(x1, y1);
+		cprintf("Content of WINDOW 1 %u", i);
+		x1=wherex();
+		y1=wherey();
+		
+		/* Window 2 */
+		window (ti.screenwidth / 2 + 2, 2, ti.screenwidth / 2 - 4, ti.screenheight / 2 - 4);
+		textattr(2*16+14);
+		gotoxy(x2, y2);
+		cprintf("Content of WINDOW 2 %u", i);
+		x2=wherex();
+		y2=wherey();
+
+		/* Window 3 */
+		window (2, ti.screenheight / 2 + 2, ti.screenwidth - 4, ti.screenheight - 4);
+		textattr(3*16+15);
+		gotoxy(x3, y3);
+		cprintf("Content of WINDOW 3 %u", i);
+		x3=wherex();
+		y3=wherey();
+		
+		/* Window 4 */
+		window (ti.screenwidth / 2 + 2, ti.screenheight / 2 + 2, ti.screenwidth - 4, ti.screenheight - 4);
+		textattr(4*16+15);
+		gotoxy(x4, y4);
+		cprintf("Content of WINDOW 4 %u", i);
+		x4=wherex();
+		y4=wherey();
+		
+		i++;
+	}
+	getch();
+	window(1, 1, ti.screenwidth, ti.screenheight);
+	textattr(7);
+	clrscr();
+}
+
 int main(void)
 {
 	unsigned int i, j;
