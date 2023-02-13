@@ -13,6 +13,6 @@ CONIOX 5	2.5s	0.8s	1.3s
 Windows
 CONIOX	5	2.4s	1.7s	2.1s
 
-![Screenshot 1: Conio Demo Under OpenWatcom DOS real mode (screenshot01.png)
+![screenshot01](https://user-images.githubusercontent.com/4672971/218527583-8dcacafe-f736-4279-9cc9-7967207ce553.png)
 
-![Screenshot 2: Conio Demo Under OpenWatcom DOS Win32 (screenshot02.png)
+![screenshot02](https://user-images.githubusercontent.com/4672971/218527622-851ba3e2-f364-4645-95f7-0e4cbd01ba14.png)
