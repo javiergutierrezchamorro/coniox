@@ -26,8 +26,8 @@ int main(void)
 {
 	init();
 	info();
-	chars();
-	windows();
+	//chars();
+	//windows();
 	getputtexts();
 	finish();
 	return(0);
@@ -221,8 +221,22 @@ void getputtexts(void)
 	gettextinfo(&ti);
 	size = ti.screenwidth * (ti.screenheight - 2) * 2;
 	buf = malloc(size);
-
+	/*
+	buf[0] = 'A';
+	buf[1] = 7;
+	buf[2] = 'B';
+	buf[3] = 15;
+	puttext(1, 1, 2, 1, buf);
+	gettext(1, 1, 2, 1, buf);
+	*/
+	gotoxy(1, 1);
+	textattr(7);
+	cputs("ABCD");
 	gettext(1, 2, ti.screenwidth, ti.screenheight - 1, buf);
+	window(1, 1, ti.screenwidth, ti.screenheight);
+	textattr(7);
+	clrscr();
+	puttext(1, 2, ti.screenwidth, ti.screenheight - 1, buf);
 	for (j = 0; j < 255; j++)
 	{
 		for (i = 0; i < size; i+=2)

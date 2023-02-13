@@ -630,28 +630,28 @@ void coniox_init(const void *title)
 		FreeConsole();
 		AllocConsole();
 	}
-	ti.normattr = info.wAttributes;
-	ti.winleft = info.srWindow.Left + 1;
-	ti.wintop = info.srWindow.Top + 1;
-	ti.winright = info.srWindow.Right + 1;
-	ti.winbottom = info.srWindow.Bottom + 1;
-	ti.screenwidth = info.dwSize.X;
-	ti.screenheight = info.dwSize.Y;
-	ti.curx = info.dwCursorPosition.X + 1;
-	ti.cury = info.dwCursorPosition.Y + 1;
+	ti.normattr = (SHORT) info.wAttributes;
+	ti.winleft = (SHORT) info.srWindow.Left + 1;
+	ti.wintop = (SHORT)info.srWindow.Top + 1;
+	ti.winright = (SHORT) info.srWindow.Right + 1;
+	ti.winbottom = (SHORT) info.srWindow.Bottom + 1;
+	ti.screenwidth = (SHORT) info.dwSize.X;
+	ti.screenheight = (SHORT) info.dwSize.Y;
+	ti.curx = (SHORT) info.dwCursorPosition.X + 1;
+	ti.cury = (SHORT) info.dwCursorPosition.Y + 1;
 	ti.attribute = info.wAttributes;
 	acp = GetACP();
 	if (GetConsoleOutputCP() != acp )
 	{
-			SetConsoleOutputCP(acp);
-			SetConsoleCP(acp);
+		SetConsoleOutputCP(acp);
+		SetConsoleCP(acp);
 	}
 	GetConsoleMode(coniox_console_output, &m);
 	SetConsoleMode(coniox_console_output, m | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_ECHO_INPUT);
 
 	if (title)
 	{
-			SetConsoleTitle(title);
+		SetConsoleTitle(title);
 	}
 }
 
@@ -934,10 +934,10 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 			return(0);
 		}
 
-		r.Left = (SHORT) __left;
-		r.Top = (SHORT) __top;
-		r.Right = (SHORT) __right;
-		r.Bottom = (SHORT) __bottom;
+		r.Left = (SHORT) __left - 1;
+		r.Top = (SHORT) __top - 1;
+		r.Right = (SHORT) __right - 1;
+		r.Bottom = (SHORT) __bottom - 1;
 		s.X = (SHORT) (__right - __left + 1);
 		s.Y = (SHORT) (__bottom - __top + 1);
 		ci = (CHAR_INFO *) malloc(s.X * s.Y * sizeof(CHAR_INFO));
@@ -953,7 +953,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 			{
 				#if UNICODE
 					//buf[i].letter = (char) ci[i].Char.UnicodeChar;
-					buf[i] = (char) ci[i].Char.UnicodeChar + (unsigned char) ci[i].Attributes << 8;
+					buf[i] = (ci[i].Char.UnicodeChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 				#else
 					//buf[i].letter = ci[i].Char.AsciiChar;
 					buf[i] = (char) ci[i].Char.AsciiChar + (unsigned char) ci[i].Attributes << 8;
@@ -975,10 +975,10 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 
 		coniox_init(NULL);
 
-		r.Left = (SHORT) __left;
-		r.Top = (SHORT) __top;
-		r.Right = (SHORT) __right;
-		r.Bottom = (SHORT) __bottom;
+		r.Left = (SHORT) __left - 1;
+		r.Top = (SHORT) __top - 1;
+		r.Right = (SHORT)__right - 1;
+		r.Bottom = (SHORT) __bottom - 1;
 		c.X = (SHORT) __destleft;
 		c.Y = (SHORT) __desttop;
 		#if UNICODE
@@ -1008,10 +1008,10 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 				return(0);
 		}
 
-		r.Left = (SHORT) __left;
-		r.Top = (SHORT) __top;
-		r.Right = (SHORT) __right;
-		r.Bottom = (SHORT) __bottom;
+		r.Left = (SHORT) __left - 1;
+		r.Top = (SHORT) __top - 1;
+		r.Right = (SHORT) __right - 1;
+		r.Bottom = (SHORT) __bottom - 1;
 		s.X = (SHORT) (__right - __left + 1);
 		s.Y = (SHORT) (__bottom - __top + 1);
 
@@ -1141,99 +1141,99 @@ void textmode(int __newmode)
 
 		if (__newmode == LASTMODE)
 		{
-				__newmode = ti.currmode;
+			__newmode = ti.currmode;
 		}
-
-		switch (__newmode)
+		if (__newmode != ti.currmode)
 		{
+			switch (__newmode)
+			{
 				case C40X14:
 				case BW40X14:
-						info.dwSize.X = 40;
-						info.dwSize.Y = 14;
-						break;
+					info.dwSize.X = 40;
+					info.dwSize.Y = 14;
+					break;
 				case C40X21:
 				case BW40X21:
-						info.dwSize.X = 40;
-						info.dwSize.Y = 21;
-						break;
+					info.dwSize.X = 40;
+					info.dwSize.Y = 21;
+					break;
 				case C40X28:
 				case BW40X28:
-						info.dwSize.X = 40;
-						info.dwSize.Y = 28;
-						break;
+					info.dwSize.X = 40;
+					info.dwSize.Y = 28;
+					break;
 				case C40X43:
 				case BW40X43:
-						info.dwSize.X = 40;
-						info.dwSize.Y = 43;
-						break;
+					info.dwSize.X = 40;
+					info.dwSize.Y = 43;
+					break;
 				case C40X50:
 				case BW40X50:
-						info.dwSize.X = 40;
-						info.dwSize.Y = 50;
-						break;
+					info.dwSize.X = 40;
+					info.dwSize.Y = 50;
+					break;
 				case C40X60:
 				case BW40X60:
-						info.dwSize.X = 40;
-						info.dwSize.Y = 60;
-						break;
+					info.dwSize.X = 40;
+					info.dwSize.Y = 60;
+					break;
 				case MONO14:
 				case C80X14:
 				case BW80X14:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 14;
-						break;
+					info.dwSize.X = 80;
+					info.dwSize.Y = 14;
+					break;
 				case MONO21:
 				case C80X21:
 				case BW80X21:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 21;
-						break;
+					info.dwSize.X = 80;
+					info.dwSize.Y = 21;
+					break;
 				case MONO28:
 				case C80X28:
 				case BW80X28:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 28;
-						break;
+					info.dwSize.X = 80;
+					info.dwSize.Y = 28;
+					break;
 				case MONO43:
 				case C80X43:
 				case BW80X43:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 43;
-						break;
+					info.dwSize.X = 80;
+					info.dwSize.Y = 43;
+					break;
 				case MONO50:
 				case C80X50:
 				case BW80X50:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 50;
-						break;
+					info.dwSize.X = 80;
+					info.dwSize.Y = 50;
+					break;
 				case MONO60:
 				case C80X60:
 				case BW80X60:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 60;
-						break;
+					info.dwSize.X = 80;
+					info.dwSize.Y = 60;
+					break;
 				case C4350:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 50;
-						break;
+					info.dwSize.X = 80;
+					info.dwSize.Y = 50;
+					break;
 				case BW40:
 				case C40:
-						info.dwSize.X = 40;
-						info.dwSize.Y = 25;
-						break;
+					info.dwSize.X = 40;
+					info.dwSize.Y = 25;
+					break;
 				case BW80:
 				case C80:
 				case _ORIGMODE:
 				case MONO:
 				default:
-						info.dwSize.X = 80;
-						info.dwSize.Y = 25;
-						break;
-		}
+					info.dwSize.X = 80;
+					info.dwSize.Y = 25;
+			}
 
 		#if (!__ZTC__)
-				if (SetConsoleScreenBufferInfoEx(coniox_console_output, &info))
-		{
+			if (SetConsoleScreenBufferInfoEx(coniox_console_output, &info))
+			{
 				r.Left = 0;
 				r.Top = 0;
 				r.Right = info.dwSize.X - 1;
@@ -1250,9 +1250,13 @@ void textmode(int __newmode)
 				ti.curx = info.dwCursorPosition.X + 1;
 				ti.cury = info.dwCursorPosition.Y + 1;
 				ti.attribute = info.wAttributes;
-				ti.currmode = (unsigned short) __newmode;
-		}
+				ti.currmode = (unsigned short)__newmode;
+			}
 		#endif
+	}
+	textattr(ti.normattr);
+	window(1, 1, ti.screenwidth, ti.screenheight);
+	_setcursortype(_NORMALCURSOR);
 }
 
 
@@ -1275,7 +1279,6 @@ void _setcursortype(int __cur_t)
 				default:
 						cci.dwSize = 10;
 						cci.bVisible = TRUE;
-						break;
 		}
 		SetConsoleCursorInfo(coniox_console_output, &cci);
 }
@@ -1982,7 +1985,8 @@ void textmode(int __newmode)
 		ti.normattr = 0;
 		coniox_init(NULL);
 	}
-	window(1, 1, ti.screenwidth, ti.screenheight);
+	textattr(ti.normattr);
+	//window(1, 1, ti.screenwidth, ti.screenheight);
 	_setcursortype(_NORMALCURSOR);
 }
 

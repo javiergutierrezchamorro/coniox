@@ -1,14 +1,7 @@
-﻿  coniox.c
-D:\PROYECTOS\coniox\coniox.h(110,1): warning C4005: '_CRT_SECURE_NO_WARNINGS': redefinición de macro
-D:\PROYECTOS\coniox\coniox.h(110,1): message : '_CRT_SECURE_NO_WARNINGS' declarado previamente en la línea de comandos
-D:\Windows Kits\10\Include\10.0.22000.0\ucrt\corecrt_wconio.h(187,37): error C2084: la función 'int cwprintf(const wchar_t *,...)' ya tiene un cuerpo
-D:\PROYECTOS\coniox\coniox.c(575,5): message : vea la definición anterior de 'cwprintf'
-D:\Windows Kits\10\Include\10.0.22000.0\ucrt\corecrt_wconio.h(367,37): error C2084: la función 'int cwscanf(const wchar_t *,...)' ya tiene un cuerpo
-D:\PROYECTOS\coniox\coniox.c(558,5): message : vea la definición anterior de 'cwscanf'
-D:\PROYECTOS\coniox\coniox.c(956,84): warning C4554: "<<": compruebe la prioridad de operador para posibles errores; utilice paréntesis para indicar la prioridad
-  coniox_test.c
+﻿  coniox_test.c
 D:\PROYECTOS\coniox\coniox.h(110,1): warning C4005: '_CRT_SECURE_NO_WARNINGS': redefinición de macro
 D:\PROYECTOS\coniox\coniox.h(110,1): message : '_CRT_SECURE_NO_WARNINGS' declarado previamente en la línea de comandos
 D:\PROYECTOS\coniox\coniox_test.c(89,6): warning C4267: '=': conversión de 'size_t' a 'int'; posible pérdida de datos
-D:\PROYECTOS\coniox\coniox_test.c(367,16): warning C4018: '<': no coinciden signed/unsigned
-  Generando código...
+D:\PROYECTOS\coniox\coniox_test.c(382,16): warning C4018: '<': no coinciden signed/unsigned
+     Creando biblioteca D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.lib y objeto D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exp
+  VC.vcxproj -> D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exe
