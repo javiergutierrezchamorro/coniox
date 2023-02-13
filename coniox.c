@@ -58,7 +58,7 @@ int coniox_vsscanf(const char  *buffer, const char  *format, va_list argPtr)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_inwindow(int x, int y)
 {
-		return (!(x<ti.winleft || y<ti.wintop || x>ti.winright || y>ti.winbottom));
+	return (!(x<ti.winleft || y<ti.wintop || x>ti.winright || y>ti.winbottom));
 }
 
 
@@ -619,20 +619,22 @@ void coniox_init(const void *title)
 
 	for (i = 0; i < 2; ++i)
 	{
-			if (GetConsoleScreenBufferInfo(coniox_console_output, &info))
-			{
-					break;
-			}
-			if (i)
-			{
-					return;
-			}
-			FreeConsole();
-			AllocConsole();
+		if (GetConsoleScreenBufferInfo(coniox_console_output, &info))
+		{
+			break;
+		}
+		if (i)
+		{
+			return;
+		}
+		FreeConsole();
+		AllocConsole();
 	}
 	ti.normattr = info.wAttributes;
-	ti.winright = info.dwSize.X;
-	ti.winbottom = info.dwSize.Y;
+	ti.winleft = info.srWindow.Left + 1;
+	ti.wintop = info.srWindow.Top + 1;
+	ti.winright = info.srWindow.Right + 1;
+	ti.winbottom = info.srWindow.Bottom + 1;
 	ti.screenwidth = info.dwSize.X;
 	ti.screenheight = info.dwSize.Y;
 	ti.curx = info.dwCursorPosition.X + 1;
@@ -921,7 +923,8 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 		int i;
 		SMALL_RECT r;
 		CHAR_INFO *ci;
-		char_info *buf;
+		//char_info *buf;
+		short *buf;
 		COORD s, c = { 0,0 };
 
 
@@ -931,10 +934,10 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 			return(0);
 		}
 
-		r.Left = (SHORT) (__left - 1);
-		r.Top = (SHORT) (__top - 1);
-		r.Right = (SHORT) (__right - 1);
-		r.Bottom = (SHORT) (__bottom - 1);
+		r.Left = (SHORT) __left;
+		r.Top = (SHORT) __top;
+		r.Right = (SHORT) __right;
+		r.Bottom = (SHORT) __bottom;
 		s.X = (SHORT) (__right - __left + 1);
 		s.Y = (SHORT) (__bottom - __top + 1);
 		ci = (CHAR_INFO *) malloc(s.X * s.Y * sizeof(CHAR_INFO));
@@ -942,17 +945,20 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 		{
 			return(0);
 		}
-		buf = (char_info *) __destin;
+		//buf = (char_info *) __destin;
+		buf = (short *) __destin;
 		if (ReadConsoleOutput(coniox_console_output, ci, s, c, &r ))
 		{
 			for (i = 0; i < s.X * s.Y; i++)
 			{
 				#if UNICODE
-						buf[i].letter = (char) ci[i].Char.UnicodeChar;
+					//buf[i].letter = (char) ci[i].Char.UnicodeChar;
+					buf[i] = (char) ci[i].Char.UnicodeChar + (unsigned char) ci[i].Attributes << 8;
 				#else
-						buf[i].letter = ci[i].Char.AsciiChar;
+					//buf[i].letter = ci[i].Char.AsciiChar;
+					buf[i] = (char) ci[i].Char.AsciiChar + (unsigned char) ci[i].Attributes << 8;
 				#endif
-				buf[i].attr = (unsigned char) ci[i].Attributes;
+				//buf[i].attr = (unsigned char) ci[i].Attributes;
 			}
 		}
 		free(ci);
@@ -969,14 +975,14 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 
 		coniox_init(NULL);
 
-		r.Left = (SHORT) (ti.winleft + __left -1);
-		r.Top = (SHORT) (ti.wintop + __top-1);
-		r.Right = (SHORT) (ti.winleft + __right-1);
-		r.Bottom = (SHORT) (ti.wintop + __bottom-1);
-		c.X = (SHORT) (ti.winleft + __destleft-1);
-		c.Y = (SHORT) (ti.wintop + __desttop-1);
+		r.Left = (SHORT) __left;
+		r.Top = (SHORT) __top;
+		r.Right = (SHORT) __right;
+		r.Bottom = (SHORT) __bottom;
+		c.X = (SHORT) __destleft;
+		c.Y = (SHORT) __desttop;
 		#if UNICODE
-				ci.Char.UnicodeChar = L' ';
+			ci.Char.UnicodeChar = L' ';
 		#else
 			ci.Char.AsciiChar = ' ';
 		#endif
@@ -992,7 +998,8 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 		int i;
 		SMALL_RECT r;
 		CHAR_INFO *buffer;
-		char_info *ci;
+		//char_info *ci;
+		short *ci;
 		COORD s, c = { 0,0 };
 
 		coniox_init(NULL);
@@ -1001,27 +1008,27 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 				return(0);
 		}
 
-		r.Left = (SHORT) (__left - 1);
-		r.Top = (SHORT) (__top - 1);
-		r.Right = (SHORT) (__right - 1);
-		r.Bottom = (SHORT) (__bottom - 1);
+		r.Left = (SHORT) __left;
+		r.Top = (SHORT) __top;
+		r.Right = (SHORT) __right;
+		r.Bottom = (SHORT) __bottom;
 		s.X = (SHORT) (__right - __left + 1);
 		s.Y = (SHORT) (__bottom - __top + 1);
 
 		buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
 		if (!buffer)
 		{
-				return(0);
+			return(0);
 		}
-		ci = (char_info *) __source;
+		ci = (short *) __source;
 		for (i = 0; i < s.X * s.Y; i++)
 		{
 				#if UNICODE
-						buffer[i].Char.UnicodeChar = (wchar_t) ci[i].letter;
+					buffer[i].Char.UnicodeChar = (wchar_t) ci[i] & 0xFF;
 				#else
-						buffer[i].Char.AsciiChar = (unsigned char) ci[i].letter;
+					buffer[i].Char.AsciiChar = (unsigned char) ci[i] & 0xFF;
 				#endif
-				buffer[i].Attributes = ci[i].attr;
+				buffer[i].Attributes = ci[i] >> 8;
 		}
 		WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
 		free(buffer);
@@ -1409,7 +1416,6 @@ void delay(unsigned int ms)
 int coniox_basecrt = 0x3D4;
 
 #if !defined(__TURBOC__)
-		#include "conio.h"
 		#define outportb		outp
 		#define outport			outpw
 		#define inportb			inp
@@ -1434,7 +1440,7 @@ int coniox_basecrt = 0x3D4;
 		#define coniox_far
 		#define coniox_int86 int386
 		#if defined(__WATCOMC__)
-				/* ToDo: Optimize with lea eax, [eax*2+coniox_vram] */
+				/* ToDo: Optimize with lea eax, [eax*2+coniox_vram] lea eax, [esi+eax*2] */
 				unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
 				#pragma aux coniox_offset =										    \
 						"			 .386													   "\
@@ -1464,7 +1470,7 @@ int coniox_basecrt = 0x3D4;
 						"			 mul di														 "\
 						"			 add ax, si										 "\
 						"			 shl ax, 1												    "\
-						"			 mov dx, word ptr coniox_vram+2
+						"			 mov dx, word ptr coniox_vram+2							"\
 						parm nomemory [SI][DI]													 \
 						modify exact nomemory []																	 \
 						value [DX AX];
