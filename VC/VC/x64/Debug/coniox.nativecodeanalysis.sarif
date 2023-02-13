@@ -16,9 +16,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                 },
                 "region": {
-                  "startLine": 955,
+                  "startLine": 954,
                   "startColumn": 6,
-                  "endLine": 955,
+                  "endLine": 954,
                   "endColumn": 79
                 }
               },
@@ -279,7 +279,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 948,
+                            "startLine": 947,
                             "startColumn": 7
                           }
                         }
@@ -293,7 +293,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 949,
+                            "startLine": 948,
                             "startColumn": 7
                           }
                         },
@@ -313,7 +313,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 949,
+                            "startLine": 948,
                             "startColumn": 7
                           }
                         },
@@ -333,7 +333,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 951,
+                            "startLine": 950,
                             "startColumn": 11
                           }
                         }
@@ -347,7 +347,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 951,
+                            "startLine": 950,
                             "startColumn": 18
                           }
                         },
@@ -367,7 +367,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 955,
+                            "startLine": 954,
                             "startColumn": 13
                           }
                         }
@@ -381,7 +381,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 951,
+                            "startLine": 950,
                             "startColumn": 32
                           }
                         },
@@ -401,7 +401,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 951,
+                            "startLine": 950,
                             "startColumn": 18
                           }
                         },
@@ -421,7 +421,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 955,
+                            "startLine": 954,
                             "startColumn": 13
                           }
                         },
@@ -480,9 +480,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                 },
                 "region": {
-                  "startLine": 1026,
+                  "startLine": 1024,
                   "startColumn": 4,
-                  "endLine": 1026,
+                  "endLine": 1024,
                   "endColumn": 51
                 }
               },
@@ -507,7 +507,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 997,
+                            "startLine": 995,
                             "startColumn": 6
                           }
                         }
@@ -521,7 +521,21 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 998,
+                            "startLine": 996,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 997,
                             "startColumn": 13
                           }
                         }
@@ -536,20 +550,6 @@
                           },
                           "region": {
                             "startLine": 999,
-                            "startColumn": 13
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1001,
                             "startColumn": 9
                           }
                         }
@@ -563,7 +563,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1002,
+                            "startLine": 1000,
                             "startColumn": 8
                           }
                         }
@@ -577,7 +577,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1002,
+                            "startLine": 1000,
                             "startColumn": 11
                           }
                         }
@@ -591,7 +591,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1004,
+                            "startLine": 1002,
                             "startColumn": 2
                           }
                         }
@@ -605,7 +605,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1005,
+                            "startLine": 1003,
                             "startColumn": 24
                           }
                         }
@@ -619,7 +619,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1010,
+                            "startLine": 1008,
                             "startColumn": 9
                           }
                         }
@@ -633,7 +633,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1011,
+                            "startLine": 1009,
                             "startColumn": 8
                           }
                         }
@@ -647,7 +647,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1012,
+                            "startLine": 1010,
                             "startColumn": 10
                           }
                         }
@@ -661,7 +661,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1013,
+                            "startLine": 1011,
                             "startColumn": 11
                           }
                         }
@@ -675,7 +675,21 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1014,
+                            "startLine": 1012,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1013,
                             "startColumn": 6
                           }
                         }
@@ -690,20 +704,6 @@
                           },
                           "region": {
                             "startLine": 1015,
-                            "startColumn": 6
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1017,
                             "startColumn": 9
                           }
                         },
@@ -723,7 +723,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1018,
+                            "startLine": 1016,
                             "startColumn": 6
                           }
                         },
@@ -743,7 +743,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1022,
+                            "startLine": 1020,
                             "startColumn": 5
                           }
                         }
@@ -757,7 +757,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1023,
+                            "startLine": 1021,
                             "startColumn": 9
                           }
                         }
@@ -771,7 +771,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1023,
+                            "startLine": 1021,
                             "startColumn": 16
                           }
                         },
@@ -791,7 +791,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1026,
+                            "startLine": 1024,
                             "startColumn": 31
                           }
                         }
@@ -805,7 +805,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1030,
+                            "startLine": 1028,
                             "startColumn": 24
                           }
                         }
@@ -819,7 +819,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1023,
+                            "startLine": 1021,
                             "startColumn": 30
                           }
                         },
@@ -839,7 +839,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1023,
+                            "startLine": 1021,
                             "startColumn": 16
                           }
                         },
@@ -859,7 +859,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1026,
+                            "startLine": 1024,
                             "startColumn": 31
                           }
                         },
@@ -890,9 +890,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                 },
                 "region": {
-                  "startLine": 1017,
+                  "startLine": 1015,
                   "startColumn": 18,
-                  "endLine": 1017,
+                  "endLine": 1015,
                   "endColumn": 26
                 }
               },
@@ -918,9 +918,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                 },
                 "region": {
-                  "startLine": 1072,
+                  "startLine": 1070,
                   "startColumn": 4,
-                  "endLine": 1072,
+                  "endLine": 1070,
                   "endColumn": 51
                 }
               },
@@ -945,7 +945,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1043,
+                            "startLine": 1041,
                             "startColumn": 6
                           }
                         }
@@ -959,7 +959,21 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1044,
+                            "startLine": 1042,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1043,
                             "startColumn": 13
                           }
                         }
@@ -974,20 +988,6 @@
                           },
                           "region": {
                             "startLine": 1045,
-                            "startColumn": 13
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1047,
                             "startColumn": 9
                           }
                         }
@@ -1001,7 +1001,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1048,
+                            "startLine": 1046,
                             "startColumn": 8
                           }
                         }
@@ -1015,7 +1015,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1048,
+                            "startLine": 1046,
                             "startColumn": 11
                           }
                         }
@@ -1029,7 +1029,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1050,
+                            "startLine": 1048,
                             "startColumn": 2
                           }
                         }
@@ -1043,7 +1043,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1051,
+                            "startLine": 1049,
                             "startColumn": 23
                           }
                         }
@@ -1057,7 +1057,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1056,
+                            "startLine": 1054,
                             "startColumn": 9
                           }
                         }
@@ -1071,7 +1071,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1057,
+                            "startLine": 1055,
                             "startColumn": 8
                           }
                         }
@@ -1085,7 +1085,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1058,
+                            "startLine": 1056,
                             "startColumn": 10
                           }
                         }
@@ -1099,7 +1099,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1059,
+                            "startLine": 1057,
                             "startColumn": 11
                           }
                         }
@@ -1113,7 +1113,21 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1060,
+                            "startLine": 1058,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1059,
                             "startColumn": 6
                           }
                         }
@@ -1128,20 +1142,6 @@
                           },
                           "region": {
                             "startLine": 1061,
-                            "startColumn": 6
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1063,
                             "startColumn": 9
                           }
                         },
@@ -1161,7 +1161,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1064,
+                            "startLine": 1062,
                             "startColumn": 6
                           }
                         },
@@ -1181,7 +1181,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1068,
+                            "startLine": 1066,
                             "startColumn": 5
                           }
                         }
@@ -1195,7 +1195,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1069,
+                            "startLine": 1067,
                             "startColumn": 9
                           }
                         }
@@ -1209,7 +1209,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1069,
+                            "startLine": 1067,
                             "startColumn": 16
                           }
                         },
@@ -1229,7 +1229,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1072,
+                            "startLine": 1070,
                             "startColumn": 31
                           }
                         }
@@ -1243,7 +1243,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1076,
+                            "startLine": 1074,
                             "startColumn": 24
                           }
                         }
@@ -1257,7 +1257,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1069,
+                            "startLine": 1067,
                             "startColumn": 30
                           }
                         },
@@ -1277,7 +1277,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1069,
+                            "startLine": 1067,
                             "startColumn": 16
                           }
                         },
@@ -1297,7 +1297,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1072,
+                            "startLine": 1070,
                             "startColumn": 31
                           }
                         },
@@ -1328,9 +1328,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                 },
                 "region": {
-                  "startLine": 1063,
+                  "startLine": 1061,
                   "startColumn": 18,
-                  "endLine": 1063,
+                  "endLine": 1061,
                   "endColumn": 26
                 }
               },
@@ -1356,9 +1356,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                 },
                 "region": {
-                  "startLine": 1115,
+                  "startLine": 1113,
                   "startColumn": 8,
-                  "endLine": 1115,
+                  "endLine": 1113,
                   "endColumn": 44
                 }
               },
@@ -1383,8 +1383,36 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1088,
+                            "startLine": 1086,
                             "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1087,
+                            "startColumn": 14
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1088,
+                            "startColumn": 14
                           }
                         }
                       },
@@ -1398,34 +1426,6 @@
                           },
                           "region": {
                             "startLine": 1089,
-                            "startColumn": 14
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1090,
-                            "startColumn": 14
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1091,
                             "startColumn": 9
                           }
                         }
@@ -1439,7 +1439,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1091,
+                            "startLine": 1089,
                             "startColumn": 12
                           }
                         }
@@ -1453,7 +1453,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1094,
+                            "startLine": 1092,
                             "startColumn": 3
                           }
                         }
@@ -1467,7 +1467,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1095,
+                            "startLine": 1093,
                             "startColumn": 24
                           }
                         }
@@ -1481,7 +1481,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1099,
+                            "startLine": 1097,
                             "startColumn": 10
                           }
                         }
@@ -1495,7 +1495,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1100,
+                            "startLine": 1098,
                             "startColumn": 9
                           }
                         }
@@ -1509,7 +1509,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1101,
+                            "startLine": 1099,
                             "startColumn": 11
                           }
                         }
@@ -1523,7 +1523,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1102,
+                            "startLine": 1100,
                             "startColumn": 12
                           }
                         }
@@ -1537,35 +1537,35 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
+                            "startLine": 1101,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1102,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
                             "startLine": 1103,
-                            "startColumn": 7
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1104,
-                            "startColumn": 7
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
-                          },
-                          "region": {
-                            "startLine": 1105,
                             "startColumn": 10
                           }
                         },
@@ -1585,7 +1585,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1106,
+                            "startLine": 1104,
                             "startColumn": 7
                           }
                         },
@@ -1605,7 +1605,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1110,
+                            "startLine": 1108,
                             "startColumn": 7
                           }
                         },
@@ -1625,7 +1625,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1110,
+                            "startLine": 1108,
                             "startColumn": 7
                           }
                         },
@@ -1645,7 +1645,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1112,
+                            "startLine": 1110,
                             "startColumn": 12
                           }
                         }
@@ -1659,7 +1659,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1112,
+                            "startLine": 1110,
                             "startColumn": 19
                           }
                         },
@@ -1679,7 +1679,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1115,
+                            "startLine": 1113,
                             "startColumn": 27
                           }
                         }
@@ -1693,7 +1693,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1119,
+                            "startLine": 1117,
                             "startColumn": 24
                           }
                         }
@@ -1707,7 +1707,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1112,
+                            "startLine": 1110,
                             "startColumn": 33
                           }
                         },
@@ -1727,7 +1727,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1112,
+                            "startLine": 1110,
                             "startColumn": 19
                           }
                         },
@@ -1747,7 +1747,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                           },
                           "region": {
-                            "startLine": 1115,
+                            "startLine": 1113,
                             "startColumn": 27
                           }
                         },
@@ -1778,9 +1778,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
                 },
                 "region": {
-                  "startLine": 1105,
+                  "startLine": 1103,
                   "startColumn": 19,
-                  "endLine": 1105,
+                  "endLine": 1103,
                   "endColumn": 27
                 }
               },
@@ -1818,7 +1818,7 @@
             "resultFile"
           ],
           "hashes": {
-            "sha-256": "505582dae67ddbe85cf8e3e99371de6b930d94d83687dbb29c025dec5e0b4c05"
+            "sha-256": "99ab9f699bf2b9f5f8e9ed877b410d7190a179efeb41c8f10c47efe4f2f2fd65"
           }
         },
         {
@@ -1826,7 +1826,7 @@
             "uri": "file:///d:/proyectos/coniox/coniox.h"
           },
           "hashes": {
-            "sha-256": "d522f57b7db54b923af3666f837c6715e86af9849dbdd5330b0806228a7959b1"
+            "sha-256": "cf99dd38f1385deb93ba0b15e993e4cb4e461b0fa65f3f87966d60fd25b2fd60"
           }
         }
       ]

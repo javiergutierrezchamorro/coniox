@@ -4,7 +4,7 @@
     <SFA>
       <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
       <FILENAME>coniox.c</FILENAME>
-      <LINE>955</LINE>
+      <LINE>954</LINE>
       <COLUMN>12</COLUMN>
     </SFA>
     <DEFECTCODE>6385</DEFECTCODE>
@@ -129,13 +129,13 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>948</LINE>
+        <LINE>947</LINE>
         <COLUMN>6</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>949</LINE>
+        <LINE>948</LINE>
         <COLUMN>6</COLUMN>
         <KEYEVENT>
           <ID>3</ID>
@@ -147,7 +147,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>949</LINE>
+        <LINE>948</LINE>
         <COLUMN>6</COLUMN>
         <KEYEVENT>
           <ID>4</ID>
@@ -159,13 +159,13 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>951</LINE>
+        <LINE>950</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>951</LINE>
+        <LINE>950</LINE>
         <COLUMN>17</COLUMN>
         <KEYEVENT>
           <ID>5</ID>
@@ -177,13 +177,13 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>955</LINE>
+        <LINE>954</LINE>
         <COLUMN>12</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>951</LINE>
+        <LINE>950</LINE>
         <COLUMN>31</COLUMN>
         <KEYEVENT>
           <ID>6</ID>
@@ -195,7 +195,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>951</LINE>
+        <LINE>950</LINE>
         <COLUMN>17</COLUMN>
         <KEYEVENT>
           <ID>7</ID>
@@ -207,7 +207,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>955</LINE>
+        <LINE>954</LINE>
         <COLUMN>12</COLUMN>
         <KEYEVENT>
           <ID>8</ID>
@@ -236,14 +236,14 @@
     <SFA>
       <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
       <FILENAME>coniox.c</FILENAME>
-      <LINE>1026</LINE>
+      <LINE>1024</LINE>
       <COLUMN>30</COLUMN>
     </SFA>
     <DEFECTCODE>6386</DEFECTCODE>
     <DESCRIPTION>Saturación del búfer al escribir en 'buffer'.</DESCRIPTION>
     <FUNCTION>puttext</FUNCTION>
     <DECORATED>puttext</DECORATED>
-    <FUNCLINE>995</FUNCLINE>
+    <FUNCLINE>993</FUNCLINE>
     <PROBABILITY>1</PROBABILITY>
     <RANK>4</RANK>
     <CATEGORY>
@@ -253,91 +253,91 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>997</LINE>
+        <LINE>995</LINE>
         <COLUMN>5</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>998</LINE>
+        <LINE>996</LINE>
+        <COLUMN>12</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
+        <LINE>997</LINE>
         <COLUMN>12</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
         <LINE>999</LINE>
-        <COLUMN>12</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1001</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1002</LINE>
+        <LINE>1000</LINE>
         <COLUMN>7</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1002</LINE>
+        <LINE>1000</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1004</LINE>
+        <LINE>1002</LINE>
         <COLUMN>1</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1005</LINE>
+        <LINE>1003</LINE>
         <COLUMN>23</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1010</LINE>
+        <LINE>1008</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1011</LINE>
+        <LINE>1009</LINE>
         <COLUMN>7</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1012</LINE>
+        <LINE>1010</LINE>
         <COLUMN>9</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1013</LINE>
+        <LINE>1011</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1014</LINE>
+        <LINE>1012</LINE>
+        <COLUMN>5</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
+        <LINE>1013</LINE>
         <COLUMN>5</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
         <LINE>1015</LINE>
-        <COLUMN>5</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1017</LINE>
         <COLUMN>8</COLUMN>
         <KEYEVENT>
           <ID>1</ID>
@@ -349,7 +349,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1018</LINE>
+        <LINE>1016</LINE>
         <COLUMN>5</COLUMN>
         <KEYEVENT>
           <ID>2</ID>
@@ -361,19 +361,19 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1022</LINE>
+        <LINE>1020</LINE>
         <COLUMN>4</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1023</LINE>
+        <LINE>1021</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1023</LINE>
+        <LINE>1021</LINE>
         <COLUMN>15</COLUMN>
         <KEYEVENT>
           <ID>3</ID>
@@ -385,19 +385,19 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1026</LINE>
+        <LINE>1024</LINE>
         <COLUMN>30</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1030</LINE>
+        <LINE>1028</LINE>
         <COLUMN>23</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1023</LINE>
+        <LINE>1021</LINE>
         <COLUMN>29</COLUMN>
         <KEYEVENT>
           <ID>4</ID>
@@ -409,7 +409,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1023</LINE>
+        <LINE>1021</LINE>
         <COLUMN>15</COLUMN>
         <KEYEVENT>
           <ID>5</ID>
@@ -421,7 +421,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1026</LINE>
+        <LINE>1024</LINE>
         <COLUMN>30</COLUMN>
         <KEYEVENT>
           <ID>6</ID>
@@ -436,28 +436,28 @@
     <SFA>
       <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
       <FILENAME>coniox.c</FILENAME>
-      <LINE>1017</LINE>
+      <LINE>1015</LINE>
       <COLUMN>21</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Desbordamiento aritmético: el operador "*" se usa en un valor de 4 bytes y, a continuación, el resultado se convierte a un valor de 8 bytes. Convierta el valor al tipo más amplio antes de llamar al operador "*" para evitar el desbordamiento (io.2).</DESCRIPTION>
     <FUNCTION>puttext</FUNCTION>
     <DECORATED>puttext</DECORATED>
-    <FUNCLINE>995</FUNCLINE>
+    <FUNCLINE>993</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
       <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
       <FILENAME>coniox.c</FILENAME>
-      <LINE>1072</LINE>
+      <LINE>1070</LINE>
       <COLUMN>30</COLUMN>
     </SFA>
     <DEFECTCODE>6386</DEFECTCODE>
     <DESCRIPTION>Saturación del búfer al escribir en 'buffer'.</DESCRIPTION>
     <FUNCTION>putwtext</FUNCTION>
     <DECORATED>putwtext</DECORATED>
-    <FUNCLINE>1041</FUNCLINE>
+    <FUNCLINE>1039</FUNCLINE>
     <PROBABILITY>1</PROBABILITY>
     <RANK>4</RANK>
     <CATEGORY>
@@ -467,91 +467,91 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1043</LINE>
+        <LINE>1041</LINE>
         <COLUMN>5</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1044</LINE>
+        <LINE>1042</LINE>
+        <COLUMN>12</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
+        <LINE>1043</LINE>
         <COLUMN>12</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
         <LINE>1045</LINE>
-        <COLUMN>12</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1047</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1048</LINE>
+        <LINE>1046</LINE>
         <COLUMN>7</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1048</LINE>
+        <LINE>1046</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1050</LINE>
+        <LINE>1048</LINE>
         <COLUMN>1</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1051</LINE>
+        <LINE>1049</LINE>
         <COLUMN>22</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1056</LINE>
+        <LINE>1054</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1057</LINE>
+        <LINE>1055</LINE>
         <COLUMN>7</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1058</LINE>
+        <LINE>1056</LINE>
         <COLUMN>9</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1059</LINE>
+        <LINE>1057</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1060</LINE>
+        <LINE>1058</LINE>
+        <COLUMN>5</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
+        <LINE>1059</LINE>
         <COLUMN>5</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
         <LINE>1061</LINE>
-        <COLUMN>5</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1063</LINE>
         <COLUMN>8</COLUMN>
         <KEYEVENT>
           <ID>1</ID>
@@ -563,7 +563,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1064</LINE>
+        <LINE>1062</LINE>
         <COLUMN>5</COLUMN>
         <KEYEVENT>
           <ID>2</ID>
@@ -575,19 +575,19 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1068</LINE>
+        <LINE>1066</LINE>
         <COLUMN>4</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1069</LINE>
+        <LINE>1067</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1069</LINE>
+        <LINE>1067</LINE>
         <COLUMN>15</COLUMN>
         <KEYEVENT>
           <ID>3</ID>
@@ -599,19 +599,19 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1072</LINE>
+        <LINE>1070</LINE>
         <COLUMN>30</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1076</LINE>
+        <LINE>1074</LINE>
         <COLUMN>23</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1069</LINE>
+        <LINE>1067</LINE>
         <COLUMN>29</COLUMN>
         <KEYEVENT>
           <ID>4</ID>
@@ -623,7 +623,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1069</LINE>
+        <LINE>1067</LINE>
         <COLUMN>15</COLUMN>
         <KEYEVENT>
           <ID>5</ID>
@@ -635,7 +635,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1072</LINE>
+        <LINE>1070</LINE>
         <COLUMN>30</COLUMN>
         <KEYEVENT>
           <ID>6</ID>
@@ -650,28 +650,28 @@
     <SFA>
       <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
       <FILENAME>coniox.c</FILENAME>
-      <LINE>1063</LINE>
+      <LINE>1061</LINE>
       <COLUMN>21</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Desbordamiento aritmético: el operador "*" se usa en un valor de 4 bytes y, a continuación, el resultado se convierte a un valor de 8 bytes. Convierta el valor al tipo más amplio antes de llamar al operador "*" para evitar el desbordamiento (io.2).</DESCRIPTION>
     <FUNCTION>putwtext</FUNCTION>
     <DECORATED>putwtext</DECORATED>
-    <FUNCLINE>1041</FUNCLINE>
+    <FUNCLINE>1039</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
       <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
       <FILENAME>coniox.c</FILENAME>
-      <LINE>1115</LINE>
+      <LINE>1113</LINE>
       <COLUMN>26</COLUMN>
     </SFA>
     <DEFECTCODE>6385</DEFECTCODE>
     <DESCRIPTION>Leyendo datos no válidos de 'buffer'.</DESCRIPTION>
     <FUNCTION>getwtext</FUNCTION>
     <DECORATED>getwtext</DECORATED>
-    <FUNCLINE>1086</FUNCLINE>
+    <FUNCLINE>1084</FUNCLINE>
     <PROBABILITY>1</PROBABILITY>
     <RANK>4</RANK>
     <CATEGORY>
@@ -681,85 +681,85 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1088</LINE>
+        <LINE>1086</LINE>
         <COLUMN>6</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
+        <LINE>1087</LINE>
+        <COLUMN>13</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
+        <LINE>1088</LINE>
+        <COLUMN>13</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
         <LINE>1089</LINE>
-        <COLUMN>13</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1090</LINE>
-        <COLUMN>13</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1091</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1091</LINE>
+        <LINE>1089</LINE>
         <COLUMN>11</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1094</LINE>
+        <LINE>1092</LINE>
         <COLUMN>2</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1095</LINE>
+        <LINE>1093</LINE>
         <COLUMN>23</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1099</LINE>
+        <LINE>1097</LINE>
         <COLUMN>9</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1100</LINE>
+        <LINE>1098</LINE>
         <COLUMN>8</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1101</LINE>
+        <LINE>1099</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1102</LINE>
+        <LINE>1100</LINE>
         <COLUMN>11</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
+        <LINE>1101</LINE>
+        <COLUMN>6</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
+        <LINE>1102</LINE>
+        <COLUMN>6</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
+        <FILENAME>coniox.c</FILENAME>
         <LINE>1103</LINE>
-        <COLUMN>6</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1104</LINE>
-        <COLUMN>6</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
-        <FILENAME>coniox.c</FILENAME>
-        <LINE>1105</LINE>
         <COLUMN>9</COLUMN>
         <KEYEVENT>
           <ID>1</ID>
@@ -771,7 +771,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1106</LINE>
+        <LINE>1104</LINE>
         <COLUMN>6</COLUMN>
         <KEYEVENT>
           <ID>2</ID>
@@ -783,7 +783,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1110</LINE>
+        <LINE>1108</LINE>
         <COLUMN>6</COLUMN>
         <KEYEVENT>
           <ID>3</ID>
@@ -795,7 +795,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1110</LINE>
+        <LINE>1108</LINE>
         <COLUMN>6</COLUMN>
         <KEYEVENT>
           <ID>4</ID>
@@ -807,13 +807,13 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1112</LINE>
+        <LINE>1110</LINE>
         <COLUMN>11</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1112</LINE>
+        <LINE>1110</LINE>
         <COLUMN>18</COLUMN>
         <KEYEVENT>
           <ID>5</ID>
@@ -825,19 +825,19 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1115</LINE>
+        <LINE>1113</LINE>
         <COLUMN>26</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1119</LINE>
+        <LINE>1117</LINE>
         <COLUMN>23</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1112</LINE>
+        <LINE>1110</LINE>
         <COLUMN>32</COLUMN>
         <KEYEVENT>
           <ID>6</ID>
@@ -849,7 +849,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1112</LINE>
+        <LINE>1110</LINE>
         <COLUMN>18</COLUMN>
         <KEYEVENT>
           <ID>7</ID>
@@ -861,7 +861,7 @@
       <SFA>
         <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
         <FILENAME>coniox.c</FILENAME>
-        <LINE>1115</LINE>
+        <LINE>1113</LINE>
         <COLUMN>26</COLUMN>
         <KEYEVENT>
           <ID>8</ID>
@@ -876,14 +876,14 @@
     <SFA>
       <FILEPATH>D:\PROYECTOS\coniox\</FILEPATH>
       <FILENAME>coniox.c</FILENAME>
-      <LINE>1105</LINE>
+      <LINE>1103</LINE>
       <COLUMN>22</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Desbordamiento aritmético: el operador "*" se usa en un valor de 4 bytes y, a continuación, el resultado se convierte a un valor de 8 bytes. Convierta el valor al tipo más amplio antes de llamar al operador "*" para evitar el desbordamiento (io.2).</DESCRIPTION>
     <FUNCTION>getwtext</FUNCTION>
     <DECORATED>getwtext</DECORATED>
-    <FUNCLINE>1086</FUNCLINE>
+    <FUNCLINE>1084</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
 </DEFECTS>

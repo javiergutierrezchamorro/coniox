@@ -1,0 +1,1723 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "ruleId": "C6385",
+          "message": {
+            "text": "Leyendo datos no válidos de 'ci'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                },
+                "region": {
+                  "startLine": 954,
+                  "startColumn": 6,
+                  "endLine": 954,
+                  "endColumn": 79
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "gettext",
+                  "decoratedName": "gettext",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 922,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 923,
+                            "startColumn": 14
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 924,
+                            "startColumn": 14
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 926,
+                            "startColumn": 10
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 927,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 927,
+                            "startColumn": 12
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 930,
+                            "startColumn": 3
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 931,
+                            "startColumn": 24
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 936,
+                            "startColumn": 10
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 937,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 938,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 939,
+                            "startColumn": 12
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 940,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 941,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 942,
+                            "startColumn": 6
+                          }
+                        },
+                        "message": {
+                          "text": "'ci' es una matriz de bytes de 0"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 943,
+                            "startColumn": 7
+                          }
+                        },
+                        "message": {
+                          "text": "Omitir esta bifurcación, (se asume que '!ci' es false)"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 947,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 948,
+                            "startColumn": 7
+                          }
+                        },
+                        "message": {
+                          "text": "'ci' es un argumento In/Out para 'ReadConsoleOutputW' (declarado en d:\\windows kits\\10\\include\\10.0.22000.0\\um\\consoleapi2.h:412)"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 948,
+                            "startColumn": 7
+                          }
+                        },
+                        "message": {
+                          "text": "Entrar en esta bifurcación, (se asume '<condición de bifurcación>')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 950,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 950,
+                            "startColumn": 18
+                          }
+                        },
+                        "message": {
+                          "text": "Entrar en este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 954,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 950,
+                            "startColumn": 32
+                          }
+                        },
+                        "message": {
+                          "text": "'i' puede ser igual a 1"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 950,
+                            "startColumn": 18
+                          }
+                        },
+                        "message": {
+                          "text": "Continuar este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 954,
+                            "startColumn": 13
+                          }
+                        },
+                        "message": {
+                          "text": "Lectura no válida de 'ci', (fuera del intervalo de lectura)"
+                        }
+                      },
+                      "kinds": [
+                        "usage"
+                      ],
+                      "importance": "essential"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C6386",
+          "message": {
+            "text": "Saturación del búfer al escribir en 'buffer'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                },
+                "region": {
+                  "startLine": 1024,
+                  "startColumn": 4,
+                  "endLine": 1024,
+                  "endColumn": 51
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "puttext",
+                  "decoratedName": "puttext",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 995,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 996,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 997,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 999,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1000,
+                            "startColumn": 8
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1000,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1002,
+                            "startColumn": 2
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1003,
+                            "startColumn": 24
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1008,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1009,
+                            "startColumn": 8
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1010,
+                            "startColumn": 10
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1011,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1012,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1013,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1015,
+                            "startColumn": 9
+                          }
+                        },
+                        "message": {
+                          "text": "'buffer' es una matriz de bytes de 0"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1016,
+                            "startColumn": 6
+                          }
+                        },
+                        "message": {
+                          "text": "Omitir esta bifurcación, (se asume que '!buffer' es false)"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1020,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1021,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1021,
+                            "startColumn": 16
+                          }
+                        },
+                        "message": {
+                          "text": "Entrar en este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1024,
+                            "startColumn": 31
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1028,
+                            "startColumn": 24
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1021,
+                            "startColumn": 30
+                          }
+                        },
+                        "message": {
+                          "text": "'i' puede ser igual a 1"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1021,
+                            "startColumn": 16
+                          }
+                        },
+                        "message": {
+                          "text": "Continuar este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1024,
+                            "startColumn": 31
+                          }
+                        },
+                        "message": {
+                          "text": "Escritura no válida en 'buffer', (fuera del intervalo de escritura)"
+                        }
+                      },
+                      "kinds": [
+                        "usage"
+                      ],
+                      "importance": "essential"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C6386",
+          "message": {
+            "text": "Saturación del búfer al escribir en 'buffer'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                },
+                "region": {
+                  "startLine": 1070,
+                  "startColumn": 4,
+                  "endLine": 1070,
+                  "endColumn": 51
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "putwtext",
+                  "decoratedName": "putwtext",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1041,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1042,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1043,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1045,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1046,
+                            "startColumn": 8
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1046,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1048,
+                            "startColumn": 2
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1049,
+                            "startColumn": 23
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1054,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1055,
+                            "startColumn": 8
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1056,
+                            "startColumn": 10
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1057,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1058,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1059,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1061,
+                            "startColumn": 9
+                          }
+                        },
+                        "message": {
+                          "text": "'buffer' es una matriz de bytes de 0"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1062,
+                            "startColumn": 6
+                          }
+                        },
+                        "message": {
+                          "text": "Omitir esta bifurcación, (se asume que '!buffer' es false)"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1066,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1067,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1067,
+                            "startColumn": 16
+                          }
+                        },
+                        "message": {
+                          "text": "Entrar en este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1070,
+                            "startColumn": 31
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1074,
+                            "startColumn": 24
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1067,
+                            "startColumn": 30
+                          }
+                        },
+                        "message": {
+                          "text": "'i' puede ser igual a 1"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1067,
+                            "startColumn": 16
+                          }
+                        },
+                        "message": {
+                          "text": "Continuar este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1070,
+                            "startColumn": 31
+                          }
+                        },
+                        "message": {
+                          "text": "Escritura no válida en 'buffer', (fuera del intervalo de escritura)"
+                        }
+                      },
+                      "kinds": [
+                        "usage"
+                      ],
+                      "importance": "essential"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C6385",
+          "message": {
+            "text": "Leyendo datos no válidos de 'buffer'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                },
+                "region": {
+                  "startLine": 1113,
+                  "startColumn": 8,
+                  "endLine": 1113,
+                  "endColumn": 44
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "getwtext",
+                  "decoratedName": "getwtext",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1086,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1087,
+                            "startColumn": 14
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1088,
+                            "startColumn": 14
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1089,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1089,
+                            "startColumn": 12
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1092,
+                            "startColumn": 3
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1093,
+                            "startColumn": 24
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1097,
+                            "startColumn": 10
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1098,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1099,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1100,
+                            "startColumn": 12
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1101,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1102,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1103,
+                            "startColumn": 10
+                          }
+                        },
+                        "message": {
+                          "text": "'buffer' es una matriz de bytes de 0"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1104,
+                            "startColumn": 7
+                          }
+                        },
+                        "message": {
+                          "text": "Omitir esta bifurcación, (se asume que '!buffer' es false)"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1108,
+                            "startColumn": 7
+                          }
+                        },
+                        "message": {
+                          "text": "'buffer' es un argumento In/Out para 'ReadConsoleOutputW' (declarado en d:\\windows kits\\10\\include\\10.0.22000.0\\um\\consoleapi2.h:412)"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1108,
+                            "startColumn": 7
+                          }
+                        },
+                        "message": {
+                          "text": "Entrar en esta bifurcación, (se asume '<condición de bifurcación>')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1110,
+                            "startColumn": 12
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1110,
+                            "startColumn": 19
+                          }
+                        },
+                        "message": {
+                          "text": "Entrar en este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1113,
+                            "startColumn": 27
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1117,
+                            "startColumn": 24
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1110,
+                            "startColumn": 33
+                          }
+                        },
+                        "message": {
+                          "text": "'i' puede ser igual a 1"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1110,
+                            "startColumn": 19
+                          }
+                        },
+                        "message": {
+                          "text": "Continuar este bucle, (se asume 'i<s.X*s.Y')"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+                          },
+                          "region": {
+                            "startLine": 1113,
+                            "startColumn": 27
+                          }
+                        },
+                        "message": {
+                          "text": "Lectura no válida de 'buffer', (fuera del intervalo de lectura)"
+                        }
+                      },
+                      "kinds": [
+                        "usage"
+                      ],
+                      "importance": "essential"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "PREfast",
+          "fullName": "PREfast Code Analysis",
+          "version": "14.34.31937.0",
+          "informationUri": "https://aka.ms/cpp/ca"
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///D:/PROYECTOS/coniox/coniox.c"
+          },
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ],
+          "hashes": {
+            "sha-256": "99ab9f699bf2b9f5f8e9ed877b410d7190a179efeb41c8f10c47efe4f2f2fd65"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///d:/proyectos/coniox/coniox.h"
+          },
+          "hashes": {
+            "sha-256": "1605b2e638e78aa10d70b1bb2b785b7e4d9bfbd3141bc90a09209ba5aa5b4a6a"
+          }
+        }
+      ]
+    }
+  ]
+}

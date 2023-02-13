@@ -5,394 +5,6 @@
     {
       "results": [
         {
-          "ruleId": "C6011",
-          "message": {
-            "text": "Desreferenciando el puntero NULL 'buf'. "
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                },
-                "region": {
-                  "startLine": 244,
-                  "startColumn": 8,
-                  "endLine": 244,
-                  "endColumn": 17
-                }
-              },
-              "logicalLocations": [
-                {
-                  "fullyQualifiedName": "getputtexts",
-                  "decoratedName": "getputtexts",
-                  "kind": "function"
-                }
-              ]
-            }
-          ],
-          "codeFlows": [
-            {
-              "threadFlows": [
-                {
-                  "locations": [
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 217,
-                            "startColumn": 17
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 218,
-                            "startColumn": 6
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 218,
-                            "startColumn": 9
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 218,
-                            "startColumn": 12
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 219,
-                            "startColumn": 19
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 221,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 222,
-                            "startColumn": 7
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 223,
-                            "startColumn": 6
-                          }
-                        },
-                        "message": {
-                          "text": "'buf' puede ser NULL"
-                        }
-                      },
-                      "kinds": [
-                        "declaration"
-                      ],
-                      "importance": "essential"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 232,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 233,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 234,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 235,
-                            "startColumn": 2
-                          }
-                        },
-                        "message": {
-                          "text": "'buf' es un argumento In/Out para 'gettext' (declarado en d:\\proyectos\\coniox\\coniox.h:325)"
-                        }
-                      },
-                      "kinds": [
-                        "declaration"
-                      ],
-                      "importance": "important"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 236,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 237,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 238,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 239,
-                            "startColumn": 2
-                          }
-                        },
-                        "message": {
-                          "text": "'buf' es un argumento In/Out para 'puttext' (declarado en d:\\proyectos\\coniox\\coniox.h:343)"
-                        }
-                      },
-                      "kinds": [
-                        "declaration"
-                      ],
-                      "importance": "important"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 240,
-                            "startColumn": 9
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 240,
-                            "startColumn": 16
-                          }
-                        },
-                        "message": {
-                          "text": "Entrar en este bucle, (se asume 'j<255')"
-                        }
-                      },
-                      "kinds": [
-                        "branch"
-                      ],
-                      "importance": "important"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 242,
-                            "startColumn": 10
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 242,
-                            "startColumn": 17
-                          }
-                        },
-                        "message": {
-                          "text": "Entrar en este bucle, (se asume 'i<size')"
-                        }
-                      },
-                      "kinds": [
-                        "branch"
-                      ],
-                      "importance": "important"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 244,
-                            "startColumn": 15
-                          }
-                        },
-                        "message": {
-                          "text": "Omitir esta bifurcación, (se asume que 'buf[i]>0' es false)"
-                        }
-                      },
-                      "kinds": [
-                        "branch"
-                      ],
-                      "importance": "important"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 244,
-                            "startColumn": 15
-                          }
-                        },
-                        "message": {
-                          "text": "'buf' se desreferencia, pero puede que siga siendo NULL"
-                        }
-                      },
-                      "kinds": [
-                        "usage"
-                      ],
-                      "importance": "essential"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
           "ruleId": "C6386",
           "message": {
             "text": "Saturación del búfer al escribir en 'buf'."
@@ -404,9 +16,9 @@
                   "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                 },
                 "region": {
-                  "startLine": 250,
+                  "startLine": 351,
                   "startColumn": 5,
-                  "endLine": 250,
+                  "endLine": 351,
                   "endColumn": 16
                 }
               },
@@ -431,7 +43,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 217,
+                            "startLine": 324,
                             "startColumn": 17
                           }
                         }
@@ -445,7 +57,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 218,
+                            "startLine": 325,
                             "startColumn": 6
                           }
                         }
@@ -459,7 +71,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 218,
+                            "startLine": 325,
                             "startColumn": 9
                           }
                         }
@@ -473,7 +85,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 218,
+                            "startLine": 325,
                             "startColumn": 12
                           }
                         }
@@ -487,7 +99,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 219,
+                            "startLine": 326,
                             "startColumn": 19
                           }
                         }
@@ -501,7 +113,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 221,
+                            "startLine": 328,
                             "startColumn": 2
                           }
                         }
@@ -515,7 +127,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 222,
+                            "startLine": 330,
                             "startColumn": 7
                           }
                         }
@@ -529,18 +141,32 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 223,
+                            "startLine": 331,
+                            "startColumn": 6
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
+                          },
+                          "region": {
+                            "startLine": 332,
                             "startColumn": 6
                           }
                         },
                         "message": {
-                          "text": "'buf' es una matriz de bytes de 0"
+                          "text": "'buf' puede ser NULL (Omitir esta bifurcación)"
                         }
                       },
                       "kinds": [
-                        "declaration"
+                        "branch"
                       ],
-                      "importance": "essential"
+                      "importance": "important"
                     },
                     {
                       "location": {
@@ -549,54 +175,12 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 232,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 233,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 234,
-                            "startColumn": 2
-                          }
-                        }
-                      },
-                      "importance": "unimportant"
-                    },
-                    {
-                      "location": {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
-                          },
-                          "region": {
-                            "startLine": 235,
+                            "startLine": 336,
                             "startColumn": 2
                           }
                         },
                         "message": {
-                          "text": "'buf' es un argumento In/Out para 'gettext' (declarado en d:\\proyectos\\coniox\\coniox.h:325)"
+                          "text": "'buf' es un argumento In/Out para 'gettext' (declarado en d:\\proyectos\\coniox\\coniox.h:328)"
                         }
                       },
                       "kinds": [
@@ -611,7 +195,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 236,
+                            "startLine": 337,
                             "startColumn": 2
                           }
                         }
@@ -625,7 +209,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 237,
+                            "startLine": 338,
                             "startColumn": 2
                           }
                         }
@@ -639,7 +223,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 238,
+                            "startLine": 339,
                             "startColumn": 2
                           }
                         }
@@ -653,12 +237,12 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 239,
+                            "startLine": 340,
                             "startColumn": 2
                           }
                         },
                         "message": {
-                          "text": "'buf' es un argumento In/Out para 'puttext' (declarado en d:\\proyectos\\coniox\\coniox.h:343)"
+                          "text": "'buf' es un argumento In/Out para 'puttext' (declarado en d:\\proyectos\\coniox\\coniox.h:346)"
                         }
                       },
                       "kinds": [
@@ -673,7 +257,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 240,
+                            "startLine": 341,
                             "startColumn": 9
                           }
                         }
@@ -687,7 +271,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 240,
+                            "startLine": 341,
                             "startColumn": 16
                           }
                         },
@@ -707,7 +291,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 242,
+                            "startLine": 343,
                             "startColumn": 10
                           }
                         },
@@ -727,7 +311,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 242,
+                            "startLine": 343,
                             "startColumn": 17
                           }
                         },
@@ -747,7 +331,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 244,
+                            "startLine": 345,
                             "startColumn": 15
                           }
                         },
@@ -767,7 +351,7 @@
                             "uri": "file:///D:/PROYECTOS/coniox/coniox_test.c"
                           },
                           "region": {
-                            "startLine": 250,
+                            "startLine": 351,
                             "startColumn": 14
                           }
                         },
@@ -810,7 +394,7 @@
             "resultFile"
           ],
           "hashes": {
-            "sha-256": "b5226cb80b736e9e3581c104bc46f35a711c6d2ffb2cdce8be9745fc6bc3ec75"
+            "sha-256": "511f6dbf8f01993d7e32731bec92b5ff22e2d894e69a76f882b81be3b419e5e5"
           }
         },
         {
@@ -818,7 +402,7 @@
             "uri": "file:///d:/proyectos/coniox/coniox.h"
           },
           "hashes": {
-            "sha-256": "d522f57b7db54b923af3666f837c6715e86af9849dbdd5330b0806228a7959b1"
+            "sha-256": "cf99dd38f1385deb93ba0b15e993e4cb4e461b0fa65f3f87966d60fd25b2fd60"
           }
         }
       ]

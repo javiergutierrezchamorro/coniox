@@ -944,7 +944,6 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 		{
 			return(0);
 		}
-		//buf = (char_info *) __destin;
 		buf = (short *) __destin;
 		if (ReadConsoleOutput(coniox_console_output, ci, s, c, &r ))
 		{
@@ -957,7 +956,6 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 					//buf[i].letter = ci[i].Char.AsciiChar;
 					buf[i] = (char) ci[i].Char.AsciiChar + (unsigned char) ci[i].Attributes << 8;
 				#endif
-				//buf[i].attr = (unsigned char) ci[i].Attributes;
 			}
 		}
 		free(ci);
@@ -1127,115 +1125,115 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textmode(int __newmode)
 {
-		#if __ZTC__
-				CONSOLE_SCREEN_BUFFER_INFO info;
-		#else
-				CONSOLE_SCREEN_BUFFER_INFOEX info;
-		#endif
-		SMALL_RECT r;
+	#if __ZTC__
+		CONSOLE_SCREEN_BUFFER_INFO info;
+	#else
+		CONSOLE_SCREEN_BUFFER_INFOEX info;
+	#endif
+	SMALL_RECT r;
 
 
-		coniox_init(NULL);
+	coniox_init(NULL);
 
-		#if __ZTC__
-				GetConsoleScreenBufferInfo(coniox_console_output, &info);
-		#else
-				info.cbSize = sizeof(info);
-				GetConsoleScreenBufferInfoEx(coniox_console_output, &info);
-		#endif
+	#if __ZTC__
+		GetConsoleScreenBufferInfo(coniox_console_output, &info);
+	#else
+		info.cbSize = sizeof(info);
+		GetConsoleScreenBufferInfoEx(coniox_console_output, &info);
+	#endif
 
-		if (__newmode == LASTMODE)
+	if (__newmode == LASTMODE)
+	{
+		__newmode = ti.currmode;
+	}
+	if (__newmode != ti.currmode)
+	{
+		switch (__newmode)
 		{
-			__newmode = ti.currmode;
+			case C40X14:
+			case BW40X14:
+				info.dwSize.X = 40;
+				info.dwSize.Y = 14;
+				break;
+			case C40X21:
+			case BW40X21:
+				info.dwSize.X = 40;
+				info.dwSize.Y = 21;
+				break;
+			case C40X28:
+			case BW40X28:
+				info.dwSize.X = 40;
+				info.dwSize.Y = 28;
+				break;
+			case C40X43:
+			case BW40X43:
+				info.dwSize.X = 40;
+				info.dwSize.Y = 43;
+				break;
+			case C40X50:
+			case BW40X50:
+				info.dwSize.X = 40;
+				info.dwSize.Y = 50;
+				break;
+			case C40X60:
+			case BW40X60:
+				info.dwSize.X = 40;
+				info.dwSize.Y = 60;
+				break;
+			case MONO14:
+			case C80X14:
+			case BW80X14:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 14;
+				break;
+			case MONO21:
+			case C80X21:
+			case BW80X21:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 21;
+				break;
+			case MONO28:
+			case C80X28:
+			case BW80X28:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 28;
+				break;
+			case MONO43:
+			case C80X43:
+			case BW80X43:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 43;
+				break;
+			case MONO50:
+			case C80X50:
+			case BW80X50:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 50;
+				break;
+			case MONO60:
+			case C80X60:
+			case BW80X60:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 60;
+				break;
+			case C4350:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 50;
+				break;
+			case BW40:
+			case C40:
+				info.dwSize.X = 40;
+				info.dwSize.Y = 25;
+				break;
+			case BW80:
+			case C80:
+			case _ORIGMODE:
+			case MONO:
+			default:
+				info.dwSize.X = 80;
+				info.dwSize.Y = 25;
 		}
-		if (__newmode != ti.currmode)
-		{
-			switch (__newmode)
-			{
-				case C40X14:
-				case BW40X14:
-					info.dwSize.X = 40;
-					info.dwSize.Y = 14;
-					break;
-				case C40X21:
-				case BW40X21:
-					info.dwSize.X = 40;
-					info.dwSize.Y = 21;
-					break;
-				case C40X28:
-				case BW40X28:
-					info.dwSize.X = 40;
-					info.dwSize.Y = 28;
-					break;
-				case C40X43:
-				case BW40X43:
-					info.dwSize.X = 40;
-					info.dwSize.Y = 43;
-					break;
-				case C40X50:
-				case BW40X50:
-					info.dwSize.X = 40;
-					info.dwSize.Y = 50;
-					break;
-				case C40X60:
-				case BW40X60:
-					info.dwSize.X = 40;
-					info.dwSize.Y = 60;
-					break;
-				case MONO14:
-				case C80X14:
-				case BW80X14:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 14;
-					break;
-				case MONO21:
-				case C80X21:
-				case BW80X21:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 21;
-					break;
-				case MONO28:
-				case C80X28:
-				case BW80X28:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 28;
-					break;
-				case MONO43:
-				case C80X43:
-				case BW80X43:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 43;
-					break;
-				case MONO50:
-				case C80X50:
-				case BW80X50:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 50;
-					break;
-				case MONO60:
-				case C80X60:
-				case BW80X60:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 60;
-					break;
-				case C4350:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 50;
-					break;
-				case BW40:
-				case C40:
-					info.dwSize.X = 40;
-					info.dwSize.Y = 25;
-					break;
-				case BW80:
-				case C80:
-				case _ORIGMODE:
-				case MONO:
-				default:
-					info.dwSize.X = 80;
-					info.dwSize.Y = 25;
-			}
-
+		//DigitalMars crashes if used
 		#if (!__ZTC__)
 			if (SetConsoleScreenBufferInfoEx(coniox_console_output, &info))
 			{
@@ -1244,9 +1242,8 @@ void textmode(int __newmode)
 				r.Right = info.dwSize.X - 1;
 				r.Bottom = info.dwSize.Y - 1;
 				SetConsoleWindowInfo(coniox_console_output, TRUE, &r);
-
 				ti.normattr = info.wAttributes;
-				ti.winleft = 1;
+				ti.winleft = info.srWindow.Left;
 				ti.wintop = 1;
 				ti.winright = info.dwSize.X;
 				ti.winbottom = info.dwSize.Y;
@@ -1259,8 +1256,9 @@ void textmode(int __newmode)
 			}
 		#endif
 	}
-	textattr(ti.normattr);
-	window(1, 1, ti.screenwidth, ti.screenheight);
+	//window(1, 1, ti.screenwidth, ti.screenheight);
+	//textattr(ti.normattr);
+	clrscr();
 	_setcursortype(_NORMALCURSOR);
 }
 
@@ -1990,8 +1988,9 @@ void textmode(int __newmode)
 		ti.normattr = 0;
 		coniox_init(NULL);
 	}
+	window(1, 1, ti.screenwidth, ti.screenheight);
 	textattr(ti.normattr);
-	//window(1, 1, ti.screenwidth, ti.screenheight);
+	clrscr();
 	_setcursortype(_NORMALCURSOR);
 }
 

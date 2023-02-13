@@ -1,7 +1,3 @@
-﻿  coniox_test.c
-D:\PROYECTOS\coniox\coniox_test.c(308): warning C4702: no se puede tener acceso al código
-D:\PROYECTOS\coniox\coniox_test.c(309): warning C4702: no se puede tener acceso al código
-D:\PROYECTOS\coniox\coniox_test.c(312): warning C4702: no se puede tener acceso al código
-D:\PROYECTOS\coniox\coniox_test.c(345): warning C4702: no se puede tener acceso al código
-D:\PROYECTOS\coniox\coniox_test.c(244): warning C6011: Desreferenciando el puntero NULL 'buf'. 
-D:\PROYECTOS\coniox\coniox_test.c(250): warning C6386: Saturación del búfer al escribir en 'buf'.
+﻿  coniox.c
+     Creando biblioteca D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.lib y objeto D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exp
+  VC.vcxproj -> D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exe

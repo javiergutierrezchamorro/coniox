@@ -1,0 +1,15 @@
+﻿  coniox.c
+  coniox_test.c
+  Ejecutando análisis del código para C/C++...
+  Generando código...
+D:\PROYECTOS\coniox\coniox_test.c(545): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniox_test.c(546): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniox_test.c(549): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniox_test.c(582): warning C4702: no se puede tener acceso al código
+     Creando biblioteca D:\PROYECTOS\coniox\VC\VC\Debug\VC.lib y objeto D:\PROYECTOS\coniox\VC\VC\Debug\VC.exp
+  VC.vcxproj -> D:\PROYECTOS\coniox\VC\VC\Debug\VC.exe
+D:\PROYECTOS\coniox\coniox.c(954): warning C6385: Leyendo datos no válidos de 'ci'.
+D:\PROYECTOS\coniox\coniox.c(1024): warning C6386: Saturación del búfer al escribir en 'buffer'.
+D:\PROYECTOS\coniox\coniox.c(1070): warning C6386: Saturación del búfer al escribir en 'buffer'.
+D:\PROYECTOS\coniox\coniox.c(1113): warning C6385: Leyendo datos no válidos de 'buffer'.
+D:\PROYECTOS\coniox\coniox_test.c(342): warning C6386: Saturación del búfer al escribir en 'buf'.

@@ -103,7 +103,7 @@ VERSION HISTORY
 #ifndef _CONIOX_H_ 
 #define _CONIOX_H_
 
-
+#define coniox_version 497
 
 #ifdef __cplusplus
 extern "C" {
@@ -596,6 +596,9 @@ void coniox_init(const void *title);
 	#define _cputws		cputws
 	#define _cwprintf	cwprintf
 	#define _cwscanf	cwscanf
+	#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 3)
+#else
+#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 2)
 #endif
 
 
