@@ -630,16 +630,16 @@ void coniox_init(const void *title)
 		FreeConsole();
 		AllocConsole();
 	}
-	ti.normattr = (SHORT) info.wAttributes;
-	ti.winleft = (SHORT) info.srWindow.Left + 1;
-	ti.wintop = (SHORT)info.srWindow.Top + 1;
-	ti.winright = (SHORT) info.srWindow.Right + 1;
-	ti.winbottom = (SHORT) info.srWindow.Bottom + 1;
-	ti.screenwidth = (SHORT) info.dwSize.X;
-	ti.screenheight = (SHORT) info.dwSize.Y;
-	ti.curx = (SHORT) info.dwCursorPosition.X + 1;
-	ti.cury = (SHORT) info.dwCursorPosition.Y + 1;
-	ti.attribute = info.wAttributes;
+	ti.normattr = (unsigned short) info.wAttributes;
+	ti.winleft = (unsigned short) info.srWindow.Left + 1;
+	ti.wintop = (unsigned short)info.srWindow.Top + 1;
+	ti.winright = (unsigned short) info.srWindow.Right + 1;
+	ti.winbottom = (unsigned short) info.srWindow.Bottom + 1;
+	ti.screenwidth = (unsigned short) info.dwSize.X;
+	ti.screenheight = (unsigned short) info.dwSize.Y;
+	ti.curx = (unsigned short) info.dwCursorPosition.X + 1;
+	ti.cury = (unsigned short) info.dwCursorPosition.Y + 1;
+	ti.attribute = (unsigned short) info.wAttributes;
 	acp = GetACP();
 	if (GetConsoleOutputCP() != acp )
 	{
@@ -698,10 +698,10 @@ void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
 		{
 				return;
 		}
-		r.Left = (SHORT) (x - 1);
-		r.Top = (SHORT) (y - 1);
-		r.Right = (SHORT) (x - 1);
-		r.Bottom = (SHORT) (y - 1);
+		r.Left = (short) (x - 1);
+		r.Top = (short) (y - 1);
+		r.Right = (short) (x - 1);
+		r.Bottom = (short) (y - 1);
 		#if UNICODE
 				ci.Char.UnicodeChar = ch;
 		#else
@@ -747,8 +747,8 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		for (i = 0; i < h; ++i)
 		{
 				DWORD written;
-				c.X = (SHORT) (x - 1);
-				c.Y = (SHORT) (y - 1 + i);
+				c.X = (short) (x - 1);
+				c.Y = (short) (y - 1 + i);
 				FillConsoleOutputAttribute(coniox_console_output, (WORD) attr, w, c, &written);
 				FillConsoleOutputCharacter(coniox_console_output, (char) ch, w, c, &written);
 		}
@@ -770,8 +770,7 @@ wchar_t getwche(void)
 		ch = getwch();
 		while (ch == 0)
 		{
-				getwch();
-				ch = getwch();
+			ch = getwch();
 		}
 		putwch(ch);
 		return(ch);
@@ -934,12 +933,12 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 			return(0);
 		}
 
-		r.Left = (SHORT) __left - 1;
-		r.Top = (SHORT) __top - 1;
-		r.Right = (SHORT) __right - 1;
-		r.Bottom = (SHORT) __bottom - 1;
-		s.X = (SHORT) (__right - __left + 1);
-		s.Y = (SHORT) (__bottom - __top + 1);
+		r.Left = (short) __left - 1;
+		r.Top = (short) __top - 1;
+		r.Right = (short) __right - 1;
+		r.Bottom = (short) __bottom - 1;
+		s.X = (short) (__right - __left + 1);
+		s.Y = (short) (__bottom - __top + 1);
 		ci = (CHAR_INFO *) malloc(s.X * s.Y * sizeof(CHAR_INFO));
 		if (!ci)
 		{
@@ -962,7 +961,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 			}
 		}
 		free(ci);
-		return(0);
+		return(1);
 }
 
 
@@ -975,12 +974,12 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 
 		coniox_init(NULL);
 
-		r.Left = (SHORT) __left - 1;
-		r.Top = (SHORT) __top - 1;
-		r.Right = (SHORT)__right - 1;
-		r.Bottom = (SHORT) __bottom - 1;
-		c.X = (SHORT) __destleft;
-		c.Y = (SHORT) __desttop;
+		r.Left = (short) __left - 1;
+		r.Top = (short) __top - 1;
+		r.Right = (short)__right - 1;
+		r.Bottom = (short) __bottom - 1;
+		c.X = (short) __destleft;
+		c.Y = (short) __desttop;
 		#if UNICODE
 			ci.Char.UnicodeChar = L' ';
 		#else
@@ -988,96 +987,102 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 		#endif
 		ci.Attributes = ti.attribute;
 		ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci);
-		return(0);
+		return(1);
 }
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 {
-		int i;
-		SMALL_RECT r;
-		CHAR_INFO *buffer;
-		//char_info *ci;
-		short *ci;
-		COORD s, c = { 0,0 };
+	int i;
+	SMALL_RECT r;
+	CHAR_INFO *buffer;
+	//char_info *ci;
+	short *ci;
+	COORD s, c = { 0,0 };
 
-		coniox_init(NULL);
-		if ( __right < __left || __bottom < __top)
-		{
-				return(0);
-		}
-
-		r.Left = (SHORT) __left - 1;
-		r.Top = (SHORT) __top - 1;
-		r.Right = (SHORT) __right - 1;
-		r.Bottom = (SHORT) __bottom - 1;
-		s.X = (SHORT) (__right - __left + 1);
-		s.Y = (SHORT) (__bottom - __top + 1);
-
-		buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
-		if (!buffer)
-		{
-			return(0);
-		}
-		ci = (short *) __source;
-		for (i = 0; i < s.X * s.Y; i++)
-		{
-				#if UNICODE
-					buffer[i].Char.UnicodeChar = (wchar_t) ci[i] & 0xFF;
-				#else
-					buffer[i].Char.AsciiChar = (unsigned char) ci[i] & 0xFF;
-				#endif
-				buffer[i].Attributes = ci[i] >> 8;
-		}
-		WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
-		free(buffer);
+	coniox_init(NULL);
+	if ( __right < __left || __bottom < __top)
+	{
 		return(0);
+	}
+
+	r.Left = (short) __left - 1;
+	r.Top = (short) __top - 1;
+	r.Right = (short) __right - 1;
+	r.Bottom = (short) __bottom - 1;
+	s.X = (short) (__right - __left + 1);
+	s.Y = (short) (__bottom - __top + 1);
+
+	buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
+	if (!buffer)
+	{
+		return(0);
+	}
+	ci = (short *) __source;
+	for (i = 0; i < s.X * s.Y; i++)
+	{
+		#if UNICODE
+			buffer[i].Char.UnicodeChar = (wchar_t) ci[i] & 0xFF;
+		#else
+			buffer[i].Char.AsciiChar = (unsigned char) ci[i] & 0xFF;
+		#endif
+		buffer[i].Attributes = ci[i] >> 8;
+	}
+	WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
+	free(buffer);
+	return(1);
 }
 
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+/* ToDo */
 int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info *__source)
 {
-		int i;
-		SMALL_RECT r;
-		CHAR_INFO* buffer;
-		COORD s, c = { 0,0 };
+	int i;
+	SMALL_RECT r;
+	CHAR_INFO* buffer;
+	//char_info *ci;
+	short* ci;
+	COORD s, c = { 0,0 };
 
-
-		coniox_init(NULL);
-		if ((__right < __left) || (__bottom < __top))
-		{
-				return(0);
-		}
-		r.Left = (SHORT) (__left - 1);
-		r.Top = (SHORT)( __top - 1);
-		r.Right = (SHORT) (__right - 1);
-		r.Bottom = (SHORT) (__bottom - 1);
-		s.X = (SHORT) (__right - __left + 1);
-		s.Y = (SHORT) (__bottom - __top + 1);
-		buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
-		if (!buffer)
-		{
-				return(0);
-		}
-		for ( i = 0; i < s.X * s.Y; i++ )
-		{
-				#if UNICODE
-						buffer[i].Char.UnicodeChar = __source[i].letter;
-				#else
-						buffer[i].Char.AsciiChar = (char) __source[i].letter;
-				#endif
-				buffer[i].Attributes = __source[i].attr;
-		}
-		WriteConsoleOutput(coniox_console_output, buffer, s, c, &r );
-		free(buffer);
+	coniox_init(NULL);
+	if (__right < __left || __bottom < __top)
+	{
 		return(0);
+	}
+
+	r.Left = (short)__left - 1;
+	r.Top = (short)__top - 1;
+	r.Right = (short)__right - 1;
+	r.Bottom = (short)__bottom - 1;
+	s.X = (short)(__right - __left + 1);
+	s.Y = (short)(__bottom - __top + 1);
+
+	buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
+	if (!buffer)
+	{
+		return(0);
+	}
+	ci = (short*)__source;
+	for (i = 0; i < s.X * s.Y; i++)
+	{
+		#if UNICODE
+			buffer[i].Char.UnicodeChar = (wchar_t) ci[i] & 0xFFFF;
+		#else
+			buffer[i].Char.AsciiChar = (unsigned char)ci[i] & 0xFF;
+		#endif
+		buffer[i].Attributes = ci[i] >> 8;
+	}
+	WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
+	free(buffer);
+	return(1);
 }
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+/* ToDo */
 int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__destin)
 {
 		int i;
@@ -1091,12 +1096,12 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 		{
 				return(0);
 		}
-		r.Left = (SHORT) (__left - 1);
-		r.Top = (SHORT) (__top - 1);
-		r.Right = (SHORT) (__right - 1);
-		r.Bottom = (SHORT) (__bottom - 1);
-		s.X = (SHORT) (__right - __left + 1);
-		s.Y = (SHORT) (__bottom - __top + 1);
+		r.Left = (short) (__left - 1);
+		r.Top = (short) (__top - 1);
+		r.Right = (short) (__right - 1);
+		r.Bottom = (short) (__bottom - 1);
+		s.X = (short) (__right - __left + 1);
+		s.Y = (short) (__bottom - __top + 1);
 		buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
 		if (!buffer)
 		{
@@ -1107,9 +1112,9 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 				for (i = 0; i < s.X * s.Y; i++)
 				{
 						#if UNICODE
-								__destin[i].letter = buffer[i].Char.UnicodeChar;
+							__destin[i].letter = buffer[i].Char.UnicodeChar;
 						#else
-								__destin[i].letter = (char) buffer[i].Char.AsciiChar;
+							__destin[i].letter = (char) buffer[i].Char.AsciiChar;
 						#endif
 						__destin[i].attr = buffer[i].Attributes;
 				}

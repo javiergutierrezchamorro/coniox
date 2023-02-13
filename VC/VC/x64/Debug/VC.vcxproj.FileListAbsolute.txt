@@ -1,1 +1,3 @@
 D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exe
+D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exe.lastcodeanalysissucceeded
+D:\PROYECTOS\coniox\VC\VC\x64\Debug\NativeCodeAnalysis.read.1.tlog

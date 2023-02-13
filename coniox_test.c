@@ -86,7 +86,7 @@ void init(void)
 	
 	/* Title text */
 	strcpy(line, "CONIO DEMO v5.00 - (c) Copyright 2022 Javier Gutierrez Chamorro (Guti)");
-	i = strlen(line);
+	i = (int) strlen(line);
 	gotoxy((ti.screenwidth - i) >> 1, 1);
 	cputs(line);
 	
@@ -378,7 +378,7 @@ int demo3(void)
 	
 	_setcursortype(_NOCURSOR);
 	
-	for (i = 0; i < ti.screenheight * ti.screenwidth; i++)
+	for (i = 0; i < (unsigned int) ti.screenheight * ti.screenwidth; i++)
 	{
 		putch(254);
 	}

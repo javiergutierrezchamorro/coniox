@@ -1,7 +1,7 @@
 ﻿  coniox_test.c
-D:\PROYECTOS\coniox\coniox.h(110,1): warning C4005: '_CRT_SECURE_NO_WARNINGS': redefinición de macro
-D:\PROYECTOS\coniox\coniox.h(110,1): message : '_CRT_SECURE_NO_WARNINGS' declarado previamente en la línea de comandos
-D:\PROYECTOS\coniox\coniox_test.c(89,6): warning C4267: '=': conversión de 'size_t' a 'int'; posible pérdida de datos
-D:\PROYECTOS\coniox\coniox_test.c(382,16): warning C4018: '<': no coinciden signed/unsigned
-     Creando biblioteca D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.lib y objeto D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exp
-  VC.vcxproj -> D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exe
+D:\PROYECTOS\coniox\coniox_test.c(308): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniox_test.c(309): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniox_test.c(312): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniox_test.c(345): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniox_test.c(244): warning C6011: Desreferenciando el puntero NULL 'buf'. 
+D:\PROYECTOS\coniox\coniox_test.c(250): warning C6386: Saturación del búfer al escribir en 'buf'.

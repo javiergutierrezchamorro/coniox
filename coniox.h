@@ -93,7 +93,10 @@ VERSION HISTORY
 - Fixed characters should be casted at c8 bit (char).
 - Optimized kbhit to direct use keyboard buffer instead of BIOS.
 - Added ungetch().
-
+4.97 - 2023/02/13
+- Rewritten demo.
+- Small fixes and optimizations.
+- Lots of Windows fixes.
 */
 
 
@@ -107,9 +110,18 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-	#define _CRT_SECURE_NO_WARNINGS
-	#define _CRT_NONSTDC_NO_WARNINGS
-	#define _SCL_SECURE_NO_WARNINGS
+	#ifndef _CRT_SECURE_NO_WARNINGS
+		#define _CRT_SECURE_NO_WARNINGS
+	#endif
+	#ifndef _CRT_NONSTDC_NO_WARNINGS
+		#define _CRT_NONSTDC_NO_WARNINGS
+	#endif
+	#ifndef _SCL_SECURE_NO_WARNINGS
+		#define _SCL_SECURE_NO_WARNINGS
+	#endif
+	#ifndef _NO_CRT_STDIO_INLINE
+		#define _NO_CRT_STDIO_INLINE
+	#endif
 #else
 	#ifndef sscanf_s
 		#define sscanf_s sscanf
