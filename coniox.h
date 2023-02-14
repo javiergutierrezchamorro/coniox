@@ -102,7 +102,7 @@ VERSION HISTORY
 - Added _directvideo.
 */
 
-
+#pragma once
 #ifndef _CONIOX_H_ 
 #define _CONIOX_H_
 
@@ -113,17 +113,20 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-	#ifndef _CRT_SECURE_NO_WARNINGS
-		#define _CRT_SECURE_NO_WARNINGS
-	#endif
-	#ifndef _CRT_NONSTDC_NO_WARNINGS
-		#define _CRT_NONSTDC_NO_WARNINGS
-	#endif
-	#ifndef _SCL_SECURE_NO_WARNINGS
-		#define _SCL_SECURE_NO_WARNINGS
-	#endif
-	#ifndef _NO_CRT_STDIO_INLINE
-		#define _NO_CRT_STDIO_INLINE
+	/* Visual Studio 2017 (15.0) or later */
+	#if _MSC_VER > 1900
+		#ifndef _CRT_SECURE_NO_WARNINGS
+			#define _CRT_SECURE_NO_WARNINGS
+		#endif
+		#ifndef _CRT_NONSTDC_NO_WARNINGS
+			#define _CRT_NONSTDC_NO_WARNINGS
+		#endif
+		#ifndef _SCL_SECURE_NO_WARNINGS
+			#define _SCL_SECURE_NO_WARNINGS
+		#endif
+		#ifndef _NO_CRT_STDIO_INLINE
+			#define _NO_CRT_STDIO_INLINE
+		#endif
 	#endif
 #else
 	#ifndef sscanf_s

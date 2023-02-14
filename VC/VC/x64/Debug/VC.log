@@ -1,7 +1,0 @@
-﻿  coniox_test.c
-D:\PROYECTOS\coniox\coniox_test.c(597): warning C4702: no se puede tener acceso al código
-D:\PROYECTOS\coniox\coniox_test.c(598): warning C4702: no se puede tener acceso al código
-D:\PROYECTOS\coniox\coniox_test.c(601): warning C4702: no se puede tener acceso al código
-D:\PROYECTOS\coniox\coniox_test.c(634): warning C4702: no se puede tener acceso al código
-     Creando biblioteca D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.lib y objeto D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exp
-  VC.vcxproj -> D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exe

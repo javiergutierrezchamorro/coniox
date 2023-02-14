@@ -1,0 +1,23 @@
+!define BLANK ""
+D:\PROYECTOS\coniox\coniox.obj : D:\PROYECTOS\coniox\coniox.c .AUTODEPEND
+ @D:
+ cd D:\PROYECTOS\coniox
+ *wcc coniox.c -i="D:\FICHEROS\OC\/h" -w4 -e25 -zq -od -d2 -bt=dos -fo=.obj &
+-ml
+
+D:\PROYECTOS\coniox\coniox_test.obj : D:\PROYECTOS\coniox\coniox_test.c .AUT&
+ODEPEND
+ @D:
+ cd D:\PROYECTOS\coniox
+ *wcc coniox_test.c -i="D:\FICHEROS\OC\/h" -w4 -e25 -zq -od -d2 -bt=dos -fo=&
+.obj -ml
+
+D:\PROYECTOS\coniox\Watcom.exe : D:\PROYECTOS\coniox\coniox.obj D:\PROYECTOS&
+\coniox\coniox_test.obj .AUTODEPEND
+ @D:
+ cd D:\PROYECTOS\coniox
+ @%write Watcom.lk1 FIL coniox.obj,coniox_test.obj
+ @%append Watcom.lk1 
+ *wlink name Watcom d all sys dos32a op m op maxe=25 op q op symf @Watcom.lk&
+1
+

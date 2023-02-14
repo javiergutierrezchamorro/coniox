@@ -11,7 +11,7 @@
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int pause(void);
+void pause(void);
 void init(void);
 void finish(void);
 void info(void);
@@ -19,6 +19,7 @@ void chars(void);
 void windows(void);
 void movetexts(void);
 void speed(void);
+void inputs(void);
 void getputtexts(void);
 
 
@@ -27,28 +28,27 @@ void getputtexts(void);
 int main(void)
 {
 	init();
-	//info();
-	//chars();
-	//windows();
+	info();
+	chars();
+	windows();
 	movetexts();
-	//speed();
-	//getputtexts();
+	speed();
+	getputtexts();
+	inputs();
 	finish();
 	return(0);
 }
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int pause(void)
+void pause(void)
 {
-	int c;
-	textcolor(YELLOW);
+	textcolor(YELLOW + BLINK);
 	_wscroll = 0;
 	cputs("---- Press any key to continue ----");
+	getch();
 	_wscroll = 1;
-	c = getch();
 	cputs("\r\n");
-	return(c);
 }
 
 
@@ -231,26 +231,18 @@ void windows(void)
 void movetexts(void)
 {
 	int i;
-	char* win;
 	struct text_info ti;
 
 	gettextinfo(&ti);
 
-	win = malloc(gettextsize(1, 1, ti.screenwidth, ti.screenheight));
-	if (!win)
+	for (i = 1; i < ti.screenheight; i++)
 	{
-		return;
+		movetext(1, i, ti.screenwidth, i, 1, ti.screenheight - i + 1);
+		delay(100);
 	}
-
-	gettext(1, 1, ti.screenwidth, ti.screenheight, win);
-	for (i = 1; i < 14; i++)
-	{
-		puttext(1, i, ti.screenwidth, ti.screenheight - i + 1, &win[gettextsize(1, 1, ti.screenwidth, 1) * i]);
-		delay(1000);
-	}
-	free(win);
+	window(1, 1, ti.screenwidth, ti.screenheight);
+	gotoxy(1, 2);
 	pause();
-
 }
 
 
@@ -397,6 +389,53 @@ void getputtexts(void)
 	}
 	free(buf);
 }
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+void inputs(void)
+{
+	int ch;
+	char s[PRINTFBUF_SIZE + 1];
+	char p[PASS_MAX + 1];
+	struct text_info ti;
+
+	gettextinfo(&ti);
+	window(1, 2, ti.screenwidth, ti.screenheight - 1);
+	textbackground(BLUE);
+	clrscr();
+	_setcursortype(_NORMALCURSOR);
+
+	textcolor(YELLOW);
+	cputs("CONIO INPUTS\r\n");
+
+	textcolor(WHITE);
+	cputs("Enter a character that will be read with echo: ");
+	textcolor(LIGHTGRAY);
+	ch = getche();
+
+	textcolor(WHITE);
+	cprintf("\r\nChar was '%c'\r\n\r\n", ch);
+	cputs("Enter a character that will be read without echo: ");
+	ch = getch();
+	cprintf("\r\nChar was '%c'\r\n\r\n", ch);
+
+	textcolor(WHITE);
+	cputs("Enter a string that will be read with echo: ");
+	textcolor(LIGHTGRAY);
+	s[0] = PRINTFBUF_SIZE - 2;
+	cgets(s);
+	cprintf("\r\n%d characters read. String was '%s'\r\n\r\n", s[1], &s[2]);
+
+	textcolor(WHITE);
+	cputs("Enter a password that will be read with echo: ");
+	textcolor(LIGHTGRAY);
+	strcpy(p, getpass("\r\nPassword: "));
+	cprintf("\r\nPassword was '%s'\r\n\r\n", p);
+
+	_setcursortype(_NOCURSOR);
+	pause();
+}
+
 
 
 
