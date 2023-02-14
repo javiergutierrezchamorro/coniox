@@ -1,3 +1,9 @@
-﻿  coniox.c
+﻿  coniodemo.c
+  coniox.c
+  Generando código...
+D:\PROYECTOS\coniox\coniodemo.c(638): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniodemo.c(639): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniodemo.c(642): warning C4702: no se puede tener acceso al código
+D:\PROYECTOS\coniox\coniodemo.c(675): warning C4702: no se puede tener acceso al código
      Creando biblioteca D:\PROYECTOS\coniox\Builds\VC\x64\Debug\VC.lib y objeto D:\PROYECTOS\coniox\Builds\VC\x64\Debug\VC.exp
   VC.vcxproj -> D:\PROYECTOS\coniox\Builds\VC\x64\Debug\VC.exe

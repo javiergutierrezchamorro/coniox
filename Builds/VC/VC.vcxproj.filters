@@ -18,7 +18,7 @@
     <ClCompile Include="..\..\coniox.c">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\coniox_test.c">
+    <ClCompile Include="..\..\coniodemo.c">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
   </ItemGroup>

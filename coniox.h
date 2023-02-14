@@ -31,26 +31,26 @@ Embarcadero Technologies, Inc.
 
 
 VERSION HISTORY
-2.9 (xx/yy/wwww)
+2.9 (yyyy/mm/dd)
 - Added support for DOS protected mode.
 - Portability improvements to make it compilable with Microsoft/Visual C/C++, Zortech/Symantec/DigitalMars C/C++ and Watcom/OpenWatcom C/C++.
 - Rewritten to store internal values in a text_info structure.
 - Implemented dtext_info, dnormvideo, dhighvideo and dlowvideo.
 
-3.0 (xx/yy/2000)
+3.0 (2000/mm/dd)
 - Optimized dputch to avoid an unneded pointer increment making it 10% faster.
 - Optimized dputs to cache pacBuffer[iCount], making it and its dependant dprintf 2% faster.
 - Made offset calculation a macro for better mantenability.
 - Functions will automatically check if dini has been invoked, and do so if not, avoiding the need of manually, making it uneeded (althoug supported) to require calling it before using DIRIO.
 
-3.9 (xx/yy/wwww)
+3.9 (yyyy/mm/dd)
 - Added support for Win32 console applications.
 - Optimized DOS16 and DOS32 offset calculations in inline assembler if under Watcom, making this part almost twice as fast.
-- Reimplement scroll to use direct dmovetext, instead of slower BIOS.
+- Reimplemented scroll to use direct dmovetext, instead of slower BIOS.
 - Solved a bug in dgettext, dputtext, and dmovetext that used window coordinates, and should not.
 - Implemented _setcursortype, andl _wscroll
 
-4.0 (xx/yy/2009)
+4.0 (2009/mm/dd)
 - Made dputch, dclrscr, dclreol, dgettext, dputtext and dmovetext use word movements instead of byte, being 50% faster.
 - Separated all functions in separate sources to increase granularity linking only the code trully used, and supporting .LIB creation.
 
@@ -100,6 +100,7 @@ VERSION HISTORY
 4.98 - 
 - Fixed Windows ANSI gettext/puttext
 - Added _directvideo.
+- Fixes to DOS _setcursortype.
 */
 
 #pragma once

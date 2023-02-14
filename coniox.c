@@ -1978,65 +1978,57 @@ void textmode(int __newmode)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void _setcursortype(int __cur_t)
 {
+	int cursor_start, cursor_end;
 	coniox_setcursortype = __cur_t;
+	
+	switch (__cur_t)
+	{
+		case _NOCURSOR:
+			cursor_start = 0x20;
+			cursor_end = 0;
+			break;
+		case _SOLIDCURSOR:
+			if (ti.screenheight == 43)
+			{
+				cursor_start = 0;
+				cursor_end = 8;
+			}
+			else
+			{
+				cursor_start = 0;
+				cursor_end = ti.currmode == MONO ? 12 : 7;
+			}
+			break;
+		case _NORMALCURSOR:
+		default:
+			if (ti.currmode == MONO)
+			{
+				cursor_start = 11;
+				cursor_end = 12;
+			}
+			else
+			{
+				cursor_start = 6;
+				cursor_end = ti.screenheight == 43 ? 0 : 7;
+			}
+	}
+	
+	
 	if (directvideo)
 	{
-		switch (__cur_t)
-		{
-			case _NOCURSOR:
-				outportb(coniox_basecrt, 0x0A);
-				outportb(coniox_basecrt + 1, 0x20);
-				break;
-			case _SOLIDCURSOR:
-				outportb(coniox_basecrt, 0x0A);
-				outportb(coniox_basecrt + 1, (inportb(0x3D5) & 0xC0) | 0);
-				outportb(coniox_basecrt, 0x0B);
-				outportb(coniox_basecrt + 1, (inportb(0x3D5) & 0xE0) | 15);
-				break;
-			case _NORMALCURSOR:
-			default:
-				outportb(coniox_basecrt, 0x0A);
-				outportb(coniox_basecrt + 1, (inportb(0x3D5) & 0xC0) | 6);
-				outportb(coniox_basecrt, 0x0B);
-				outportb(coniox_basecrt + 1, (inportb(0x3D5) & 0xE0) | 7);
-				break;
-		}
+		outportb(coniox_basecrt, 0x0A);
+		//outportb(coniox_basecrt + 1, (inportb(coniox_basecrt + 1) & 0xC0) | cursor_start);
+		outportb(coniox_basecrt + 1, cursor_start);
+		outportb(coniox_basecrt, 0x0B);
+		//outportb(coniox_basecrt + 1, (inportb(coniox_basecrt + 1) & 0xE0) | cursor_end);
+		outportb(coniox_basecrt + 1, cursor_end);
 	}
 	else
 	{
 		union REGS r;
 		r.h.ah = 0x1;
-		switch (__cur_t)
-		{
-			case _NOCURSOR:
-				r.h.ch = 0x20;
-				r.h.cl = 0;
-				break;
-			case _SOLIDCURSOR:
-				if (ti.screenheight == 43)
-				{
-					r.h.ch = 0;
-					r.h.cl = 8;
-				}
-				else
-				{
-					r.h.ch = 0;
-					r.h.cl = ti.currmode == MONO ? 12 : 7;
-				}
-				break;
-			case _NORMALCURSOR:
-			default:
-				if (ti.currmode == MONO)
-				{
-					r.h.ch = 11;
-					r.h.cl = 12;
-				}
-				else
-				{
-					r.h.ch = 6;
-					r.h.cl = ti.screenheight == 43 ? 0 : 7;
-				}
-		}
+		r.h.ch = cursor_start;
+		r.h.cl = cursor_end;
 		coniox_int86(0x10, &r, &r);
 	}
 }
