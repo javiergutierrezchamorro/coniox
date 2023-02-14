@@ -2,3 +2,7 @@
 *.obj
 *.err
 *.sym
+*.pdb
+*.user
+.vs
+*.log
