@@ -1,11 +1,11 @@
 /* ----------------------------------------------------------------------------------------------------------------- */
+#include "coniox.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <malloc.h>
 #include <stddef.h>
-#include "coniox.h"
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -954,7 +954,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 					buf[i] = (ci[i].Char.UnicodeChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 				#else
 					//buf[i].letter = ci[i].Char.AsciiChar;
-					buf[i] = (char) ci[i].Char.AsciiChar + (unsigned char) ci[i].Attributes << 8;
+					buf[i] = (ci[i].Char.AsciiChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 				#endif
 			}
 		}
@@ -1021,7 +1021,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 	for (i = 0; i < s.X * s.Y; i++)
 	{
 		#if UNICODE
-			buffer[i].Char.UnicodeChar = (wchar_t) ci[i] & 0xFF;
+			buffer[i].Char.UnicodeChar = (wchar_t) ci[i] & 0xFFFF;
 		#else
 			buffer[i].Char.AsciiChar = (unsigned char) ci[i] & 0xFF;
 		#endif

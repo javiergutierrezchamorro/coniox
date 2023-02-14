@@ -26,7 +26,7 @@ Borland-style CONIO 2.1 - Dec 2013
 CONIOW - Oct 2015
 Demidov Andrey (https://sourceforge.net/projects/coniow/)
 
-CONIO 24.0 - Jul 2018
+CONIO 29.0 - Jul 2022
 Embarcadero Technologies, Inc.
 
 
@@ -97,13 +97,16 @@ VERSION HISTORY
 - Rewritten demo.
 - Small fixes and optimizations.
 - Lots of Windows fixes.
+4.98 - 
+- Fixed Windows ANSI gettext/puttext
+- Added _directvideo.
 */
 
 
 #ifndef _CONIOX_H_ 
 #define _CONIOX_H_
 
-#define coniox_version 497
+#define coniox_version 498
 
 #ifdef __cplusplus
 extern "C" {
@@ -265,7 +268,7 @@ directvideo controls where your program's console output goes:
 1: Goes directly to video RAM
 */
 extern int directvideo;
-
+#define _directvideo directvideo
 
 /**
 Enables or disables scrolling in console I/O functions.

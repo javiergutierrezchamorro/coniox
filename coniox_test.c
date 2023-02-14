@@ -17,6 +17,7 @@ void finish(void);
 void info(void);
 void chars(void);
 void windows(void);
+void movetexts(void);
 void speed(void);
 void getputtexts(void);
 
@@ -26,11 +27,12 @@ void getputtexts(void);
 int main(void)
 {
 	init();
-	info();
-	chars();
-	windows();
-	speed();
-	getputtexts();
+	//info();
+	//chars();
+	//windows();
+	movetexts();
+	//speed();
+	//getputtexts();
 	finish();
 	return(0);
 }
@@ -60,9 +62,9 @@ void init(void)
 	//Optional: Set window caption
 	#ifdef _CONIOX_H_
 		#if UNICODE
-			coniox_init(L"coniox Test");
+			coniox_init(L"coniox demo");
 		#else
-			coniox_init("coniox Test");
+			coniox_init("coniox demo");
 		#endif
 	#endif
 
@@ -116,7 +118,9 @@ void info(void)
 	textcolor(YELLOW);
 	cputs("CONIO INFORMATION\r\n");
 	textcolor(WHITE);
-	cprintf("- Version: %d.%02d\r\n", coniox_version / 100, coniox_version % 100);
+	#ifdef _CONIOX_H_
+		cprintf("- Version: %d.%02d\r\n", coniox_version / 100, coniox_version % 100);
+	#endif
 	cprintf("- winleft: %d\r\n", ti.winleft);
 	cprintf("- wintop: %d\r\n", ti.wintop);
 	cprintf("- winright: %d\r\n", ti.winright);
@@ -221,6 +225,34 @@ void windows(void)
 	textattr(CYAN * 16 + BLACK);
 	cputs("                            ");
 }
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+void movetexts(void)
+{
+	int i;
+	char* win;
+	struct text_info ti;
+
+	gettextinfo(&ti);
+
+	win = malloc(gettextsize(1, 1, ti.screenwidth, ti.screenheight));
+	if (!win)
+	{
+		return;
+	}
+
+	gettext(1, 1, ti.screenwidth, ti.screenheight, win);
+	for (i = 1; i < 14; i++)
+	{
+		puttext(1, i, ti.screenwidth, ti.screenheight - i + 1, &win[gettextsize(1, 1, ti.screenwidth, 1) * i]);
+		delay(1000);
+	}
+	free(win);
+	pause();
+
+}
+
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
