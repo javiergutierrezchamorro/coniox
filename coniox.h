@@ -101,6 +101,7 @@ VERSION HISTORY
 - Fixed Windows ANSI gettext/puttext
 - Added _directvideo.
 - Fixes to DOS _setcursortype.
+- Fixes to DOS textmode C4350
 */
 
 #pragma once
