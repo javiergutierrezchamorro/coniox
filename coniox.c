@@ -5,7 +5,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <stddef.h>
-#include "coniox.h"
+#include "conio.h"
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1401,97 +1401,96 @@ void delay(unsigned int ms)
 
 int coniox_basecrt = 0x3D4;
 
-#if !defined(__TURBOC__)
-		#define outportb		outp
-		#define outport			outpw
-		#define inportb			inp
-		#define inport			inpw
-#endif
-
 #if defined(__WATCOMC__)
-		#include <i86.h>
+	#include <i86.h>
 #endif
 
-#define peekb(s,o)			    (*((unsigned char  __far *)MK_FP((s),(o))))
-#define peekw(s,o)			    (*((unsigned short  __far *)MK_FP((s),(o))))
-#define peekl(s,o)			    (*((unsigned long __far *)MK_FP((s),(o))))
-#define pokeb(s,o,x)		(*((unsigned char __far *)MK_FP((s),(o))) = (unsigned char)(x))
-#define pokew(s,o,x)		(*((unsigned short  __far *)MK_FP((s),(o))) = (unsigned short)(x))
-#define pokel(s,o,x)		(*((unsigned long __far *)MK_FP((s),(o))) = (unsigned long)(x))
+#if defined(__DJGPP__)
+	#include <sys/nearptr.h>
+	#define _fmemmove	memmove
+	#define fmemcpy		memcpy
+	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base
+#endif
+
+
+#ifndef MK_FP
+	#define MK_FP(seg,off) (((seg)<<4)|(off))
+#endif
+
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-#if (defined(__FLAT__))
-		unsigned short *coniox_vram;
-		unsigned short *coniox_currentoffset;
-		#define coniox_far
-		#define coniox_int86 int386
-		#if defined(__WATCOMC__)
-				/* ToDo: Optimize with lea eax, [eax*2+coniox_vram] lea eax, [esi+eax*2] */
-				unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
-				#pragma aux coniox_offset =										    \
-						"			 .386													   "\
-						"			 movzx eax, byte ptr ti + 16				"\
-						"			 imul eax, edi									    "\
-						"			 add eax, esi									   "\
-						"			 shl eax, 1												 "\
-						"			 add eax, coniox_vram					   "\
-						parm nomemory [ESI][EDI]												   \
-						modify exact nomemory []																	 \
-						value [EAX];
-		#else
-				#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
-		#endif
+#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+	unsigned short *coniox_vram;
+	unsigned short *coniox_currentoffset;
+	#define coniox_far
+	#define coniox_int86 int386
+	#if defined(__WATCOMC__)
+		/* ToDo: Optimize with lea eax, [eax*2+coniox_vram] lea eax, [esi+eax*2] */
+		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
+		#pragma aux coniox_offset =										    \
+			"			 .386													   "\
+			"			 movzx eax, byte ptr ti + 16				"\
+			"			 imul eax, edi									    "\
+			"			 add eax, esi									   "\
+			"			 shl eax, 1												 "\
+			"			 add eax, coniox_vram					   "\
+			parm nomemory [ESI][EDI]												   \
+			modify exact nomemory []																	 \
+			value [EAX];
+	#else
+		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
+	#endif
 #else
-		unsigned short far *coniox_vram;
-		unsigned short far *coniox_currentoffset;
-		#define coniox_far far
-		#define coniox_int86 int86
-		#if defined(__WATCOMCToDo__)
-			/* ToDo: Not working */
-			unsigned short far *coniox_offset(unsigned int piX, unsigned int piY);
-			#pragma aux coniox_offset =										    \
-					"			 .8086													    "\
-					"			 xor ah, ah												 "\
-					"			 mov al, byte ptr ti + 16					    "\
-					"			 mul di														 "\
-					"			 add ax, si										 "\
-					"			 shl ax, 1												    "\
-					"			 mov dx, word ptr coniox_vram+2							"\
-					parm nomemory [SI][DI]													 \
-					modify exact nomemory []																	 \
-					value [DX AX];
-		#else
-			#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
-		#endif
+	unsigned short far *coniox_vram;
+	unsigned short far *coniox_currentoffset;
+	#define coniox_far far
+	#define coniox_int86 int86
+	#if defined(__WATCOMCToDo__)
+		/* ToDo: Not working */
+		unsigned short far *coniox_offset(unsigned int piX, unsigned int piY);
+		#pragma aux coniox_offset =										    \
+			"			 .8086													    "\
+			"			 xor ah, ah												 "\
+			"			 mov al, byte ptr ti + 16					    "\
+			"			 mul di														 "\
+			"			 add ax, si										 "\
+			"			 shl ax, 1												    "\
+			"			 mov dx, word ptr coniox_vram+2							"\
+			parm nomemory [SI][DI]													 \
+			modify exact nomemory []																	 \
+			value [DX AX];
+	#else
+		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
+	#endif
 #endif
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if defined(__WATCOMC__)
-		void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count);
-		#if (defined(__FLAT__))
-			#pragma aux coniox_fmemsetw =										\
-					"			 .386												      "\
-					"			      push ax										  "\
-					"			      push ax										  "\
-					"			      pop eax										  "\
-					"			      push ecx										 "\
-					"			      shr ecx, 1										     "\
-					"				  cld											"\
-					"			      rep stosd										       "\
-					"			      pop ecx										   "\
-					"			      and ecx, 1										     "\
-					"			      rep stosw										       "\
-					parm [EDI][AX][ECX]													     \
-					modify exact [EDI ECX];
-		#else
-			#pragma aux coniox_fmemsetw =										\
-					"			 .8086													    "\
-					"			 cld														"\
-					"			 rep stosw												   "\
-					parm [ES DI][AX][CX]													   \
-					modify exact [DI CX];
-		#endif
+	void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count);
+	#if (defined(__FLAT__))
+		#pragma aux coniox_fmemsetw =										\
+				"			 .386												      "\
+				"			      push ax										  "\
+				"			      push ax										  "\
+				"			      pop eax										  "\
+				"			      push ecx										 "\
+				"			      shr ecx, 1										     "\
+				"				  cld											"\
+				"			      rep stosd										       "\
+				"			      pop ecx										   "\
+				"			      and ecx, 1										     "\
+				"			      rep stosw										       "\
+				parm [EDI][AX][ECX]													     \
+				modify exact [EDI ECX];
+	#else
+		#pragma aux coniox_fmemsetw =										\
+				"			 .8086													    "\
+				"			 cld														"\
+				"			 rep stosw												   "\
+				parm [ES DI][AX][CX]													   \
+				modify exact [DI CX];
+	#endif
 #else
 	void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count)
 	{
@@ -1504,6 +1503,24 @@ int coniox_basecrt = 0x3D4;
 		}
 	}
 #endif
+
+
+#if !defined(__TURBOC__)
+	#define outportb		outp
+	#define outport			outpw
+	#define inportb			inp
+	#define inport			inpw
+#endif
+
+
+#define peekb(s,o)			(*((unsigned char coniox_far *) MK_FP((s),(o))))
+#define peekw(s,o)			(*((unsigned short coniox_far *) MK_FP((s),(o))))
+#define peekl(s,o)			(*((unsigned long coniox_far *) MK_FP((s),(o))))
+#define pokeb(s,o,x)		(*((unsigned char coniox_far *) MK_FP((s),(o))) = (unsigned char)(x))
+#define pokew(s,o,x)		(*((unsigned short coniox_far *) MK_FP((s),(o))) = (unsigned short)(x))
+#define pokel(s,o,x)		(*((unsigned long coniox_far *) MK_FP((s),(o))) = (unsigned long)(x))
+
+
 
 
 void coniox_idle(void);
@@ -1521,6 +1538,11 @@ void coniox_init(const void* title)
 		return;
 	}
 	ti.normattr = 7;
+	
+	
+	#if (defined(__DJGPP__))
+		__djgpp_nearptr_enable();
+	#endif
 
 	/* Get current video mode */
 	if (ti.currmode == C4350)
@@ -1545,6 +1567,15 @@ void coniox_init(const void* title)
 		else
 		{
 			coniox_vram = (unsigned short *) 0x000B8000UL;
+		}
+	#elif (defined(__DJGPP__))
+		if ((ti.currmode == BW40) || (ti.currmode == BW80) || (ti.currmode == MONO))
+		{
+			coniox_vram = (unsigned short *) 0x000B0000UL +  __djgpp_conventional_base;
+		}
+		else
+		{
+			coniox_vram = (unsigned short *) 0x000B8000UL +  __djgpp_conventional_base;
 		}
 	#else
 		if ((ti.currmode == BW40) || (ti.currmode == BW80) || (ti.currmode == MONO))
@@ -2133,7 +2164,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
 	{
 		_fmemcpy((unsigned short coniox_far *) __destin, p, (__right - __left + 1) << 1);
 		p += ti.screenwidth;
-		(unsigned short *) __destin += (__right - __left + 1);
+		(unsigned short *) __destin += (int) (__right - __left + 1);
 	}
 	return(1);
 }
@@ -2156,7 +2187,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 	{
 		_fmemcpy(p, (unsigned short coniox_far *) __source, (__right - __left + 1) << 1);
 		p += ti.screenwidth;
-		(unsigned short *) __source += (__right - __left + 1);
+		(unsigned short *) __source += (int) (__right - __left + 1);
 	}
 	return(1);
 }

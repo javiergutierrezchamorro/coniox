@@ -139,6 +139,10 @@ extern "C" {
 	#endif
 #endif
 
+#ifdef gettext
+	#undef gettext
+#endif
+
 #define PRINTFBUF_SIZE	255
 
 #pragma pack(push)

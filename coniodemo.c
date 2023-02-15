@@ -5,8 +5,9 @@
 #include "coniox.h"
 
 
-#if !defined(__TURBOC__)
-	#define random(num)	(int)(((long)rand()*(num))/(RAND_MAX+1))
+//#if !defined(__TURBOC__)
+#if !defined(random)
+	#define random(num)	(short)(((long)rand()*(num))/(RAND_MAX+1))
 #endif
 
 
@@ -102,6 +103,7 @@ void finish(void)
 	textmode(LASTMODE);
 	textattr(7);
 	clrscr();
+	ungetch('T'); ungetch('h'); ungetch('a'); ungetch('n'); ungetch('k'); ungetch(' '); ungetch('y'); ungetch('o'); ungetch('u');
 }
 
 
