@@ -30,8 +30,8 @@ int main(void)
 	init();
 	info();
 	chars();
-	windows();
 	movetexts();
+	windows();
 	speed();
 	inputs();
 	getputtexts();
@@ -271,7 +271,7 @@ void speed(void)
 	stop = clock();
 	textcolor(YELLOW);
 	cputs("\r\nThose was 50000 254 (þ) chars using putch\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, CLOCKS_PER_SEC);
+	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
 	pause();
 
 	window(1, 2, ti.screenwidth, ti.screenheight - 1);
@@ -303,7 +303,7 @@ void speed(void)
 	stop = clock();
 	textcolor(YELLOW);
 	cputs("\r\nThose was 1000 cputs\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, CLOCKS_PER_SEC);
+	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
 	pause();
 
 
@@ -319,7 +319,7 @@ void speed(void)
 	stop = clock();
 	textcolor(YELLOW);
 	cputs("\r\nThose was 1000 cprintf\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, CLOCKS_PER_SEC);
+	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
 	pause();
 
 	background = malloc(gettextsize(7, 7, ti.screenwidth - 7, ti.screenheight - 7));
@@ -496,7 +496,7 @@ void demo3(void)
 	stop = clock();
 	textcolor(YELLOW);
 	cputs("\r\nThose was 50000 254 (þ) chars using putch\r\n");
-	cprintf( "It took %u clocks (%u clocks are a second)\r\n", stop - start, CLOCKS_PER_SEC);
+	cprintf( "It took %u clocks (%u clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
 	cputs("---- Press any key to continue ----");
 	getch();
 	
@@ -530,7 +530,7 @@ void demo3(void)
 	stop = clock();
 	textcolor(YELLOW);
 	cputs("\r\nThose was 1000 cputs\r\n");
-	cprintf( "It took %u clocks (%u clocks are a second)\r\n", stop - start, CLOCKS_PER_SEC);
+	cprintf( "It took %u clocks (%u clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
 	cputs( "---- Press any key to continue ----" );
 	getch();
 
@@ -547,7 +547,7 @@ void demo3(void)
 	stop = clock();
 	textcolor(YELLOW);
 	cputs("\r\nThose was 1000 cprintf\r\n");
-	cprintf("It took %u clocks (%u clocks are a second)\r\n", stop - start, CLOCKS_PER_SEC);
+	cprintf("It took %u clocks (%u clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
 	cputs( "---- Press any key to continue ----" );
 	getch();
 

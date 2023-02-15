@@ -38,6 +38,12 @@ SET OLDPATH=%PATH%
 SET PATH=%ZORTECH%\BIN;%PATH%
 SET INCLUDE=%ZORTECH%\INCLUDE;
 SET LIB=%ZORTECH%\LIB;
+DEL coniox_zc16d.exe
+sc ..\coniodemo.c ..\coniox.c -mt -o+time -ff -0 -a4 -Nc
+ren coniodemo.exe coniox_zc16d.exe
+DEL coniox_zc32d.exe
+sc ..\coniodemo.c ..\coniox.c -mx -o+time -ff -3 -a8 -Nc
+ren coniodemo.exe coniox_zc32d.exe
 DEL coniox_zc32w.exe
 sc ..\coniodemo.c ..\coniox.c -mn -o+time -ff -6 -a8 -Nc
 ren coniodemo.exe coniox_zc32w.exe

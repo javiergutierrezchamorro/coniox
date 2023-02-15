@@ -1951,7 +1951,15 @@ void textmode(int __newmode)
 				r.x.ax = 0x1112;
 				r.x.bx = 0;
 			#endif
+			/* For 4350 select alternate print screen routine */
+			#if defined(__WATCOMC__)
+				r.w.ax = 0x1200;
+			#else
+				r.x.ax = 0x1200;
+			#endif
+			r.h.bl = 0x20;
 			coniox_int86(0x10, &r, &r);
+			pokeb(0x40, 0x87, peekb(0x40, 0x87) | 1);	/* Disable cursor size emultation */
 			pokew(0x40, 0x4C, 8000);	/* Correct video buffer size */
 		}
 		else
