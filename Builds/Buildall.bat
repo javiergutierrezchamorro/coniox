@@ -1,5 +1,5 @@
 @ECHO OFF
-goto dmc857
+goto oc20
 
 :vc2017
 rem *** VISUAL C++ 2017 ***

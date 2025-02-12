@@ -5,7 +5,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <stddef.h>
-#include "conio.h"
+#include "coniox.h"
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -31,7 +31,7 @@ int _wscroll = 1;
 /* ----------------------------------------------------------------------------------------------------------------- */
 /* INTERNAL (Private)*/
 /* ----------------------------------------------------------------------------------------------------------------- */
-int coniox_vsscanf(const char  *buffer, const char  *format, va_list argPtr)
+int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
 	void *a[20] = {NULL};
 	size_t count = 0;
@@ -1420,9 +1420,9 @@ int coniox_basecrt = 0x3D4;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+	#define coniox_far __far
 	unsigned short *coniox_vram;
 	unsigned short *coniox_currentoffset;
-	#define coniox_far
 	#define coniox_int86 int386
 	#if defined(__WATCOMC__)
 		/* ToDo: Optimize with lea eax, [eax*2+coniox_vram] lea eax, [esi+eax*2] */
@@ -1441,13 +1441,13 @@ int coniox_basecrt = 0x3D4;
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 	#endif
 #else
-	unsigned short far *coniox_vram;
-	unsigned short far *coniox_currentoffset;
-	#define coniox_far far
+	#define coniox_far __far
+	unsigned short coniox_far *coniox_vram;
+	unsigned short coniox_far *coniox_currentoffset;
 	#define coniox_int86 int86
-	#if defined(__WATCOMCToDo__)
+	#if defined(__WATCOMCKK__)
 		/* ToDo: Not working */
-		unsigned short far *coniox_offset(unsigned int piX, unsigned int piY);
+		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 		#pragma aux coniox_offset =										    \
 			"			 .8086													    "\
 			"			 xor ah, ah												 "\
@@ -1455,7 +1455,7 @@ int coniox_basecrt = 0x3D4;
 			"			 mul di														 "\
 			"			 add ax, si										 "\
 			"			 shl ax, 1												    "\
-			"			 mov dx, word ptr coniox_vram+2							"\
+			"			 add dx, word ptr coniox_vram+2							"\
 			parm nomemory [SI][DI]													 \
 			modify exact nomemory []																	 \
 			value [DX AX];
@@ -1482,7 +1482,7 @@ int coniox_basecrt = 0x3D4;
 				"			      and ecx, 1										     "\
 				"			      rep stosw										       "\
 				parm [EDI][AX][ECX]													     \
-				modify exact [EDI ECX];
+				modify exact [EDI ECX EAX];
 	#else
 		#pragma aux coniox_fmemsetw =										\
 				"			 .8086													    "\
@@ -1611,7 +1611,7 @@ void coniox_init(const void* title)
 	/* Get screen mode */
 	if (directvideo)
 	{
-		ti.screenwidth = peekb(0x40, 0x4A);
+		ti.screenwidth = peekw(0x40, 0x4A);
 		if (ti.currmode == C4350)
 		{
 			ti.screenheight = 50;
@@ -1640,6 +1640,13 @@ void coniox_init(const void* title)
 	ti.wintop = 1;
 	ti.winright = ti.screenwidth;
 	ti.winbottom = ti.screenheight;
+	printf("Width: %d\n", ti.screenwidth);
+	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+		printf("Pointer: %p\n", (void *) coniox_offset(80, 25));
+	#else
+		printf("Pointer: %Fp\n", (void far *) coniox_offset(80, 25));
+	#endif
+	//exit(0);
 }
 
 
