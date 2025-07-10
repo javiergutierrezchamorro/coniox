@@ -585,9 +585,7 @@ int wherey(void);
 Pauses program execution for a given time.
 @param ms miliseconds
 */
-//#if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
-	void delay(unsigned int ms);
-//#endif
+void delay(unsigned int ms);
 
 
 void coniox_init(const void *title);

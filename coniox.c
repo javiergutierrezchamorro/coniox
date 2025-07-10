@@ -1417,6 +1417,8 @@ int coniox_basecrt = 0x3D4;
 	#define MK_FP(seg,off) (((seg)<<4)|(off))
 #endif
 
+#define coniox_far __far
+
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((defined(__FLAT__)) || (defined(__DJGPP__)))
@@ -1441,24 +1443,23 @@ int coniox_basecrt = 0x3D4;
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 	#endif
 #else
-	#define coniox_far __far
 	unsigned short coniox_far *coniox_vram;
 	unsigned short coniox_far *coniox_currentoffset;
 	#define coniox_int86 int86
 	#if defined(__WATCOMCKK__)
-		/* ToDo: Not working */
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 		#pragma aux coniox_offset =										    \
-			"			 .8086													    "\
-			"			 xor ah, ah												 "\
-			"			 mov al, byte ptr ti + 16					    "\
-			"			 mul di														 "\
-			"			 add ax, si										 "\
-			"			 shl ax, 1												    "\
-			"			 add dx, word ptr coniox_vram+2							"\
-			parm nomemory [SI][DI]													 \
-			modify exact nomemory []																	 \
-			value [DX AX];
+				"			 .8086													    "\
+				"			 xor ah, ah												 "\
+				"			 mov al, byte ptr ti + 16					    "\
+				"			 mul di														 "\
+				"			 add ax, si										 "\
+				"			 shl ax, 1												    "\
+			    " mov dx, seg coniox_vram"      /* cargar segmento de coniox_vram en dx */ \
+			    " add ax, word ptr coniox_vram" /* sumar offset base de coniox_vram */ \
+			    parm nomemory [SI][DI]          \
+			    modify exact nomemory []            \
+			    value [DX AX];			
 	#else
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 	#endif
@@ -2263,7 +2264,7 @@ int kbhit(void)
 	coniox_idle();
 	if (directvideo)
 	{
-		return(peekw(0x40, 0x1A) - peekw(0x40, 0x1C));
+		return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
 	}
 	else
 	{
@@ -2280,31 +2281,40 @@ int kbhit(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+static int getch_last_extended_key = 0;
 int getch(void)
 {
-/*
-	unsigned short coniox_far *pHead;
-	unsigned short coniox_far *pTail;
-	unsigned short coniox_far *pBuffer;
-	
-
-	while (!kbhit());
-	
-	pHead = MK_FP(0x40, 0x1A);	//This word points to the next character code/scan code to be removed from the keyboard buffer
-	pTail = MK_FP(0x40, 0x1C);	//This word points to the location in the keyboard buffer at which the next character typed will be placed. After a character is placed in the keyboard at this location, the tail pointer is incremented and adjusted if it needs to wrap to the beginning of the keyboard buffer.
-	pBuffer = MK_FP(0x40, 0x1E);
-	
-	pBuffer[*pHead];
-	pHead++;`
-	pHead &=15;
-*/	
-	
-
-	while (!kbhit());
-	
-	/* ToDo: Implement it by removing from the keyboard buffer */
-	if (0 /*directvideo*/)
+	if (directvideo)
 	{
+		unsigned short head, tail, scancode;
+		unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
+		
+		if (getch_last_extended_key)
+		{
+			int ch = getch_last_extended_key;
+			getch_last_extended_key = 0;
+			return ch;
+		}
+
+		// Esperar tecla
+		while (!kbhit());
+
+		tail = peekw(0x40, 0x1C);
+		scancode = keyboard_buffer[tail >> 1];  // cada entrada = WORD (scan << 8 | ascii)
+
+		// Avanzar cola (buffer circular de 32 bytes)
+		tail = (tail + 2) & 0x1E;
+		pokew(0x40, 0x1C, tail);
+
+		if ((scancode & 0xFF) == 0)  // ASCII == 0 ? tecla extendida
+		{
+			getch_last_extended_key = (scancode >> 8);  // Guardamos el código extendido
+			return 0;
+		}
+		else
+		{
+			return scancode & 0xFF;  // Devolvemos sólo el carácter ASCII
+		}
 	}
 	else
 	{
@@ -2319,18 +2329,26 @@ int getch(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int ungetch(int __ch)
 {
-/*
-	unsigned short coniox_far *pTail;
-	unsigned short coniox_far *pBuffer;
-	
-	pHead = MK_FP(0x40, 0x1A);	//This word points to the next character code/scan code to be removed from the keyboard buffer
-	pTail = MK_FP(0x40, 0x1C);	//This word points to the location in the keyboard buffer at which the next character typed will be placed. After a character is placed in the keyboard at this location, the tail pointer is incremented and adjusted if it needs to wrap to the beginning of the keyboard buffer.
-	pBuffer = MK_FP(0x40, 0x1E);
-*/
-
-	/* ToDo: Implement it by inserting onto the keyboard buffer	*/
-	if (0 /*directvideo*/)
+	if (directvideo)
 	{
+		unsigned short head, tail;
+	    unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
+	    unsigned short scancode;
+
+	    head = peekw(0x40, 0x1A);
+	    tail = peekw(0x40, 0x1C);
+
+	    // Decrementar tail circularmente
+	    tail -= 2;
+	    if ((short)tail < 0) tail = 30;
+
+	    // Insertar el carácter con scancode 0 (sin scan code)
+	    scancode = (0 << 8) | (__ch & 0xFF);
+	    keyboard_buffer[tail >> 1] = scancode;
+
+	    // Actualizar tail
+	    pokew(0x40, 0x1C, tail);
+	    return(__ch);
 	}
 	else
 	{
