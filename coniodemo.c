@@ -68,6 +68,8 @@ void init(void)
 			coniox_init("coniox demo");
 		#endif
 	#endif
+	
+	directvideo=0;
 
 	//textmode(C4350);
 	_setcursortype(_NOCURSOR);
@@ -90,7 +92,7 @@ void init(void)
 	_wscroll = 1;
 	
 	/* Title text */
-	strcpy(line, "CONIO DEMO v5.00 - (c) Copyright 2022 Javier Gutierrez Chamorro (Guti)");
+	strcpy(line, "CONIO DEMO v5.00 - (c) Copyright 2025 Javier Gutierrez Chamorro (Guti)");
 	i = (int) strlen(line);
 	gotoxy((ti.screenwidth - i) >> 1, 1);
 	cputs(line);
