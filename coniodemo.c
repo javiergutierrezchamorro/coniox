@@ -59,6 +59,8 @@ void init(void)
 	struct text_info ti;
 	int i;
 	char line[255];
+
+	//directvideo=0;
 	
 	//Optional: Set window caption
 	#ifdef _CONIOX_H_
@@ -69,8 +71,6 @@ void init(void)
 		#endif
 	#endif
 	
-	directvideo=1;
-
 	//textmode(C4350);
 	_setcursortype(_NOCURSOR);
 	textattr(BLUE*16+WHITE);

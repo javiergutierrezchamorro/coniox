@@ -1403,6 +1403,7 @@ int coniox_basecrt = 0x3D4;
 
 #if defined(__WATCOMC__)
 	#include <i86.h>
+	unsigned int outp( int port, int value );
 #endif
 
 #if defined(__DJGPP__)
@@ -1437,16 +1438,17 @@ int coniox_basecrt = 0x3D4;
 			"			 shl eax, 1												 "\
 			"			 add eax, coniox_vram					   "\
 			parm nomemory [ESI][EDI]												   \
-			modify exact nomemory []																	 \
+			modify exact nomemory [EAX]																	 \
 			value [EAX];
 	#else
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 	#endif
 #else
+	#define coniox_far __far
 	unsigned short coniox_far *coniox_vram;
 	unsigned short coniox_far *coniox_currentoffset;
 	#define coniox_int86 int86
-	#if defined(__WATCOMCKK__)
+	#if defined(__WATCOMKKC__)
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 		#pragma aux coniox_offset =										    \
 				"			 .8086													    "\
@@ -1455,10 +1457,10 @@ int coniox_basecrt = 0x3D4;
 				"			 mul di														 "\
 				"			 add ax, si										 "\
 				"			 shl ax, 1												    "\
-			    " mov dx, seg coniox_vram"      /* cargar segmento de coniox_vram en dx */ \
-			    " add ax, word ptr coniox_vram" /* sumar offset base de coniox_vram */ \
+			    "			 mov dx, seg coniox_vram"      /* cargar segmento de coniox_vram en dx */ \
+			    "			 add ax, word ptr coniox_vram" /* sumar offset base de coniox_vram */ \
 			    parm nomemory [SI][DI]          \
-			    modify exact nomemory []            \
+			    modify exact nomemory [DX AX]            \
 			    value [DX AX];			
 	#else
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
@@ -2101,26 +2103,26 @@ void gotoxy(int __x, int __y)
 	ti.curx = __x;
 	ti.cury = __y;
 
-	if (directvideo)
+	/* Only move cursor if visible */
+	if (coniox_setcursortype != _NOCURSOR)
 	{
-		/* Only move cursor if visible */
-		if (coniox_setcursortype != _NOCURSOR)
-		{	
+		if (directvideo)
+		{
 			cursor = ((ti.wintop + ti.cury - 2) * ti.screenwidth) + (ti.winleft + ti.curx - 2);
 			outportb(coniox_basecrt, 0x0F);
 			outportb(coniox_basecrt + 1, cursor & 0xFF);
 			outportb(coniox_basecrt, 0x0E);
 			outportb(coniox_basecrt + 1, (cursor >> 8) & 0xFF);
 		}
-	}
-	else
-	{
-		union REGS r;
-		r.h.ah = 2;
-		r.h.bh = 0;
-		r.h.dh = ti.wintop + ti.cury - 2;
-		r.h.dl = ti.winleft + ti.curx - 2;
-		coniox_int86(0x10, &r, &r);
+		else
+		{
+			union REGS r;
+			r.h.ah = 2;
+			r.h.bh = 0;
+			r.h.dh = ti.wintop + ti.cury - 2;
+			r.h.dl = ti.winleft + ti.curx - 2;
+			coniox_int86(0x10, &r, &r);
+		}
 	}
 }
 
