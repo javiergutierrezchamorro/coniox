@@ -2288,7 +2288,9 @@ int getch(void)
 	{
 		unsigned short head, tail, scancode;
 		unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
-		
+
+		/* Si hay un código extendido pendiente, devolverlo */
+		coniox_idle();
 		if (getch_last_extended_key)
 		{
 			int ch = getch_last_extended_key;
@@ -2296,25 +2298,28 @@ int getch(void)
 			return ch;
 		}
 
-		// Esperar tecla
-		while (!kbhit());
+		/* Esperar hasta que haya una tecla disponible */
+		while (peekw(0x40, 0x1A) == peekw(0x40, 0x1C));
 
+		/* Leer la posición de cola del buffer */
 		tail = peekw(0x40, 0x1C);
-		scancode = keyboard_buffer[tail >> 1];  // cada entrada = WORD (scan << 8 | ascii)
 
-		// Avanzar cola (buffer circular de 32 bytes)
+		/* Leer el scancode (una palabra: high = scan, low = ASCII) */
+		scancode = keyboard_buffer[tail >> 1];
+
+		/* Avanzar la cola (es circular de 32 bytes ? 16 palabras) */
 		tail = (tail + 2) & 0x1E;
 		pokew(0x40, 0x1C, tail);
 
-		if ((scancode & 0xFF) == 0)  // ASCII == 0 ? tecla extendida
+		/* Tecla extendida: ASCII == 0 */
+		if ((scancode & 0xFF) == 0)
 		{
-			getch_last_extended_key = (scancode >> 8);  // Guardamos el código extendido
-			return 0;
+			getch_last_extended_key = scancode >> 8;  // guardar scan code extendido
+			return 0;  // comportamiento exacto: primero se retorna 0
 		}
-		else
-		{
-			return scancode & 0xFF;  // Devolvemos sólo el carácter ASCII
-		}
+
+		/* Tecla normal */
+		return scancode & 0xFF;
 	}
 	else
 	{
