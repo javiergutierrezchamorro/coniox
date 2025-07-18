@@ -1428,7 +1428,6 @@ int coniox_basecrt = 0x3D4;
 	unsigned short *coniox_currentoffset;
 	#define coniox_int86 int386
 	#if defined(__WATCOMC__)
-		/* ToDo: Optimize with lea eax, [eax*2+coniox_vram] lea eax, [esi+eax*2] */
 		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
 		#pragma aux coniox_offset =										    \
 			"			 .386													   "\
@@ -1473,19 +1472,20 @@ int coniox_basecrt = 0x3D4;
 	void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count);
 	#if (defined(__FLAT__))
 		#pragma aux coniox_fmemsetw =										\
-				"			 .386												      "\
-				"			      push ax										  "\
-				"			      push ax										  "\
-				"			      pop eax										  "\
-				"			      push ecx										 "\
+				"			      .386												      "\
+				"			      movzx eax, ax										  "\
+				"			      mov edx, eax										  "\
+				"			      shl eax, 16										  "\
+				"			      or eax, edx  										  "\
 				"			      shr ecx, 1										     "\
 				"				  cld											"\
 				"			      rep stosd										       "\
-				"			      pop ecx										   "\
-				"			      and ecx, 1										     "\
-				"			      rep stosw										       "\
+				"			      test ecx, 1										     "\
+				"			      jz short no_odd										"\
+				"			      stosw										       "\
+				"no_odd:																"\
 				parm [EDI][AX][ECX]													     \
-				modify exact [EDI ECX EAX];
+				modify exact [EDI EDX ECX EAX];
 	#else
 		#pragma aux coniox_fmemsetw =										\
 				"			 .8086													    "\
@@ -1662,7 +1662,7 @@ int cputs(const char *__str)
 	int oldx, oldy;
 	
 	coniox_init(NULL);
-	coniox_currentoffset = (unsigned short coniox_far *) coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+	coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 
 	while (c = *__str)
 	{
@@ -2174,7 +2174,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
 	{
 		_fmemcpy((unsigned short coniox_far *) __destin, p, (__right - __left + 1) << 1);
 		p += ti.screenwidth;
-		(unsigned short *) __destin += (int) (__right - __left + 1);
+		__destin = (void *) ((unsigned short *)__destin + (__right - __left + 1));
 	}
 	return(1);
 }
@@ -2197,7 +2197,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 	{
 		_fmemcpy(p, (unsigned short coniox_far *) __source, (__right - __left + 1) << 1);
 		p += ti.screenwidth;
-		(unsigned short *) __source += (int) (__right - __left + 1);
+		__source = (void *) ((unsigned short *)__source + (__right - __left + 1));
 	}
 	return(1);
 }
@@ -2301,7 +2301,9 @@ int getch(void)
 		}
 
 		/* Esperar hasta que haya una tecla disponible */
-		while (peekw(0x40, 0x1A) == peekw(0x40, 0x1C));
+		while (peekw(0x40, 0x1A) == peekw(0x40, 0x1C))
+		{
+		}
 
 		/* Leer la posición de cola del buffer */
 		tail = peekw(0x40, 0x1C);
