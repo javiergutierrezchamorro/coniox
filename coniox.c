@@ -2101,26 +2101,26 @@ void gotoxy(int __x, int __y)
 	ti.curx = __x;
 	ti.cury = __y;
 
-	/* Only move cursor if visible */
-	if (coniox_setcursortype != _NOCURSOR)
+	if (directvideo)
 	{
-		if (directvideo)
-		{
+		/* Only move cursor if visible */
+		if (coniox_setcursortype != _NOCURSOR)
+		{	
 			cursor = ((ti.wintop + ti.cury - 2) * ti.screenwidth) + (ti.winleft + ti.curx - 2);
 			outportb(coniox_basecrt, 0x0F);
 			outportb(coniox_basecrt + 1, cursor & 0xFF);
 			outportb(coniox_basecrt, 0x0E);
 			outportb(coniox_basecrt + 1, (cursor >> 8) & 0xFF);
 		}
-		else
-		{
-			union REGS r;
-			r.h.ah = 2;
-			r.h.bh = 0;
-			r.h.dh = ti.wintop + ti.cury - 2;
-			r.h.dl = ti.winleft + ti.curx - 2;
-			coniox_int86(0x10, &r, &r);
-		}
+	}
+	else
+	{
+		union REGS r;
+		r.h.ah = 2;
+		r.h.bh = 0;
+		r.h.dh = ti.wintop + ti.cury - 2;
+		r.h.dl = ti.winleft + ti.curx - 2;
+		coniox_int86(0x10, &r, &r);
 	}
 }
 

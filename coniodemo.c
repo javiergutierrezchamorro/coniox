@@ -69,7 +69,7 @@ void init(void)
 		#endif
 	#endif
 	
-	directvideo=0;
+	directvideo=1;
 
 	//textmode(C4350);
 	_setcursortype(_NOCURSOR);
