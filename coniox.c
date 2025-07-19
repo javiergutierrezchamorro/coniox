@@ -15,6 +15,16 @@
 	void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
 #endif
 
+#if (__BORLANDC__)
+	#define inline
+#endif
+
+
+#if (__BORLANDC__)
+	#define inline
+#endif
+
+
 
 inline void coniox_putchattrcursor(int ch, int attr);
 inline void coniox_putchxyattr(int x, int y, int ch, int attr);
@@ -1504,6 +1514,7 @@ int coniox_basecrt = 0x3D4;
 		{
 			*buf++ = val;
 		}
+		return(m);
 	}
 #endif
 
@@ -1952,7 +1963,7 @@ void delay (unsigned int ms)
 {
 	unsigned long lTicks;
 
-	if (1 /*directvideo*/)
+	if (directvideo)
 	{
 		lTicks = peekl(0, 0x46C);
 		while (peekl(0, 0x46C) < (lTicks + (unsigned long) ms * 182 / 10000))

@@ -20,10 +20,10 @@ SET LIB=
 SET BORLAND=D:\FICHEROS\BCW\
 SET OLDPATH=%PATH%
 SET PATH=%BORLAND%\BIN;%PATH%
-SET INCLUDE=%BORLAND%\INCLUDE;
+SET INCLUDE=%BORLAND%\INCLUDE;..\
 SET LIB=%BORLAND%\LIB;
 DEL coniox_bc16d.exe
-bcc -1- -a2 -d -ff -k- -ms -po -RT- -O2 -I%INCLUDE% -L%LIB% ..\coniox~1.c ..\coniox.c
+bcc -1- -a2 -d -ff -k- -ms -po -RT- -O2 -I%INCLUDE% -L%LIB% ..\coniodemo.c ..\coniox.c
 ren coniodemo.exe coniox_bc16d.exe
 SET BORLAND=
 SET PATH=%OLDPATH%
@@ -36,7 +36,7 @@ rem *** DIGITALMARS C++ 8.57 ***
 SET ZORTECH=D:\FICHEROS\DM
 SET OLDPATH=%PATH%
 SET PATH=%ZORTECH%\BIN;%PATH%
-SET INCLUDE=%ZORTECH%\INCLUDE;
+SET INCLUDE=%ZORTECH%\INCLUDE;..\
 SET LIB=%ZORTECH%\LIB;
 DEL coniox_zc16d.exe
 sc ..\coniodemo.c ..\coniox.c -mt -o+time -ff -0 -a4 -Nc
@@ -71,7 +71,7 @@ WCL -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp4 -0 -mt -s -ri -zm /bt=dos /l=com /
 REN coniodemo.com coniox_ocd16.com
 rem *** DOS32 ***
 DEL coniox_ocd32.exe
-WCL386 -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r -fpi87 -fp6 -mf -s -ri -zm /bt=dos /l=dos32a /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
+WCL386 -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r -fpi87 -fp6 -mf -s -ri -zm /bt=dos /l=pmodew /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
 REN coniodemo.exe coniox_ocd32.exe
 
 SET WATCOM=

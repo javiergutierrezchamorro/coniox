@@ -595,7 +595,7 @@ void demo3(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int demo2(void)
+void demo2(void)
 {
 	int x1 = 1, y1 = 1, x2 = 1, y2 = 1, x3 = 1, y3 = 1, x4 = 1, y4 = 1;
 	int i;
@@ -637,7 +637,7 @@ int demo2(void)
 	textattr(4 * 16 + 15);
 	clrscr();
 
-	return(0);
+	return;
 
 	i = 0;
 	while (!kbhit())

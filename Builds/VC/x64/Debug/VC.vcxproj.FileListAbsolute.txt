@@ -1,2 +1,0 @@
-D:\PROYECTOS\coniox\VC\VC\x64\Debug\VC.exe
-D:\PROYECTOS\coniox\Builds\VC\x64\Debug\VC.exe
