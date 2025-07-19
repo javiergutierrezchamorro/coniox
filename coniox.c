@@ -16,8 +16,8 @@
 #endif
 
 
-void coniox_putchattrcursor(int ch, int attr);
-void coniox_putchxyattr(int x, int y, int ch, int attr);
+inline void coniox_putchattrcursor(int ch, int attr);
+inline void coniox_putchxyattr(int x, int y, int ch, int attr);
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
 int coniox_setcursortype = _NORMALCURSOR;
 
@@ -1660,6 +1660,9 @@ int cputs(const char *__str)
 	char c;
 	int k = 0;
 	int oldx, oldy;
+	unsigned int winwidth  = ti.winright  - ti.winleft  + 1;
+	unsigned int winheight = ti.winbottom - ti.wintop   + 1;
+	
 	
 	coniox_init(NULL);
 	coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
@@ -1673,7 +1676,7 @@ int cputs(const char *__str)
 				ti.curx = 1;
 				break;
 			case '\n':
-				if (ti.cury < ti.winbottom - ti.wintop + 1)
+				if (ti.cury < winheight)
 				{
 					coniox_currentoffset += ti.screenwidth;
 					ti.cury++;
@@ -1722,11 +1725,11 @@ int cputs(const char *__str)
 					#endif
 					coniox_int86(0x10, &r, &r);
 				}
-				if (ti.curx + 1 > ti.winright - ti.winleft + 1)
+				if (ti.curx + 1 > winwidth)
 				{
 					if (_wscroll)
 					{
-						if (ti.cury < ti.winbottom - ti.wintop + 1)
+						if (ti.cury < winheight)
 						{
 							coniox_currentoffset += ti.screenwidth - (ti.curx - 1);
 							ti.curx = 1;
@@ -1764,7 +1767,7 @@ int cputs(const char *__str)
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 /* ToDo: It is manually inlined */
-void coniox_putchattrcursor(int ch, int attr)
+inline void coniox_putchattrcursor(int ch, int attr)
 {
 	if (directvideo)
 	{
@@ -1794,7 +1797,7 @@ void coniox_putchattrcursor(int ch, int attr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_putchxyattr(int x, int y, int ch, int attr)
+inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 {
 	if (directvideo)
 	{
@@ -1943,6 +1946,7 @@ void coniox_idle(void)
 	#endif
 	coniox_int86(0x15, &r, &r);
 }
+
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void delay (unsigned int ms)
@@ -2162,6 +2166,8 @@ int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
 {
 	unsigned short coniox_far* p;
 	int y1;
+	unsigned int width = (__right - __left + 1) << 1;
+	
 
 	coniox_init(NULL);
 	if (__right < __left || __bottom < __top)
@@ -2172,9 +2178,9 @@ int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
 	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
-		_fmemcpy((unsigned short coniox_far *) __destin, p, (__right - __left + 1) << 1);
+		_fmemcpy((unsigned short coniox_far *) __destin, p, width);
 		p += ti.screenwidth;
-		__destin = (void *) ((unsigned short *)__destin + (__right - __left + 1));
+		__destin = (void *) ((unsigned short *)__destin + (width >> 1));
 	}
 	return(1);
 }
@@ -2185,6 +2191,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 {
 	unsigned short coniox_far* p;
 	int y1;
+	unsigned int width = (__right - __left + 1) << 1;
 
 	coniox_init(NULL);
 	if (__right < __left || __bottom < __top)
@@ -2195,9 +2202,9 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
-		_fmemcpy(p, (unsigned short coniox_far *) __source, (__right - __left + 1) << 1);
+		_fmemcpy(p, (unsigned short coniox_far *) __source, width);
 		p += ti.screenwidth;
-		__source = (void *) ((unsigned short *)__source + (__right - __left + 1));
+		__source = (void *) ((unsigned short *)__source + (width >> 1));
 	}
 	return(1);
 }
@@ -2210,13 +2217,14 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	unsigned short coniox_far* p;
 	unsigned short coniox_far* __destin;
 	int y1;
+	unsigned int width = (__right - __left + 1) << 1;
 
 	coniox_init(NULL);
 	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	__destin = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __top + __desttop - __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
-		_fmemmove((unsigned short coniox_far *) __destin, p, (__right - __left + 1) << 1);
+		_fmemmove((unsigned short coniox_far *) __destin, p, width);
 		p += ti.screenwidth;
 		__destin += ti.screenwidth;
 	}
