@@ -2291,9 +2291,9 @@ wchar_t getwch(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
-	coniox_idle();
 	if (directvideo)
 	{
+		coniox_idle();
 		return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
 	}
 	else
@@ -2329,7 +2329,7 @@ int getch(void)
 		}
 
 		/* Esperar hasta que haya una tecla disponible */
-		while (peekw(0x40, 0x1A) == peekw(0x40, 0x1C))
+		while (!kbhit())
 		{
 		}
 
