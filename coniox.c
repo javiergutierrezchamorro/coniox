@@ -1766,7 +1766,6 @@ int cputs(const char *__str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/* ToDo: It is manually inlined */
 inline void coniox_putchattrcursor(int ch, int attr)
 {
 	if (directvideo)
@@ -1963,7 +1962,19 @@ void delay (unsigned int ms)
 	}
 	else
 	{
-		/* ToDO: Implement with BIOS */
+		union REGS r;
+		unsigned long microsec = ms * 1000UL;
+		
+		#if defined(__WATCOMC__)
+			r.w.ax = 0x8600;                    // función 0x86 en AH, AL=0
+			r.w.cx = microsec & 0xFFFF;        // parte baja de microsegundos
+			r.w.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
+		#else
+			r.x.ax = 0x8600;                    // función 0x86 en AH, AL=0
+			r.x.cx = microsec & 0xFFFF;        // parte baja de microsegundos
+			r.x.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
+		 #endif
+		coniox_int86(0x15, &r, &r);            // llamada a BIOS
 	}
 }
 
@@ -2070,10 +2081,8 @@ void _setcursortype(int __cur_t)
 	if (directvideo)
 	{
 		outportb(coniox_basecrt, 0x0A);
-		//outportb(coniox_basecrt + 1, (inportb(coniox_basecrt + 1) & 0xC0) | cursor_start);
 		outportb(coniox_basecrt + 1, cursor_start);
 		outportb(coniox_basecrt, 0x0B);
-		//outportb(coniox_basecrt + 1, (inportb(coniox_basecrt + 1) & 0xE0) | cursor_end);
 		outportb(coniox_basecrt + 1, cursor_end);
 	}
 	else
@@ -2296,7 +2305,7 @@ int getch(void)
 {
 	if (directvideo)
 	{
-		unsigned short head, tail, scancode;
+		unsigned short tail, scancode;
 		unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
 
 		/* Si hay un código extendido pendiente, devolverlo */

@@ -63,15 +63,15 @@ SET INCLUDE=%WATCOM%\H;%WATCOM%\MFC\INCLUDE;%WATCOM%\H\NT;INCLUDE;
 SET LIB=LIB;
 rem *** Win32 ***
 DEL coniox_ocw32.exe
-WCL386 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r  -fpi87 -fp6 -mf -s -ri -zm /bt=nt /l=nt /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
+WCL386 -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r  -fpi87 -fp6 -mf -s -ri -zm /bt=nt /l=nt /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
 REN coniodemo.exe coniox_ocw32.exe
 rem *** DOS16 ***
 DEL coniox_ocd16.com
-WCL -oneatx -ohirbk -ol -ol+ -oi -ei -zp4 -0 -mt -s -ri -zm /bt=dos /l=com /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
+WCL -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp4 -0 -mt -s -ri -zm /bt=dos /l=com /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
 REN coniodemo.com coniox_ocd16.com
 rem *** DOS32 ***
 DEL coniox_ocd32.exe
-WCL386 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r -fpi87 -fp6 -mf -s -ri -zm /bt=dos /l=dos32a /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
+WCL386 -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r -fpi87 -fp6 -mf -s -ri -zm /bt=dos /l=dos32a /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\coniodemo.c ..\coniox.c
 REN coniodemo.exe coniox_ocd32.exe
 
 SET WATCOM=
