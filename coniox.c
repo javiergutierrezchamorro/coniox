@@ -8,6 +8,7 @@
 #include "coniox.h"
 
 
+
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
 	wchar_t coniox_ansi2unicode(char ch);
@@ -1434,6 +1435,7 @@ int coniox_basecrt = 0x3D4;
 	unsigned short *coniox_vram;
 	unsigned short *coniox_currentoffset;
 	#define coniox_int86 int386
+	#define coniox_int86x int386x
 	#if defined(__WATCOMC__)
 		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
 		#pragma aux coniox_offset =										    \
@@ -1454,6 +1456,7 @@ int coniox_basecrt = 0x3D4;
 	unsigned short coniox_far *coniox_vram;
 	unsigned short coniox_far *coniox_currentoffset;
 	#define coniox_int86 int86
+	#define coniox_int86x int86x
 	#if defined(__WATCOMKKC__)
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 		#pragma aux coniox_offset =										    \
@@ -1982,35 +1985,14 @@ void coniox_idle(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_get_is_emulator (void)
 {
-    union REGS r;
-    struct SREGS s;
-    char far *str;
+    unsigned char result;
 
-	#if defined(__WATCOMC__)
-		r.w.ax = 0x3306;
-		intdosx(&r, &r, &s);
-		str = (char coniox_far *) MK_FP(s.es, r.w.bx);
-	#else
-		r.x.ax = 0x3306;
-		intdosx(&r, &r, &s);
-		str = (char coniox_far *) MK_FP(s.es, r.x.bx);
-	#endif
-    
-    //OEM String: "DOSBox", "DOSBox-X", "DOSBox-Staging", "MSDOS", "MS-DOS", "FreeDOS", "DRDOS", "DR DOS", "Phoenix", "DOSEMU", "VMware"
-	if (str && (
-        _fmemcmp(str, "DOSBox", 6) == 0 ||
-        _fmemcmp(str, "DOSEMU", 6) == 0 ||
-        _fmemcmp(str, "VMware", 6) == 0 ||
-        _fmemcmp(str, "Phoenix", 7) == 0))
-	{
-        return(1);
-    }
-	else
-	{
-		return(0);
-	}
+    outportb(0x04F4, 0x00);
+    result = inportb(0x04F4);
+    // En DOSBox, inp(0x04F4) típicamente devuelve 0xFF
+    return (result == 0xFF);
 }
-
+    
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_blink(unsigned int blink)
@@ -2401,12 +2383,18 @@ wchar_t getwch(void)
 }
 
 
+int getch_last_extended_key = 0;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
-	if (directvideo)
+	if (getch_last_extended_key)
 	{
-		coniox_idle();
+		return(getch_last_extended_key);
+	}
+	coniox_idle();
+
+	if ((directvideo) && (!coniox_is_emulator))
+	{
 		return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
 	}
 	else
@@ -2424,16 +2412,13 @@ int kbhit(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-static int getch_last_extended_key = 0;
 int getch(void)
 {
-	if (directvideo)
+	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short tail, scancode;
 		unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
 
-		/* Si hay un código extendido pendiente, devolverlo */
-		coniox_idle();
 		if (getch_last_extended_key)
 		{
 			int ch = getch_last_extended_key;
@@ -2441,40 +2426,50 @@ int getch(void)
 			return ch;
 		}
 
-		/* Esperar hasta que haya una tecla disponible */
 		while (!kbhit())
 		{
 		}
 
-		/* Leer la posición de cola del buffer */
 		tail = peekw(0x40, 0x1C);
-
-		/* Leer el scancode (una palabra: high = scan, low = ASCII) */
 		scancode = keyboard_buffer[tail >> 1];
-
-		/* Avanzar la cola (es circular de 32 bytes ? 16 palabras) */
 		tail = (tail + 2) & 0x1E;
 		pokew(0x40, 0x1C, tail);
 
-		/* Tecla extendida: ASCII == 0 */
 		if ((scancode & 0xFF) == 0)
 		{
-			getch_last_extended_key = scancode >> 8;  // guardar scan code extendido
-			return 0;  // comportamiento exacto: primero se retorna 0
+			getch_last_extended_key = scancode >> 8;
+			return 0;
 		}
 
-		/* Tecla normal */
 		return scancode & 0xFF;
 	}
 	else
 	{
 		union REGS r;
-		r.h.ah = 0;
+
+		if (getch_last_extended_key)
+		{
+			int ch = getch_last_extended_key;
+			getch_last_extended_key = 0;
+			return ch;
+		}
+
+		r.h.ah = 0;  // INT 16h AH=0 - Wait for keypress
 		coniox_int86(0x16, &r, &r);
-		return((int) r.h.al);
+
+		if (r.h.al == 0)
+		{
+			// Tecla extendida: guardar el scan code
+			getch_last_extended_key = r.h.ah;
+			return 0;
+		}
+		else
+		{
+			// Tecla normal
+			return r.h.al;
+		}
 	}
 }
-
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int ungetch(int __ch)

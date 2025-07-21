@@ -108,7 +108,8 @@ VERSION HISTORY
 #ifndef _CONIOX_H_ 
 #define _CONIOX_H_
 
-#define coniox_version 498
+#define coniox_version (499)
+#define coniox_build (__DATE__)
 
 #ifdef __cplusplus
 extern "C" {

@@ -18,9 +18,9 @@ void finish(void);
 void info(void);
 void chars(void);
 void windows(void);
+void movetexts(void);
 void speed(void);
 void inputs(void);
-void movetexts(void);
 void getputtexts(void);
 
 
@@ -31,8 +31,8 @@ int main(void)
 	init();
 	info();
 	chars();
-	movetexts();
 	windows();
+	movetexts();
 	speed();
 	inputs();
 	getputtexts();
@@ -46,7 +46,7 @@ void pause(void)
 {
 	textcolor(YELLOW + BLINK);
 	_wscroll = 0;
-	cputs("---- Press any key to continue ----");
+	cputs("\b---- Press any key to continue ----");
 	getch();
 	_wscroll = 1;
 	cputs("\r\n");
@@ -123,7 +123,7 @@ void info(void)
 	cputs("CONIO INFORMATION\r\n");
 	textcolor(WHITE);
 	#ifdef _CONIOX_H_
-		cprintf("- Version: %d.%02d\r\n", coniox_version / 100, coniox_version % 100);
+		cprintf("- Version: %d.%02d (%s)\r\n", coniox_version / 100, coniox_version % 100, coniox_build);
 	#endif
 	cprintf("- winleft: %d\r\n", ti.winleft);
 	cprintf("- wintop: %d\r\n", ti.wintop);
