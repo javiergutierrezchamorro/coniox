@@ -2487,7 +2487,7 @@ int ungetch(int __ch)
 
 	    // Verificar si el buffer no está lleno
 	    new_tail = tail - 2;
-	    if ((short)new_tail < 0)
+	    if ((short) new_tail < 0)
 	    {
 	    	new_tail = 30;
     	}
@@ -2509,8 +2509,12 @@ int ungetch(int __ch)
 	{
 		union REGS r;
 		r.h.ah = 0x05; // ungetch BIOS
-		r.w.cx = (__ch & 0xFF);
-
+		#if defined(__WATCOMC__)		
+			r.w.cx = (__ch & 0xFF);
+		#else
+			r.x.cx = (__ch & 0xFF);
+		#endif
+		
 		coniox_int86(0x16, &r, &r);
 
 		if (r.h.al == 0)

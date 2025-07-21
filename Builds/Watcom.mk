@@ -1,3 +1,3 @@
-project : D:\PROYECTOS\coniox\Watcom.exe .SYMBOLIC
+project : D:\PROYECTOS\coniox\Builds\Watcom.exe .SYMBOLIC
 
-!include D:\PROYECTOS\coniox\Watcom.mk1
+!include D:\PROYECTOS\coniox\Builds\Watcom.mk1

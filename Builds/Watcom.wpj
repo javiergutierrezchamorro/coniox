@@ -1,4 +1,4 @@
-40
+42
 projectIdent
 0
 VpeMain
@@ -7,7 +7,7 @@ WRect
 0
 0
 5792
-9111
+9054
 2
 MProject
 3
@@ -28,10 +28,10 @@ WVList
 VComponent
 8
 WRect
-0
-0
-5648
-4133
+208
+189
+5680
+4276
 0
 0
 9
@@ -39,5 +39,5 @@ WFileName
 10
 Watcom.tgt
 0
-2
+0
 7
