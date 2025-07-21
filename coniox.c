@@ -33,6 +33,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
 struct text_info ti; /*= { 1, 1, 80, 25, 15, 15, 0, 25, 80, 1, 1 } */;
 int directvideo = 1;
 int _wscroll = 1;
+int coniox_setcursortype = _NORMALCURSOR;
 
 
 
@@ -64,7 +65,7 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int coniox_inwindow(int x, int y)
+coniox_inline int coniox_inwindow(int x, int y)
 {
 	return (!(x<ti.winleft || y<ti.wintop || x>ti.winright || y>ti.winbottom));
 }
@@ -149,7 +150,7 @@ void window(int __left, int __top, int __right, int __bottom)
 int putch(int __c)
 {
 	int oldx, oldy;
-
+	
 	coniox_init(NULL);
 	switch (__c)
 	{
@@ -1549,7 +1550,6 @@ int coniox_movetext_nonoverlap(int __left, int __top, int __right, int __bottom,
 int coniox_get_is_emulator (void);
 void coniox_blink(unsigned int blink);
 coniox_inline void coniox_putchattrcursor(int ch, int attr);
-int coniox_setcursortype = _NORMALCURSOR;
 int coniox_is_emulator = 0;
 
 
@@ -1801,7 +1801,7 @@ int cputs(const char *__str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-inline void coniox_putchattrcursor(int ch, int attr)
+coniox_inline void coniox_putchattrcursor(int ch, int attr)
 {
 	if (directvideo)
 	{
@@ -1831,7 +1831,7 @@ inline void coniox_putchattrcursor(int ch, int attr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-inline void coniox_putchxyattr(int x, int y, int ch, int attr)
+coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 {
 	if (directvideo)
 	{
@@ -1910,7 +1910,6 @@ void coniox_idle(void)
 {
 	union REGS r;
 
-
 	/*
 		This interrupt was undocumented prior to DOS 5.0, but it has been
 		supported without change since DOS 2.0.  It lets programs such as the
@@ -1922,6 +1921,8 @@ void coniox_idle(void)
 		while it is awaiting user response.
 	*/
 	coniox_int86(0x28, &r, &r);
+
+	return;
 
 	/*
 		Advanced Power Management v1.0+
@@ -2383,7 +2384,7 @@ wchar_t getwch(void)
 }
 
 
-int getch_last_extended_key = 0;
+static int getch_last_extended_key = 0;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {

@@ -208,7 +208,6 @@ void windows(void)
 			y1 = i;
 		}
 
-
 		window(1, 2, ti.screenwidth, ti.screenheight - 1);
 		textbackground(BLUE);
 		clrscr();

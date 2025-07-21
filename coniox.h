@@ -143,6 +143,15 @@ extern "C" {
 #ifdef gettext
 	#undef gettext
 #endif
+#ifdef puttext
+	#undef puttext
+#endif
+
+#ifdef UNICODE
+	#define gettextbuffersize(__left, __top, __right, __bottom, __destin) (((__right - __left) * (__bottom - __top)) * 3)
+#else
+	#define gettextbuffersize(__left, __top, __right, __bottom, __destin) (((__right - __left) * (__bottom - __top)) << 1)
+#endif
 
 #define PRINTFBUF_SIZE	255
 
