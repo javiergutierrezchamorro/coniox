@@ -189,6 +189,7 @@ void windows(void)
 	textattr(CYAN * 16 + BLACK);
 	cputs("Press any key to continue...");
 
+
 	while (!kbhit())
 	{
 		x1 = random(ti.screenwidth - 1) + 1;

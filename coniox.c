@@ -1922,8 +1922,6 @@ void coniox_idle(void)
 	*/
 	coniox_int86(0x28, &r, &r);
 
-	return;
-
 	/*
 		Advanced Power Management v1.0+
 		call when the system is idle and should be suspended until the next
@@ -2383,6 +2381,20 @@ wchar_t getwch(void)
 	return(0);
 }
 
+#if defined(__WATCOMC__)
+	unsigned short coniox_kbhit_watcom(void);
+	#pragma aux coniox_kbhit_watcom = \
+	    "mov ah, 01h"        \
+	    "int 16h"            \
+	    "jz  no_key"         \
+	    "mov ax, 1"          \
+	    "jmp done"           \
+	    "no_key:"            \
+	    "xor ax, ax"         \
+	    "done:"              \
+	    value [ax]           \
+	    modify [ax];
+#endif
 
 static int getch_last_extended_key = 0;
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2400,13 +2412,13 @@ int kbhit(void)
 	}
 	else
 	{
-		union REGS r;
-		r.h.ah = 1;
-		coniox_int86(0x16, &r, &r);
 		#if defined(__WATCOMC__)
-			return(r.w.ax);
+			return(coniox_kbhit_watcom());
 		#else
-			return(r.x.ax);
+			union REGS r;
+			r.h.ah = 1;
+			coniox_int86(0x16, &r, &r);
+			return((r.x.flags & 0x40) == 0 ? 1 : 0);
 		#endif
 	}
 }
