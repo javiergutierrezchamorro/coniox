@@ -21,13 +21,15 @@
 
 
 #if (__BORLANDC__)
-	#define inline
+	#define coniox_inline
+#else
+	#define coniox_inline inline
 #endif
 
 
 
-inline void coniox_putchattrcursor(int ch, int attr);
-inline void coniox_putchxyattr(int x, int y, int ch, int attr);
+coniox_inline void coniox_putchattrcursor(int ch, int attr);
+coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr);
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
 int coniox_setcursortype = _NORMALCURSOR;
 
@@ -2158,7 +2160,8 @@ línea anterior. La función delline funciona en la ventana de texto activa.*/
 void delline(void)
 {
 	coniox_init(NULL);
-	if (directvideo)
+	//Seems to be faster using BIOS
+	if (0 /*directvideo*/)
 	{
 		movetext(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop - 1);
 		coniox_putchxyattrwh(ti.winleft, ti.winbottom, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
@@ -2244,6 +2247,7 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	__destin = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __top + __desttop - __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
+		//_fmemcpy((unsigned short coniox_far *) __destin, p, width);
 		_fmemmove((unsigned short coniox_far *) __destin, p, width);
 		p += ti.screenwidth;
 		__destin += ti.screenwidth;
