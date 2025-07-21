@@ -2381,22 +2381,7 @@ wchar_t getwch(void)
 	return(0);
 }
 
-#if defined(__WATCOMC__)
-	unsigned short coniox_kbhit_watcom(void);
-	#pragma aux coniox_kbhit_watcom = \
-	    "mov ah, 01h"        \
-	    "int 16h"            \
-	    "jz  no_key"         \
-	    "mov ax, 1"          \
-	    "jmp done"           \
-	    "no_key:"            \
-	    "xor ax, ax"         \
-	    "done:"              \
-	    value [ax]           \
-	    modify [ax];
-#endif
-
-static int getch_last_extended_key = 0;
+int getch_last_extended_key = 0;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
@@ -2413,7 +2398,11 @@ int kbhit(void)
 	else
 	{
 		#if defined(__WATCOMC__)
-			return(coniox_kbhit_watcom());
+			union REGPACK r;
+			memset(&r, 0, sizeof(union REGPACK));
+			r.h.ah = 1;
+			intr(0x16, &r);
+			return((r.w.flags & 0x40) == 0 ? 1 : 0);
 		#else
 			union REGS r;
 			r.h.ah = 1;
@@ -2487,44 +2476,50 @@ int getch(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int ungetch(int __ch)
 {
-	if (directvideo)
+	if ((directvideo) && (!coniox_is_emulator))
 	{
-		unsigned short head, tail;
+		unsigned short head, tail, new_tail;
 	    unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
 	    unsigned short scancode;
 
 	    head = peekw(0x40, 0x1A);
 	    tail = peekw(0x40, 0x1C);
 
-	    // Decrementar tail circularmente
-	    tail -= 2;
-	    if ((short)tail < 0) tail = 30;
+	    // Verificar si el buffer no está lleno
+	    new_tail = tail - 2;
+	    if ((short)new_tail < 0)
+	    {
+	    	new_tail = 30;
+    	}
+	    if (new_tail == head)
+	    {
+	        // Buffer lleno, no se puede insertar más
+	        return EOF;
+	    }
 
 	    // Insertar el carácter con scancode 0 (sin scan code)
 	    scancode = (0 << 8) | (__ch & 0xFF);
-	    keyboard_buffer[tail >> 1] = scancode;
+	    keyboard_buffer[new_tail >> 1] = scancode;
 
 	    // Actualizar tail
-	    pokew(0x40, 0x1C, tail);
-	    return(__ch);
+	    pokew(0x40, 0x1C, new_tail);
+	    return __ch;
 	}
 	else
 	{
 		union REGS r;
-		r.h.ah = 0x5;
-		#if defined(__WATCOMC__)
-			r.w.cx = (__ch & 0xFF);
-		#else
-			r.x.cx = (__ch & 0xFF);
-		#endif
+		r.h.ah = 0x05; // ungetch BIOS
+		r.w.cx = (__ch & 0xFF);
+
 		coniox_int86(0x16, &r, &r);
+
 		if (r.h.al == 0)
 		{
-			return(__ch);
+			return __ch;
 		}
 		else
 		{
-			return(EOF);
+			return EOF;
 		}
 	}
 }
