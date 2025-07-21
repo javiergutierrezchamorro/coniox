@@ -15,10 +15,6 @@
 	void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
 #endif
 
-#if (__BORLANDC__)
-	#define inline
-#endif
-
 
 #if (__BORLANDC__)
 	#define coniox_inline
@@ -27,11 +23,10 @@
 #endif
 
 
-
-coniox_inline void coniox_putchattrcursor(int ch, int attr);
 coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr);
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
-int coniox_setcursortype = _NORMALCURSOR;
+
+
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 struct text_info ti; /*= { 1, 1, 80, 25, 15, 15, 0, 25, 80, 1, 1 } */;
@@ -664,7 +659,7 @@ void coniox_init(const void *title)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_putchxyattr(int x, int y, int ch, int attr)
+inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 {
 	CHAR_INFO ci;
 	SMALL_RECT r;
@@ -1522,10 +1517,19 @@ int coniox_basecrt = 0x3D4;
 
 
 #if !defined(__TURBOC__)
+	unsigned int inp (int port);
+	unsigned int inpw (int port);
+	unsigned long inpd (int port);
+	unsigned int outp (int port, int value);
+	unsigned long outpd (int port, unsigned long value);
+	unsigned int outpw (int port, unsigned int value);
+
 	#define outportb		outp
 	#define outport			outpw
+	#define outportd		outpd
 	#define inportb			inp
 	#define inport			inpw
+	#define inportd			inpd
 #endif
 
 
@@ -1537,9 +1541,14 @@ int coniox_basecrt = 0x3D4;
 #define pokel(s,o,x)		(*((unsigned long coniox_far *) MK_FP((s),(o))) = (unsigned long)(x))
 
 
-
-
 void coniox_idle(void);
+int coniox_movetext_nonoverlap(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop);
+int coniox_get_is_emulator (void);
+void coniox_blink(unsigned int blink);
+coniox_inline void coniox_putchattrcursor(int ch, int attr);
+int coniox_setcursortype = _NORMALCURSOR;
+int coniox_is_emulator = 0;
+
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1656,12 +1665,22 @@ void coniox_init(const void* title)
 	ti.wintop = 1;
 	ti.winright = ti.screenwidth;
 	ti.winbottom = ti.screenheight;
+	
+	//Debug
 	printf("Width: %d\n", ti.screenwidth);
 	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 		printf("Pointer: %p\n", (void *) coniox_offset(80, 25));
 	#else
 		printf("Pointer: %Fp\n", (void far *) coniox_offset(80, 25));
 	#endif
+	
+	
+	//Get if under emulator
+	coniox_is_emulator = coniox_get_is_emulator();
+	
+	//Activate blink
+	coniox_blink(1);
+
 	//exit(0);
 }
 
@@ -1961,6 +1980,75 @@ void coniox_idle(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+int coniox_get_is_emulator (void)
+{
+    union REGS r;
+    struct SREGS s;
+    char far *str;
+
+	#if defined(__WATCOMC__)
+		r.w.ax = 0x3306;
+		intdosx(&r, &r, &s);
+		str = (char coniox_far *) MK_FP(s.es, r.w.bx);
+	#else
+		r.x.ax = 0x3306;
+		intdosx(&r, &r, &s);
+		str = (char coniox_far *) MK_FP(s.es, r.x.bx);
+	#endif
+    
+    //OEM String: "DOSBox", "DOSBox-X", "DOSBox-Staging", "MSDOS", "MS-DOS", "FreeDOS", "DRDOS", "DR DOS", "Phoenix", "DOSEMU", "VMware"
+	if (str && (
+        _fmemcmp(str, "DOSBox", 6) == 0 ||
+        _fmemcmp(str, "DOSEMU", 6) == 0 ||
+        _fmemcmp(str, "VMware", 6) == 0 ||
+        _fmemcmp(str, "Phoenix", 7) == 0))
+	{
+        return(1);
+    }
+	else
+	{
+		return(0);
+	}
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+void coniox_blink(unsigned int blink)
+{
+	if (directvideo)
+	{
+		unsigned char v;
+		outportb(0x3DA, 0);
+		outportb(0x3C0, 0x10);
+		v = inportb(0x3C1);
+		if (blink)
+		{
+			v &= ~0x08; // bit 3 = 0. blink ON
+		}
+		else
+		{
+			v |= 0x08;  // bit 3 = 1. blink OFF (fondo extendido)
+		}
+		outportb(0x3DA, 0);
+		outportb(0x3C0, 0x10);
+		outportb(0x3C0, v);
+	}
+	else
+	{
+		union REGS r;
+		#if defined(__WATCOMC__)
+			r.w.ax = 0x1003;		// Subfunción: set blink/intensity bit
+		#else
+			r.x.ax = 0x1003;
+		#endif
+		r.h.bh = blink ? 0 : 1;
+		coniox_int86(0x10, &r, &r);
+	}
+}
+
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
 void delay (unsigned int ms)
 {
 	unsigned long lTicks;
@@ -2160,10 +2248,10 @@ línea anterior. La función delline funciona en la ventana de texto activa.*/
 void delline(void)
 {
 	coniox_init(NULL);
-	//Seems to be faster using BIOS
-	if (0 /*directvideo*/)
+	//Seems to be faster using BIOS under emulators
+	if ((directvideo) && (!coniox_is_emulator))
 	{
-		movetext(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop - 1);
+		coniox_movetext_nonoverlap(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop - 1);
 		coniox_putchxyattrwh(ti.winleft, ti.winbottom, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
 	}
 	else
@@ -2247,13 +2335,34 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	__destin = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __top + __desttop - __top - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
-		//_fmemcpy((unsigned short coniox_far *) __destin, p, width);
 		_fmemmove((unsigned short coniox_far *) __destin, p, width);
 		p += ti.screenwidth;
 		__destin += ti.screenwidth;
 	}
 	return(1);
 }
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+int coniox_movetext_nonoverlap(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
+{
+	unsigned short coniox_far* p;
+	unsigned short coniox_far* __destin;
+	int y1;
+	unsigned int width = (__right - __left + 1) << 1;
+
+	coniox_init(NULL);
+	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
+	__destin = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __top + __desttop - __top - 1);
+	for (y1 = __top; y1 <= __bottom; y1++)
+	{
+		_fmemcpy((unsigned short coniox_far *) __destin, p, width);
+		p += ti.screenwidth;
+		__destin += ti.screenwidth;
+	}
+	return(1);
+}
+
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
