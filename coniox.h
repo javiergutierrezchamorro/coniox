@@ -155,6 +155,56 @@ extern "C" {
 
 #define PRINTFBUF_SIZE	255
 
+
+#if ((__DOS__) || (__MSDOS__))
+#include <dos.h>
+#include <bios.h>
+
+#define coniox_far __far
+
+#if defined(__WATCOMC__)
+	#include <i86.h>
+	unsigned int outp( int port, int value );
+#endif
+
+#if defined(__DJGPP__)
+	#include <sys/nearptr.h>
+	#define _fmemmove	memmove
+	#define fmemcpy		memcpy
+	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base
+#endif
+
+
+#ifndef MK_FP
+	#define MK_FP(seg,off) (((seg)<<4)|(off))
+#endif
+
+#if !defined(__TURBOC__)
+	unsigned int inp (int port);
+	unsigned int inpw (int port);
+	unsigned long inpd (int port);
+	unsigned int outp (int port, int value);
+	unsigned long outpd (int port, unsigned long value);
+	unsigned int outpw (int port, unsigned int value);
+
+	#define outportb		outp
+	#define outport			outpw
+	#define outportd		outpd
+	#define inportb			inp
+	#define inport			inpw
+	#define inportd			inpd
+#endif
+
+
+#define peekb(s,o)			(*((unsigned char coniox_far *) MK_FP((s),(o))))
+#define peekw(s,o)			(*((unsigned short coniox_far *) MK_FP((s),(o))))
+#define peekl(s,o)			(*((unsigned long coniox_far *) MK_FP((s),(o))))
+#define pokeb(s,o,x)		(*((unsigned char coniox_far *) MK_FP((s),(o))) = (unsigned char)(x))
+#define pokew(s,o,x)		(*((unsigned short coniox_far *) MK_FP((s),(o))) = (unsigned short)(x))
+#define pokel(s,o,x)		(*((unsigned long coniox_far *) MK_FP((s),(o))) = (unsigned long)(x))
+#endif
+
+
 #pragma pack(push)
 #pragma pack(1)
 
