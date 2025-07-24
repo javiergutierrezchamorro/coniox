@@ -333,8 +333,8 @@ typedef struct char_info
 /**
 Controls de video output.
 directvideo controls where your program's console output goes:
-0: (Default). Goes via ROM calls.
-1: Goes directly to video RAM
+0: Goes via ROM calls.
+1: (Default). Goes directly to video RAM
 */
 extern int directvideo;
 #define _directvideo directvideo
