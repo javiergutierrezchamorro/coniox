@@ -2213,7 +2213,7 @@ void insline(void)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		coniox_movetext_nonoverlap(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop + 1);
-		coniox_putchxyattrwh(ti.winleft, ti.winbottom, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+		coniox_putchxyattrwh(ti.winleft, ti.cury + ti.wintop - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
 	}
 	else
 	{
