@@ -2200,7 +2200,7 @@ void delline(void)
 		r.h.ch = ti.cury + ti.wintop - 2;   /* Upper row number, */
 		r.h.dl = ti.winright - 1;		   /*  Right column number */
 		r.h.dh = ti.winbottom - 1;		  /* Lower row number */
-		coniox_int86(0x10, &r, &r);
+		coniox_int86(0x10, &r, &r);			/* Scroll up */
 	}
 }
 
@@ -2208,7 +2208,28 @@ void delline(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void insline(void)
 {
-	//ToDo
+	coniox_init(NULL);
+	//Seems to be faster using BIOS under emulators
+	if ((directvideo) && (!coniox_is_emulator))
+	{
+		coniox_movetext_nonoverlap(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop + 1);
+		coniox_putchxyattrwh(ti.winleft, ti.winbottom, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+	}
+	else
+	{
+		union REGS r;
+		#if defined(__WATCOMC__)
+			r.w.ax = 0x0701;
+		#else
+			r.x.ax = 0x0701;
+		#endif
+		r.h.bh = ti.attribute;
+		r.h.cl = ti.winleft - 1;			/*  Left column number */
+		r.h.ch = ti.cury + ti.wintop - 2;   /* Upper row number, */
+		r.h.dl = ti.winright - 1;		   /*  Right column number */
+		r.h.dh = ti.winbottom - 1;		  /* Lower row number */
+		coniox_int86(0x10, &r, &r);			/* Scroll down */
+	}
 }
 
 
