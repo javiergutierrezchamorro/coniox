@@ -48,7 +48,7 @@ VERSION HISTORY
 - Optimized DOS16 and DOS32 offset calculations in inline assembler if under Watcom, making this part almost twice as fast.
 - Reimplemented scroll to use direct dmovetext, instead of slower BIOS.
 - Solved a bug in dgettext, dputtext, and dmovetext that used window coordinates, and should not.
-- Implemented _setcursortype, andl _wscroll
+- Implemented _setcursortype, and _wscroll
 
 4.0 (2009/mm/dd)
 - Made dputch, dclrscr, dclreol, dgettext, dputtext and dmovetext use word movements instead of byte, being 50% faster.
@@ -75,28 +75,33 @@ VERSION HISTORY
 
 4.92a - 2023/02/03
 - More WIP and DOS bug fixing
-- Implemented directiveo=0
+- Implemented directvideo=0
 
 4.93 - 2023/02/06
 - Some additional optimizations
 - Fixes to DOS32
 - Demo successfully running on Watcom DOS16 and DOS32.
+
 4.94 - 2023/02/07
 - Cursor handling fixed and improved performance.
 - Added C4350 mode support.---
 - Optimized 6845 base calculation.
 - Added delay().
+
 4.95 - 2023/02/08
 - Specialized cputs causing 2x faster cputs/cprintf
+
 4.96 - 2023/02/11
 - Fixed gettextinfo should return a copy and not a reference.
 - Fixed characters should be casted at c8 bit (char).
 - Optimized kbhit to direct use keyboard buffer instead of BIOS.
 - Added ungetch().
+
 4.97 - 2023/02/13
 - Rewritten demo.
 - Small fixes and optimizations.
 - Lots of Windows fixes.
+
 4.98 - 
 - Fixed Windows ANSI gettext/puttext
 - Added _directvideo.
