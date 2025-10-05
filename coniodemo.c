@@ -462,8 +462,6 @@ void demo3(void)
 		#endif
 	#endif
 
-	directvideo=1;
-
 	textmode(C80);
 	
 	clrscr();
