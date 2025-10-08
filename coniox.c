@@ -1433,7 +1433,7 @@ int coniox_basecrt = 0x3D4;
 	unsigned short coniox_far *coniox_currentoffset;
 	#define coniox_int86 int86
 	#define coniox_int86x int86x
-	#if defined(__WATCOMKKC__)
+	#if defined(__WATCOMC__)
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 		#pragma aux coniox_offset =										    \
 				"			 .8086													    "\
@@ -1442,8 +1442,7 @@ int coniox_basecrt = 0x3D4;
 				"			 mul di														 "\
 				"			 add ax, si										 "\
 				"			 shl ax, 1												    "\
-			    "			 mov dx, seg coniox_vram"      /* cargar segmento de coniox_vram en dx */ \
-			    "			 add ax, word ptr coniox_vram" /* sumar offset base de coniox_vram */ \
+				"			 mov dx, word ptr coniox_vram+2					"\
 			    parm nomemory [SI][DI]          \
 			    modify exact nomemory [DX AX]            \
 			    value [DX AX];			
@@ -1622,13 +1621,14 @@ void coniox_init(const void* title)
 	ti.winbottom = ti.screenheight;
 	
 	//Debug
+	/*
 	printf("Width: %d\n", ti.screenwidth);
 	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 		printf("Pointer: %p\n", (void *) coniox_offset(80, 25));
 	#else
 		printf("Pointer: %Fp\n", (void far *) coniox_offset(80, 25));
 	#endif
-	
+	*/
 	
 	//Get if under emulator
 	coniox_is_emulator = coniox_get_is_emulator();
