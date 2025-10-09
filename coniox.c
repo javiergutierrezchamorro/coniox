@@ -684,10 +684,6 @@ inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 	COORD c = {0, 0}, s = {1, 1};
 
 
-	if (!coniox_inwindow(x, y))
-	{
-		return;
-	}
 	r.Left = (short) x - 1;
 	r.Top = (short) y - 1;
 	r.Right = (short) x - 1;
@@ -708,10 +704,6 @@ void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
 	COORD c = { 0, 0 }, s = { 1, 1 };
 
 
-	if (!coniox_inwindow(x, y))
-	{
-		return;
-	}
 	r.Left = (short) (x - 1);
 	r.Top = (short) (y - 1);
 	r.Right = (short) (x - 1);
@@ -737,28 +729,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	#else
 		char chval;
 	#endif
-
-	coniox_init(NULL);
-
-	if (x < ti.winleft)
-	{
-		w -= ti.winleft - x;
-		x = ti.winleft;
-	}
-	if (y < ti.wintop)
-	{
-		h -= ti.wintop - y;
-		y = ti.wintop;
-	}
-	if (x + w - 1 > ti.winright)
-	{
-		w = ti.winright - x + 1;
-	}
-	if (y + h - 1 > ti.winbottom)
-	{
-		h = ti.winbottom - y + 1;
-	}
-
+	
 	if (w <= 0 || h <= 0)
 	{
 		return;
@@ -1989,6 +1960,10 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	unsigned short v;
 	union REGS r;
 
+	if (w <= 0 || h <= 0)
+	{
+		return;
+	}
 
 	if (directvideo)
 	{
