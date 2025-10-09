@@ -42,25 +42,53 @@ int coniox_setcursortype = _NORMALCURSOR;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
-	void *a[20] = {NULL};
+	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tamaños
 	size_t count = 0;
 	const char *p;
 	char c;
 
 	p = format;
-	while (1)
+	if (!buffer || !format)
 	{
-		c = *(p++);
-		if ( c == 0 )
+		return 0;
+	}
+
+	while ((c = *p++) != 0)
+	{
+		if (c == '%')
 		{
-			break;
-		}
-		if (c == '%' && ( p[0] != '*' && p[0] != '%' ))
-		{
-			a[count++] = va_arg(argPtr, void *);
+			if (*p == '%')
+			{
+				p++; // Literal '%', sin argumento
+				continue;
+			}
+			if (*p == '*')
+			{
+				p++; // Ignorar argumento
+				continue;
+			}
+			// Saltar modificadores de ancho (opcional)
+			while (*p >= '0' && *p <= '9')
+			{
+				p++;
+			}
+			// Detectar especificadores que requieren tamaño adicional
+			if (*p == 's' || *p == 'c' || *p == '[')
+			{
+				a[count++] = va_arg(argPtr, void *);	 // buffer
+				a[count++] = va_arg(argPtr, size_t *);   // tamaño del buffer
+			}
+			else
+			{
+				a[count++] = va_arg(argPtr, void *);
+			}
 		}
 	}
-	return(sscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
+	#ifdef _MSC_VER
+		return(sscanf_s(buffer, format,	a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], 	a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39]));
+	#else
+		return(sscanf(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
+	#endif
 }
 
 
@@ -69,7 +97,6 @@ coniox_inline int coniox_inwindow(int x, int y)
 {
 	return (!(x<ti.winleft || y<ti.wintop || x>ti.winright || y>ti.winbottom));
 }
-
 
 
 
@@ -87,7 +114,8 @@ void clreol(void)
 void gettextinfo(struct text_info *__r)
 {
 	coniox_init(NULL);
-	memcpy(__r, &ti, sizeof(ti));
+	*__r = ti; /* memcpy(__r, &ti, sizeof(ti)); */
+
 }
 
 
@@ -152,6 +180,7 @@ int putch(int __c)
 	int oldy;
 	int winwidth, winheight;
 
+	
 	coniox_init(NULL);
 
 	winwidth = ti.winright - ti.winleft + 1;
@@ -162,7 +191,6 @@ int putch(int __c)
 		case '\r':
 			gotoxy(1, ti.cury);
 			break;
-
 		case '\n':
 			if (ti.cury < winheight)
 			{
@@ -176,17 +204,14 @@ int putch(int __c)
 				gotoxy(1, oldy);
 			}
 			break;
-
 		case '\b':
 			if (ti.curx > 1)
 			{
 				gotoxy(ti.curx - 1, ti.cury);
 			}
 			break;
-
 		default:
 			coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
-
 			if (ti.curx >= winwidth)
 			{
 				if (_wscroll)
@@ -440,6 +465,7 @@ int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr
 	return(swscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
 }
 
+
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t* cgetws(wchar_t* __str)
 {
@@ -514,65 +540,69 @@ int cputws(const wchar_t* __str)
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t putwch(wchar_t __c)
 {
-	int oldx, oldy;
-	
+	int oldy;
+	int winwidth, winheight;
+
+
 	coniox_init(NULL);
+
+	winwidth = ti.winright - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop + 1;
+
 	switch (__c)
 	{
-		case L'\r':
-			gotoxy(1, ti.cury);
-			break;
-		case L'\n':
-			if (ti.cury < ti.winbottom - ti.wintop + 1)
+	case L'\r':
+		gotoxy(1, ti.cury);
+		break;
+	case L'\n':
+		if (ti.cury < winheight)
+		{
+			gotoxy(ti.curx, ti.cury + 1);
+		}
+		else
+		{
+			oldy = ti.cury;
+			gotoxy(1, 1);
+			delline();
+			gotoxy(1, oldy);
+		}
+		break;
+	case L'\b':
+		if (ti.curx > 1)
+		{
+			gotoxy(ti.curx - 1, ti.cury);
+		}
+		break;
+	default:
+		coniox_putwchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
+		if (ti.curx >= winwidth)
+		{
+			if (_wscroll)
 			{
-				gotoxy(ti.curx, ti.cury + 1);
-			}
-			else
-			{
-				oldx = ti.curx;
-				oldy = ti.cury;
-				gotoxy(1, 1);
-				delline();
-				gotoxy(oldx, oldy);
-			}
-			break;
-		case L'\b':
-			if (ti.curx > 1)
-			{
-				gotoxy(ti.curx - 1, ti.cury);
-			}
-			break;
-		default:
-			coniox_putwchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
-			if (ti.curx + 1 > ti.winright - ti.winleft + 1)
-			{
-				if (_wscroll)
+				if (ti.cury < winheight)
 				{
-					if (ti.cury < ti.winbottom - ti.wintop + 1)
-					{
-						gotoxy(1, ti.cury + 1);
-					}
-					else
-					{
-						oldy = ti.cury;
-						gotoxy(1, 1);
-						delline();
-						gotoxy(1, oldy);
-					}
+					gotoxy(1, ti.cury + 1);
 				}
 				else
 				{
-					gotoxy(1, ti.cury);
+					oldy = ti.cury;
+					gotoxy(1, 1);
+					delline();
+					gotoxy(1, oldy);
 				}
 			}
 			else
 			{
-				gotoxy(ti.curx + 1, ti.cury);
+				gotoxy(1, ti.cury);
 			}
+		}
+		else
+		{
+			gotoxy(ti.curx + 1, ti.cury);
+		}
 	}
 	return(__c);
 }
-
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
