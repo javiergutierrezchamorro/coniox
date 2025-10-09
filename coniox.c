@@ -11,6 +11,7 @@
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
+	#define CONIOX_MAX_CHARINFO	(132 * 60)
 	wchar_t coniox_ansi2unicode(char ch);
 	char coniox_unicode2ansi(wchar_t ch);
 	void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
@@ -434,8 +435,8 @@ int cputs(const char *__str)
 	while (*__str)
 	{
 		putch(*__str);
-		++__str;
-		++k;
+		__str++;
+		k++;
 	}
 	return(k);
 }
@@ -694,8 +695,10 @@ void coniox_init(const void *title)
 		SetConsoleOutputCP(acp);
 		SetConsoleCP(acp);
 	}
-	GetConsoleMode(coniox_console_output, &m);
-	SetConsoleMode(coniox_console_output, m | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_ECHO_INPUT);
+	if (GetConsoleMode(coniox_console_input, &m))
+	{
+		SetConsoleMode(coniox_console_input, m | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_ECHO_INPUT);
+	}
 
 	if (title)
 	{
@@ -751,7 +754,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
 	int i;
 	int total;
-	CHAR_INFO *ci;
+	CHAR_INFO ci[CONIOX_MAX_CHARINFO];
 	SMALL_RECT r;
 	COORD s, c;
 	#if UNICODE
@@ -766,12 +769,6 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	}
 
 	total = w * h;
-	ci = (CHAR_INFO*) malloc(total * sizeof(CHAR_INFO));
-	if (!ci)
-	{
-		return;
-	}
-
 	#if UNICODE
 		chval = (wchar_t) ch;
 	#else
@@ -799,7 +796,6 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	c.Y = 0;
 
 	WriteConsoleOutput(coniox_console_output, ci, s, c, &r);
-	free(ci);
 }
 
 
@@ -862,11 +858,19 @@ int getch(void)
 	int car;
 	DWORD leidos, modo;
 
-	GetConsoleMode(coniox_console_input, &modo);
-	SetConsoleMode(coniox_console_input, modo & !ENABLE_ECHO_INPUT & !ENABLE_PROCESSED_INPUT);
-	ReadConsole(coniox_console_input, &car, 1, &leidos, NULL);
+	if (GetConsoleMode(coniox_console_input, &modo))
+	{
+		SetConsoleMode(coniox_console_input, modo & ~ENABLE_ECHO_INPUT & ~ENABLE_PROCESSED_INPUT & ~ENABLE_LINE_INPUT);
+	}
+	if (!ReadConsoleA(coniox_console_input, &car, 1, &leidos, NULL) || leidos == 0)
+	{
+		/* Restaurar modo antes de salir */
+		SetConsoleMode(coniox_console_input, modo);
+		return EOF;
+	}
 	SetConsoleMode(coniox_console_input, modo);
-	return(car & 0xFF);
+	//return(car & 0xFF);
+	return((int)((unsigned char)car));
 }
 
 
@@ -966,7 +970,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO *ci;
+	CHAR_INFO ci[CONIOX_MAX_CHARINFO];
 	short *buf;
 	COORD s, c = { 0,0 };
 
@@ -983,11 +987,6 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	r.Bottom = (short) __bottom - 1;
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
-	ci = (CHAR_INFO *) malloc(s.X * s.Y * sizeof(CHAR_INFO));
-	if (!ci)
-	{
-		return(0);
-	}
 	buf = (short *) __destin;
 	if (ReadConsoleOutput(coniox_console_output, ci, s, c, &r ))
 	{
@@ -1000,7 +999,6 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 			#endif
 		}
 	}
-	free(ci);
 	return(1);
 }
 
@@ -1036,7 +1034,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO *buffer;
+	CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
 	//char_info *ci;
 	short *ci;
 	COORD s, c = { 0,0 };
@@ -1054,11 +1052,6 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
 
-	buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
-	if (!buffer)
-	{
-		return(0);
-	}
 	ci = (short *) __source;
 	for (i = 0; i < s.X * s.Y; i++)
 	{
@@ -1070,7 +1063,6 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
 	}
 	WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
-	free(buffer);
 	return(1);
 }
 
@@ -1081,7 +1073,7 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO* buffer;
+	CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
 	//char_info *ci;
 	short* ci;
 	COORD s, c = { 0,0 };
@@ -1099,11 +1091,6 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 	s.X = (short)(__right - __left + 1);
 	s.Y = (short)(__bottom - __top + 1);
 
-	buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
-	if (!buffer)
-	{
-		return(0);
-	}
 	ci = (short*)__source;
 	for (i = 0; i < s.X * s.Y; i++)
 	{
@@ -1112,10 +1099,9 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 		#else
 			buffer[i].Char.AsciiChar = (unsigned char)ci[i] & 0xFF;
 		#endif
-		buffer[i].Attributes = ci[i] >> 8;
+		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
 	}
 	WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
-	free(buffer);
 	return(1);
 }
 
@@ -1125,7 +1111,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO* buffer;
+	CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
 	COORD s, c = { 0,0 };
 
 	coniox_init(NULL);
@@ -1139,11 +1125,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	r.Bottom = (short) (__bottom - 1);
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
-	buffer = malloc(s.X * s.Y * sizeof(CHAR_INFO));
-	if (!buffer)
-	{
-		return(0);
-	}
+
 	if (ReadConsoleOutput(coniox_console_output, buffer, s, c, &r ))
 	{
 		for (i = 0; i < s.X * s.Y; i++)
@@ -1156,8 +1138,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 			__destin[i].attr = buffer[i].Attributes;
 		}
 	}
-	free(buffer);
-	return(0);
+	return(1);
 }
 
 
@@ -1484,7 +1465,7 @@ int coniox_basecrt = 0x3D4;
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 		#pragma aux coniox_offset =											\
 				"			 .8086														"\
-				"			 xor ah, ah												 "\
+				"			 xor ah, ah										"\
 				"			 mov al, byte ptr ti + 16						"\
 				"			 mul di														 "\
 				"			 add ax, si										 "\

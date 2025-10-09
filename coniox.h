@@ -107,6 +107,10 @@ VERSION HISTORY
 - Added _directvideo.
 - Fixes to DOS _setcursortype.
 - Fixes to DOS textmode C4350
+
+4.99 - 
+ - All functions are now working, including ASM pragma aux
+ - Several optimizations to Windows and DOS paths
 */
 
 #pragma once
@@ -177,7 +181,7 @@ extern "C" {
 	#include <sys/nearptr.h>
 	#define _fmemmove	memmove
 	#define fmemcpy		memcpy
-	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base
+	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base)
 #endif
 
 
