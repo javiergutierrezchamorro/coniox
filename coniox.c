@@ -1692,57 +1692,124 @@ void coniox_init(const void* title)
 int cputs(const char *__str)
 {
 	char c;
-	int k = 0;
+	unsigned int i;
+	char *run;
+	unsigned int runlen;
+	int k;
 	int oldy;
-	unsigned int winwidth  = ti.winright  - ti.winleft  + 1;
-	unsigned int winheight = ti.winbottom - ti.wintop   + 1;
-	unsigned int linejump;
+	unsigned int winwidth;
+	unsigned int winheight;
+	unsigned short attrword;
+	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+		unsigned short *p;
+	#else
+		unsigned short coniox_far *p;
+	#endif
+	union REGS r;
 
 	coniox_init(NULL);
+
+	k = 0;
+	winwidth  = ti.winright  - ti.winleft  + 1;
+	winheight = ti.winbottom - ti.wintop   + 1;
+	attrword  = (unsigned short)(ti.attribute << 8);
 	coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 
 	while ((c = *__str) != 0)
 	{
-		switch (c)
+		if (c == '\r')
 		{
-			case '\r':
+			coniox_currentoffset -= (ti.curx - 1);
+			ti.curx = 1;
+			++__str;
+			++k;
+			continue;
+		}
+		if (c == '\n')
+		{
+			if (ti.cury < winheight)
+			{
+				coniox_currentoffset += ti.screenwidth;
+				ti.cury++;
+			}
+			else
+			{
 				coniox_currentoffset -= (ti.curx - 1);
+				oldy = ti.cury;
 				ti.curx = 1;
-				break;
+				ti.cury = 1;
+				delline();
+				ti.cury = oldy;
+			}
+			coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+			++__str;
+			++k;
+			continue;
+		}
+		if (c == '\b')
+		{
+			if (ti.curx > 1)
+			{
+				coniox_currentoffset--;
+				ti.curx--;
+			}
+			++__str;
+			++k;
+			continue;
+		}
 
-			case '\n':
-				if (ti.cury < winheight)
-				{
-					coniox_currentoffset += ti.screenwidth;
-					ti.cury++;
-				}
-				else
-				{
-					oldy = ti.cury;
-					coniox_currentoffset -= (ti.curx - 1);
-					ti.curx = 1;
-					ti.cury = 1;
-					delline();
-					ti.cury = oldy;
-				}
-				break;
+		run = (char *) __str;
+		runlen = 0;
+		while (run[runlen] &&
+			   run[runlen] != '\r' &&
+			   run[runlen] != '\n' &&
+			   run[runlen] != '\b' &&
+			   (ti.curx + runlen) <= winwidth)
+		{
+			runlen++;
+		}
 
-			case '\b':
-				if (ti.curx > 1)
+		if (runlen > 0)
+		{
+			if (directvideo)
+			{
+				p = coniox_currentoffset;
+				for (i = 0; i < runlen; i++)
 				{
-					coniox_currentoffset--;
-					ti.curx--;
-				}
-				break;
+					*p = attrword | (unsigned char)run[i];
+					p++;
+					ti.curx++;
 
-			default:
-				if (directvideo)
-				{
-					*coniox_currentoffset = (ti.attribute << 8) | (c & 0xFF);
+					if (ti.curx > winwidth)
+					{
+						if (_wscroll)
+						{
+							if (ti.cury < winheight)
+							{
+								ti.curx = 1;
+								ti.cury++;
+							}
+							else
+							{
+								ti.curx = 1;
+								ti.cury = 1;
+								delline();
+								ti.cury = winheight;
+							}
+						}
+						else
+						{
+							ti.curx = 1;
+						}
+						p = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+					}
 				}
-				else
+				coniox_currentoffset = p;
+			}
+			else
+			{
+				for (i = 0; i < runlen; i++)
 				{
-					union REGS r;
 					r.h.ah = 2;
 					r.h.bh = 0;
 					r.h.dh = ti.cury - 1;
@@ -1750,7 +1817,7 @@ int cputs(const char *__str)
 					coniox_int86(0x10, &r, &r);
 
 					r.h.ah = 0x9;
-					r.h.al = c;
+					r.h.al = run[i];
 					r.h.bh = 0;
 					r.h.bl = ti.attribute;
 					#if defined(__WATCOMC__)
@@ -1759,41 +1826,92 @@ int cputs(const char *__str)
 						r.x.cx = 1;
 					#endif
 					coniox_int86(0x10, &r, &r);
-				}
 
-				if (ti.curx >= winwidth)
-				{
-					if (_wscroll)
+					ti.curx++;
+					if (ti.curx > winwidth)
 					{
-						if (ti.cury < winheight)
+						if (_wscroll)
 						{
-							linejump = ti.screenwidth - (ti.curx - 1);
-							coniox_currentoffset += linejump;
-							ti.curx = 1;
-							ti.cury++;
+							if (ti.cury < winheight)
+							{
+								ti.curx = 1;
+								ti.cury++;
+							}
+							else
+							{
+								ti.curx = 1;
+								ti.cury = 1;
+								delline();
+								ti.cury = winheight;
+							}
 						}
 						else
 						{
-							coniox_currentoffset -= (ti.curx - 1);
-							oldy = ti.cury;
 							ti.curx = 1;
-							ti.cury = 1;
-							delline();
-							ti.cury = oldy;
 						}
 					}
-					else
-					{
-						coniox_currentoffset -= (ti.curx - 1);
-						ti.curx = 1;
-					}
+					coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+				}
+			}
+			__str += runlen;
+			k += runlen;
+			continue;
+		}
+
+		if (directvideo)
+		{
+			*coniox_currentoffset = attrword | (c & 0xFF);
+		}
+		else
+		{
+			r.h.ah = 2;
+			r.h.bh = 0;
+			r.h.dh = ti.cury - 1;
+			r.h.dl = ti.curx - 1;
+			coniox_int86(0x10, &r, &r);
+
+			r.h.ah = 0x9;
+			r.h.al = c;
+			r.h.bh = 0;
+			r.h.bl = ti.attribute;
+			#if defined(__WATCOMC__)
+				r.w.cx = 1;
+			#else
+				r.x.cx = 1;
+			#endif
+			coniox_int86(0x10, &r, &r);
+		}
+
+		ti.curx++;
+		if (ti.curx > winwidth)
+		{
+			if (_wscroll)
+			{
+				if (ti.cury < winheight)
+				{
+					ti.curx = 1;
+					ti.cury++;
 				}
 				else
 				{
-					coniox_currentoffset++;
-					ti.curx++;
+					coniox_currentoffset -= (winwidth - 1);
+					ti.curx = 1;
+					ti.cury = 1;
+					delline();
+					ti.cury = winheight;
 				}
+			}
+			else
+			{
+				coniox_currentoffset -= (winwidth - 1);
+				ti.curx = 1;
+			}
 		}
+		else
+		{
+			coniox_currentoffset++;
+		}
+
 		++__str;
 		++k;
 	}
@@ -1801,6 +1919,7 @@ int cputs(const char *__str)
 	gotoxy(ti.curx, ti.cury);
 	return(k);
 }
+
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 coniox_inline void coniox_putchattrcursor(int ch, int attr)

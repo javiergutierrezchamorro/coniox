@@ -166,6 +166,7 @@ extern "C" {
 #include <bios.h>
 
 #define coniox_far __far
+	
 
 #if defined(__WATCOMC__)
 	#include <i86.h>
