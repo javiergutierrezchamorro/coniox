@@ -684,13 +684,9 @@ inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 	r.Top = (short) y - 1;
 	r.Right = (short) x - 1;
 	r.Bottom = (short) y - 1;
-	#if UNICODE
-			ci.Char.UnicodeChar = (wchar_t) ch;
-	#else
-			ci.Char.AsciiChar = (char) ch;
-	#endif
+	ci.Char.AsciiChar = (char) ch;
 	ci.Attributes = (short) attr;
-	WriteConsoleOutput(coniox_console_output, &ci, s, c, &r);
+	WriteConsoleOutputA(coniox_console_output, &ci, s, c, &r);
 }
 
 
@@ -712,13 +708,9 @@ void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
 	r.Top = (short) (y - 1);
 	r.Right = (short) (x - 1);
 	r.Bottom = (short) (y - 1);
-	#if UNICODE
-		ci.Char.UnicodeChar = ch;
-	#else
-		ci.Char.AsciiChar = (char) ch;
-	#endif
+	ci.Char.UnicodeChar = ch;
 	ci.Attributes = (WORD) attr;
-	WriteConsoleOutput(coniox_console_output, &ci, s, c, &r);
+	WriteConsoleOutputW(coniox_console_output, &ci, s, c, &r);
 }
 
 
@@ -728,16 +720,27 @@ void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
 	int i;
-	COORD c;
+	int total;
+	CHAR_INFO *ci;
+	SMALL_RECT r;
+	COORD s, c;
+	#if UNICODE
+		wchar_t chval;
+	#else
+		char chval;
+	#endif
 
+	coniox_init(NULL);
 
 	if (x < ti.winleft)
 	{
 		w -= ti.winleft - x;
+		x = ti.winleft;
 	}
 	if (y < ti.wintop)
 	{
 		h -= ti.wintop - y;
+		y = ti.wintop;
 	}
 	if (x + w - 1 > ti.winright)
 	{
@@ -753,15 +756,44 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		return;
 	}
 
-	for (i = 0; i < h; ++i)
+	total = w * h;
+	ci = (CHAR_INFO*) malloc(total * sizeof(CHAR_INFO));
+	if (!ci)
 	{
-		DWORD written;
-		c.X = (short) (x - 1);
-		c.Y = (short) (y - 1 + i);
-		FillConsoleOutputAttribute(coniox_console_output, (WORD) attr, w, c, &written);
-		FillConsoleOutputCharacter(coniox_console_output, (char) ch, w, c, &written);
+		return;
 	}
+
+	#if UNICODE
+		chval = (wchar_t) ch;
+	#else
+		chval = (char) ch;
+	#endif
+
+	for (i = 0; i < total; i++)
+	{
+		#if UNICODE
+			ci[i].Char.UnicodeChar = chval;
+		#else
+			ci[i].Char.AsciiChar = chval;
+		#endif
+		ci[i].Attributes = (WORD) attr;
+	}
+
+	r.Left = (short) x - 1;
+	r.Top = (short) y - 1;
+	r.Right = (short) x + w - 2;
+	r.Bottom = (short) y + h - 2;
+
+	s.X = (short) w;
+	s.Y = (short) h;
+	c.X = 0;
+	c.Y = 0;
+
+	WriteConsoleOutput(coniox_console_output, ci, s, c, &r);
+	free(ci);
 }
+
+
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t getwch(void)
@@ -953,10 +985,8 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 		for (i = 0; i < s.X * s.Y; i++)
 		{
 			#if UNICODE
-				//buf[i].letter = (char) ci[i].Char.UnicodeChar;
 				buf[i] = (ci[i].Char.UnicodeChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 			#else
-				//buf[i].letter = ci[i].Char.AsciiChar;
 				buf[i] = (ci[i].Char.AsciiChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 			#endif
 		}
