@@ -149,41 +149,49 @@ void window(int __left, int __top, int __right, int __bottom)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int putch(int __c)
 {
-	int oldx, oldy;
-	
+	int oldy;
+	int winwidth, winheight;
+
 	coniox_init(NULL);
+
+	winwidth = ti.winright - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop + 1;
+
 	switch (__c)
 	{
 		case '\r':
 			gotoxy(1, ti.cury);
 			break;
+
 		case '\n':
-			if (ti.cury < ti.winbottom - ti.wintop + 1)
+			if (ti.cury < winheight)
 			{
 				gotoxy(ti.curx, ti.cury + 1);
 			}
 			else
 			{
-				oldx = ti.curx;
 				oldy = ti.cury;
 				gotoxy(1, 1);
 				delline();
-				gotoxy(oldx, oldy);
+				gotoxy(1, oldy);
 			}
 			break;
+
 		case '\b':
 			if (ti.curx > 1)
 			{
 				gotoxy(ti.curx - 1, ti.cury);
 			}
 			break;
+
 		default:
 			coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
-			if (ti.curx + 1 > ti.winright - ti.winleft + 1)
+
+			if (ti.curx >= winwidth)
 			{
 				if (_wscroll)
 				{
-					if (ti.cury < ti.winbottom - ti.wintop + 1)
+					if (ti.cury < winheight)
 					{
 						gotoxy(1, ti.cury + 1);
 					}
@@ -1453,10 +1461,10 @@ int coniox_basecrt = 0x3D4;
 	#define coniox_int86x int386x
 	#if defined(__WATCOMC__)
 		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
-		#pragma aux coniox_offset =										    \
+		#pragma aux coniox_offset =											\
 			"			 .386													   "\
 			"			 movzx eax, byte ptr ti + 16				"\
-			"			 imul eax, edi									    "\
+			"			 imul eax, edi										"\
 			"			 add eax, esi									   "\
 			"			 shl eax, 1												 "\
 			"			 add eax, coniox_vram					   "\
@@ -1473,18 +1481,18 @@ int coniox_basecrt = 0x3D4;
 	#define coniox_int86x int86x
 	#if defined(__WATCOMC__)
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
-		#pragma aux coniox_offset =										    \
-				"			 .8086													    "\
+		#pragma aux coniox_offset =											\
+				"			 .8086														"\
 				"			 xor ah, ah												 "\
-				"			 mov al, byte ptr ti + 16					    "\
+				"			 mov al, byte ptr ti + 16						"\
 				"			 mul di														 "\
 				"			 add ax, si										 "\
-				"			 shl ax, 1												    "\
+				"			 shl ax, 1													"\
 				"			 add ax, word ptr coniox_vram					"\
 				"			 mov dx, word ptr coniox_vram+2					"\
-			    parm nomemory [SI][DI]          \
-			    modify exact nomemory [DX AX]            \
-			    value [DX AX];			
+				parm nomemory [SI][DI]		  \
+				modify exact nomemory [DX AX]			\
+				value [DX AX];			
 	#else
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 	#endif
@@ -1496,23 +1504,23 @@ int coniox_basecrt = 0x3D4;
 	void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count);
 	#if (defined(__FLAT__))
 		#pragma aux coniox_fmemsetw =										\
-				"			      .386												      "\
-				"			      movzx eax, ax										  "\
-				"			      mov edx, eax										  "\
-				"			      shl eax, 16										  "\
-				"			      or eax, edx  										  "\
-				"			      shr ecx, 1										     "\
+				"				  .386													  "\
+				"				  movzx eax, ax										  "\
+				"				  mov edx, eax										  "\
+				"				  shl eax, 16										  "\
+				"				  or eax, edx  										  "\
+				"				  shr ecx, 1											 "\
 				"				  cld											"\
-				"			      rep stosd										       "\
-				"			      test ecx, 1										     "\
-				"			      jz short no_odd										"\
-				"			      stosw										       "\
+				"				  rep stosd											   "\
+				"				  test ecx, 1											 "\
+				"				  jz short no_odd										"\
+				"				  stosw											   "\
 				"no_odd:																"\
-				parm [EDI][AX][ECX]													     \
+				parm [EDI][AX][ECX]														 \
 				modify exact [EDI EDX ECX EAX];
 	#else
 		#pragma aux coniox_fmemsetw =										\
-				"			 .8086													    "\
+				"			 .8086														"\
 				"			 cld														"\
 				"			 rep stosw												   "\
 				parm [ES DI][AX][CX]													   \
@@ -1608,7 +1616,7 @@ void coniox_init(const void* title)
 	#endif
 
 	/* Base for 6845 CRT controller */
-	coniox_basecrt = peekw(0x40, 0x63);     /* 0x3D4 */
+	coniox_basecrt = peekw(0x40, 0x63);	 /* 0x3D4 */
 
 	/* Get cursor position */
 	if (directvideo)
@@ -1685,22 +1693,23 @@ int cputs(const char *__str)
 {
 	char c;
 	int k = 0;
-	int oldx, oldy;
+	int oldy;
 	unsigned int winwidth  = ti.winright  - ti.winleft  + 1;
 	unsigned int winheight = ti.winbottom - ti.wintop   + 1;
-	
-	
+	unsigned int linejump;
+
 	coniox_init(NULL);
 	coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 
-	while (c = *__str)
+	while ((c = *__str) != 0)
 	{
 		switch (c)
 		{
 			case '\r':
-				coniox_currentoffset-= (ti.curx - 1);
+				coniox_currentoffset -= (ti.curx - 1);
 				ti.curx = 1;
 				break;
+
 			case '\n':
 				if (ti.cury < winheight)
 				{
@@ -1709,15 +1718,15 @@ int cputs(const char *__str)
 				}
 				else
 				{
-					oldx = ti.curx;
 					oldy = ti.cury;
+					coniox_currentoffset -= (ti.curx - 1);
 					ti.curx = 1;
 					ti.cury = 1;
 					delline();
-					ti.curx = oldx;
 					ti.cury = oldy;
 				}
 				break;
+
 			case '\b':
 				if (ti.curx > 1)
 				{
@@ -1725,8 +1734,8 @@ int cputs(const char *__str)
 					ti.curx--;
 				}
 				break;
+
 			default:
-				/* Inlined coniox_putchattrcursor(c, ti.attribute); */
 				if (directvideo)
 				{
 					*coniox_currentoffset = (ti.attribute << 8) | (c & 0xFF);
@@ -1751,13 +1760,15 @@ int cputs(const char *__str)
 					#endif
 					coniox_int86(0x10, &r, &r);
 				}
-				if (ti.curx + 1 > winwidth)
+
+				if (ti.curx >= winwidth)
 				{
 					if (_wscroll)
 					{
 						if (ti.cury < winheight)
 						{
-							coniox_currentoffset += ti.screenwidth - (ti.curx - 1);
+							linejump = ti.screenwidth - (ti.curx - 1);
+							coniox_currentoffset += linejump;
 							ti.curx = 1;
 							ti.cury++;
 						}
@@ -1786,10 +1797,10 @@ int cputs(const char *__str)
 		++__str;
 		++k;
 	}
+
 	gotoxy(ti.curx, ti.cury);
 	return(k);
 }
-
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 coniox_inline void coniox_putchattrcursor(int ch, int attr)
@@ -1975,14 +1986,14 @@ void coniox_idle(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_get_is_emulator (void)
 {
-    unsigned char result;
+	unsigned char result;
 
-    outportb(0x04F4, 0x00);
-    result = inportb(0x04F4);
-    // En DOSBox, inp(0x04F4) típicamente devuelve 0xFF
-    return (result == 0xFF);
+	outportb(0x04F4, 0x00);
+	result = inportb(0x04F4);
+	// En DOSBox, inp(0x04F4) típicamente devuelve 0xFF
+	return (result == 0xFF);
 }
-    
+	
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_blink(unsigned int blink)
@@ -2039,15 +2050,15 @@ void delay (unsigned int ms)
 		unsigned long microsec = ms * 1000UL;
 		
 		#if defined(__WATCOMC__)
-			r.w.ax = 0x8600;                    // función 0x86 en AH, AL=0
-			r.w.cx = microsec & 0xFFFF;        // parte baja de microsegundos
+			r.w.ax = 0x8600;					// función 0x86 en AH, AL=0
+			r.w.cx = microsec & 0xFFFF;		// parte baja de microsegundos
 			r.w.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
 		#else
-			r.x.ax = 0x8600;                    // función 0x86 en AH, AL=0
-			r.x.cx = microsec & 0xFFFF;        // parte baja de microsegundos
+			r.x.ax = 0x8600;					// función 0x86 en AH, AL=0
+			r.x.cx = microsec & 0xFFFF;		// parte baja de microsegundos
 			r.x.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
 		 #endif
-		coniox_int86(0x15, &r, &r);            // llamada a BIOS
+		coniox_int86(0x15, &r, &r);			// llamada a BIOS
 	}
 }
 
@@ -2384,9 +2395,9 @@ void clrscr(void)
 		#endif
 		r.h.bh = ti.attribute;
 		r.h.cl = ti.winleft - 1;			/*  Left column number */
-		r.h.ch = ti.cury + ti.wintop - 2;       /* Upper row number, */
-		r.h.dl = ti.winright - 1;		      /*  Right column number */
-		r.h.dh = ti.winbottom - 1;		    /* Lower row number */
+		r.h.ch = ti.cury + ti.wintop - 2;	   /* Upper row number, */
+		r.h.dl = ti.winright - 1;			  /*  Right column number */
+		r.h.dh = ti.winbottom - 1;			/* Lower row number */
 		coniox_int86(0x10, &r, &r);
 	}
 }
@@ -2499,31 +2510,31 @@ int ungetch(int __ch)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short head, tail, new_tail;
-	    unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
-	    unsigned short scancode;
+		unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
+		unsigned short scancode;
 
-	    head = peekw(0x40, 0x1A);
-	    tail = peekw(0x40, 0x1C);
+		head = peekw(0x40, 0x1A);
+		tail = peekw(0x40, 0x1C);
 
-	    // Verificar si el buffer no está lleno
-	    new_tail = tail - 2;
-	    if ((short) new_tail < 0)
-	    {
-	    	new_tail = 30;
-    	}
-	    if (new_tail == head)
-	    {
-	        // Buffer lleno, no se puede insertar más
-	        return EOF;
-	    }
+		// Verificar si el buffer no está lleno
+		new_tail = tail - 2;
+		if ((short) new_tail < 0)
+		{
+			new_tail = 30;
+		}
+		if (new_tail == head)
+		{
+			// Buffer lleno, no se puede insertar más
+			return EOF;
+		}
 
-	    // Insertar el carácter con scancode 0 (sin scan code)
-	    scancode = (0 << 8) | (__ch & 0xFF);
-	    keyboard_buffer[new_tail >> 1] = scancode;
+		// Insertar el carácter con scancode 0 (sin scan code)
+		scancode = (0 << 8) | (__ch & 0xFF);
+		keyboard_buffer[new_tail >> 1] = scancode;
 
-	    // Actualizar tail
-	    pokew(0x40, 0x1C, new_tail);
-	    return __ch;
+		// Actualizar tail
+		pokew(0x40, 0x1C, new_tail);
+		return __ch;
 	}
 	else
 	{
