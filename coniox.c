@@ -279,6 +279,14 @@ int cprintf (const char *__format, ...)
 		r = vsprintf(buffer, __format, ap);
 	#endif
 	va_end(ap);
+	if (r < 0)
+	{
+		buffer[0] = 0;
+	}
+	else if ((size_t) r >= sizeof(buffer))
+	{
+		buffer[sizeof(buffer) - 1] = 0;
+	}
 	cputs(buffer);
 	return(r);
 }
@@ -1442,6 +1450,7 @@ int coniox_basecrt = 0x3D4;
 				"			 mul di														 "\
 				"			 add ax, si										 "\
 				"			 shl ax, 1												    "\
+				"			 add ax, word ptr coniox_vram					"\
 				"			 mov dx, word ptr coniox_vram+2					"\
 			    parm nomemory [SI][DI]          \
 			    modify exact nomemory [DX AX]            \
