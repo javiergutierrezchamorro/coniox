@@ -396,7 +396,7 @@ char *getpass(const char *__prompt)
 								putch('*');
 								str[length++] = (char) ch;
 						}
-				}
+			}
 		}
 	}
 	str[length] = 0;
@@ -445,9 +445,9 @@ int cputs(const char *__str)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr)
 {
-	void* a[20] = { NULL };
+	void *a[20] = { NULL };
 	size_t count = 0;
-	const wchar_t* p;
+	const wchar_t *p;
 
 
 	p = format;
@@ -468,9 +468,9 @@ int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-wchar_t* cgetws(wchar_t* __str)
+wchar_t *cgetws(wchar_t *__str)
 {
-	wchar_t* str;
+	wchar_t *str;
 	int maxlen;
 	int length = 0;
 	wchar_t ch = 0;
@@ -523,7 +523,7 @@ wchar_t* cgetws(wchar_t* __str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int cputws(const wchar_t* __str)
+int cputws(const wchar_t *__str)
 {
 	int k = 0;
 
@@ -552,55 +552,55 @@ wchar_t putwch(wchar_t __c)
 
 	switch (__c)
 	{
-	case L'\r':
-		gotoxy(1, ti.cury);
-		break;
-	case L'\n':
-		if (ti.cury < winheight)
-		{
-			gotoxy(ti.curx, ti.cury + 1);
-		}
-		else
-		{
-			oldy = ti.cury;
-			gotoxy(1, 1);
-			delline();
-			gotoxy(1, oldy);
-		}
-		break;
-	case L'\b':
-		if (ti.curx > 1)
-		{
-			gotoxy(ti.curx - 1, ti.cury);
-		}
-		break;
-	default:
-		coniox_putwchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
-		if (ti.curx >= winwidth)
-		{
-			if (_wscroll)
+		case L'\r':
+			gotoxy(1, ti.cury);
+			break;
+		case L'\n':
+			if (ti.cury < winheight)
 			{
-				if (ti.cury < winheight)
+				gotoxy(ti.curx, ti.cury + 1);
+			}
+			else
+			{
+				oldy = ti.cury;
+				gotoxy(1, 1);
+				delline();
+				gotoxy(1, oldy);
+			}
+			break;
+		case L'\b':
+			if (ti.curx > 1)
+			{
+				gotoxy(ti.curx - 1, ti.cury);
+			}
+			break;
+		default:
+			coniox_putwchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
+			if (ti.curx >= winwidth)
+			{
+				if (_wscroll)
 				{
-					gotoxy(1, ti.cury + 1);
+					if (ti.cury < winheight)
+					{
+						gotoxy(1, ti.cury + 1);
+					}
+					else
+					{
+						oldy = ti.cury;
+						gotoxy(1, 1);
+						delline();
+						gotoxy(1, oldy);
+					}
 				}
 				else
 				{
-					oldy = ti.cury;
-					gotoxy(1, 1);
-					delline();
-					gotoxy(1, oldy);
+					gotoxy(1, ti.cury);
 				}
 			}
 			else
 			{
-				gotoxy(1, ti.cury);
+				gotoxy(ti.curx + 1, ti.cury);
 			}
-		}
-		else
-		{
-			gotoxy(ti.curx + 1, ti.cury);
-		}
 	}
 	return(__c);
 }
@@ -623,7 +623,7 @@ int cwscanf(const wchar_t* __format, ...)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int cwprintf(const wchar_t* __format, ...)
+int cwprintf(const wchar_t *__format, ...)
 {
 	int r;
 	wchar_t buffer[PRINTFBUF_SIZE];
@@ -754,7 +754,6 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
 	int i;
 	int total;
-	CHAR_INFO ci[CONIOX_MAX_CHARINFO];
 	SMALL_RECT r;
 	COORD s, c;
 	#if UNICODE
@@ -762,6 +761,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	#else
 		char chval;
 	#endif
+	static CHAR_INFO ci[CONIOX_MAX_CHARINFO];
 	
 	if (w <= 0 || h <= 0)
 	{
@@ -787,8 +787,8 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 	r.Left = (short) x - 1;
 	r.Top = (short) y - 1;
-	r.Right = (short) x + w - 2;
-	r.Bottom = (short) y + h - 2;
+	r.Right = (short) (x + w - 2);
+	r.Bottom = (short) (y + h - 2);
 
 	s.X = (short) w;
 	s.Y = (short) h;
@@ -843,10 +843,10 @@ char coniox_unicode2ansi(wchar_t ch)
 	char ansistr[2];
 	wchar_t unicodestr[2];
 
-	ansistr[0] = ( char ) ch;
+	ansistr[0] = (char) ch;
 	unicodestr[0] = ch;
 	unicodestr[1] = 0;
-	WideCharToMultiByte( CP_ACP, 0, unicodestr, 1, ansistr, 1, NULL, NULL );
+	WideCharToMultiByte(CP_ACP, 0, unicodestr, 1, ansistr, 1, NULL, NULL);
 	return ansistr[0];
 }
 
@@ -870,7 +870,7 @@ int getch(void)
 	}
 	SetConsoleMode(coniox_console_input, modo);
 	//return(car & 0xFF);
-	return((int)((unsigned char)car));
+	return((int) ((unsigned char) car));
 }
 
 
@@ -946,6 +946,7 @@ void insline(void)
 	SMALL_RECT r;
 	CHAR_INFO ci;
 
+
 	coniox_init(NULL);
 	c.X = ti.winleft - 1;
 	c.Y = ti.wintop - 1 + ti.cury;
@@ -970,9 +971,9 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO ci[CONIOX_MAX_CHARINFO];
 	short *buf;
 	COORD s, c = { 0,0 };
+	static CHAR_INFO ci[CONIOX_MAX_CHARINFO];
 
 
 	coniox_init(NULL);
@@ -1034,10 +1035,10 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
-	//char_info *ci;
 	short *ci;
 	COORD s, c = { 0,0 };
+	static CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
+
 
 	coniox_init(NULL);
 	if ( __right < __left || __bottom < __top)
@@ -1073,10 +1074,10 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
-	//char_info *ci;
-	short* ci;
+	short *ci;
 	COORD s, c = { 0,0 };
+	static CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
+
 
 	coniox_init(NULL);
 	if (__right < __left || __bottom < __top)
@@ -1111,8 +1112,9 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 {
 	int i;
 	SMALL_RECT r;
-	CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
 	COORD s, c = { 0,0 };
+	static CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
+
 
 	coniox_init(NULL);
 	if (__right < __left || __bottom < __top)
