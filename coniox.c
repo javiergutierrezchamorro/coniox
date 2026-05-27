@@ -1447,7 +1447,8 @@ int coniox_basecrt = 0x3D4;
 		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
 		#pragma aux coniox_offset =											\
 			"			 .386													   "\
-			"			 movzx eax, byte ptr ti + 16				"\
+			"			 xor eax, eax				"\
+			"			 mov al, byte ptr ti + 16				"\
 			"			 imul eax, edi										"\
 			"			 add eax, esi									   "\
 			"			 shl eax, 1												 "\
@@ -1489,7 +1490,7 @@ int coniox_basecrt = 0x3D4;
 	#if (defined(__FLAT__))
 		#pragma aux coniox_fmemsetw =										\
 				"				  .386													  "\
-				"				  movzx eax, ax										  "\
+				"				  and eax, 0FFFFh										  "\
 				"				  mov edx, eax										  "\
 				"				  shl eax, 16										  "\
 				"				  or eax, edx  										  "\
