@@ -157,9 +157,9 @@ extern "C" {
 #endif
 
 #ifdef UNICODE
-	#define gettextbuffersize(__left, __top, __right, __bottom, __destin) (((__right - __left) * (__bottom - __top)) * 3)
+	#define gettextbuffersize(__left, __top, __right, __bottom) (((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 3)
 #else
-	#define gettextbuffersize(__left, __top, __right, __bottom, __destin) (((__right - __left) * (__bottom - __top)) << 1)
+	#define gettextbuffersize(__left, __top, __right, __bottom) (((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 2)
 #endif
 
 #define PRINTFBUF_SIZE	255
@@ -233,8 +233,8 @@ struct text_info
 	unsigned short currmode;
 	unsigned short screenheight;	/**< screen width */
 	unsigned short screenwidth;		/**< screen height */
-	short curx;						/**< cursor coordinate x */
-	short cury;						/**< cursor coordinate y */
+	unsigned short curx;						/**< cursor coordinate x */
+	unsigned short cury;						/**< cursor coordinate y */
 };
 
 /**
