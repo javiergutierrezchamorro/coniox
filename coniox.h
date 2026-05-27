@@ -139,6 +139,9 @@ extern "C" {
 		#ifndef _NO_CRT_STDIO_INLINE
 			#define _NO_CRT_STDIO_INLINE
 		#endif
+		#ifdef _CRT_USE_WINAPI_FAMILY_DESKTOP_APP
+			#undef _CRT_USE_WINAPI_FAMILY_DESKTOP_APP
+		#endif
 	#endif
 #else
 	#ifndef sscanf_s
@@ -725,18 +728,17 @@ typedef struct wchar_info
 } wchar_info;
 
 #if _MSC_VER <= 2000
+	wchar_t *cgetws( wchar_t *__str );
+	int      cputws( const wchar_t *__str );
+	wchar_t  getwch(void);
+	wchar_t  putwch(wchar_t);
+	wchar_t  ungetwch( wchar_t );
+	wchar_t  getwche(void);
+	int cwscanf( const wchar_t *__format, ... );
+	int cwprintf( const wchar_t *__format, ... );
+	int putwtext( int __left, int __top, int __right, int __bottom, const wchar_info *__source );
+	int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__destin);
 #endif
-
-wchar_t *cgetws( wchar_t *__str );
-int      cputws( const wchar_t *__str );
-wchar_t  getwch( void );
-wchar_t  putwch( wchar_t );
-wchar_t  ungetwch( wchar_t );
-wchar_t  getwche( void );
-int cwscanf( const wchar_t *__format, ... );
-int cwprintf( const wchar_t *__format, ... );
-int putwtext( int __left, int __top, int __right, int __bottom, const wchar_info *__source );
-int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__destin);
 
 #pragma pack(pop)
 
