@@ -2309,6 +2309,16 @@ void gotoxy(int __x, int __y)
 	{
 		return;
 	}
+
+	/* Solo mover el cursor hardware si la posicion realmente cambia.
+	   Cada outportb es una instruccion de I/O lenta en DOS; evitar las
+	   cuatro instrucciones cuando no hay movimiento ahorra ciclos en
+	   bucles de escritura como cputs/cprintf. */
+	if (ti.curx == __x && ti.cury == __y && coniox_setcursortype != _NOCURSOR)
+	{
+		return;
+	}
+
 	ti.curx = __x;
 	ti.cury = __y;
 

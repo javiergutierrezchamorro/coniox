@@ -5,15 +5,16 @@ If you are already using Turbo/Borland conio.h in you DOS development, coniox wi
 
 
 DOS						putch	cputs	cprintf
-CONIO					4.3s	2.7s	2.7s
+CONIO					4.3s	2.7s	2.8s
 DIRIO 2.4				1.0s	0.6s	0.8s
-CONIOX 5 (8086)			2.5s	0.3s	0.8s
-CONIOX 5 (386)			2.2s	0.3s	0.8s
+CONIOX 5 (8086)			1.6s	0.3s	0.8s
+CONIOX 5 (386)			1.5s	0.3s	0.8s
 
 
 Windows
-CONIOX 5 (WATCOM x86)	8.8s	5.4s	13.9s
-CONIOX 5 (VC x64)		2.5s	1.9s	2.3s
+CONIOX 5 (WATCOM x86)	3.2s	2.2s	2.4s
+CONIOX 5 (VC x64)		1.9s	1.5s	1.7s
+
 
 ![screenshot01](https://user-images.githubusercontent.com/4672971/218527583-8dcacafe-f736-4279-9cc9-7967207ce553.png)
 
