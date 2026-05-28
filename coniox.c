@@ -1489,7 +1489,6 @@ int coniox_basecrt = 0x3D4;
 	void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count);
 	#if (defined(__FLAT__))
 		#pragma aux coniox_fmemsetw =										\
-				"				  .386													  "\
 				"				  and eax, 0FFFFh										  "\
 				"				  mov edx, eax										  "\
 				"				  shl eax, 16										  "\
@@ -1505,7 +1504,6 @@ int coniox_basecrt = 0x3D4;
 				modify exact [EDI EDX ECX EAX];
 	#else
 		#pragma aux coniox_fmemsetw =										\
-				"			 .8086														"\
 				"			 cld														"\
 				"			 rep stosw												   "\
 				parm [ES DI][AX][CX]													   \
