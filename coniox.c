@@ -146,7 +146,7 @@ void normvideo(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textbackground(int __newcolor)
 {
-	ti.attribute = (ti.attribute & 0x8F) | ((__newcolor << 4) & 0x7f);
+	ti.attribute = (ti.attribute & 0x0F) | ((__newcolor << 4) & 0x70);
 }
 
 
@@ -154,7 +154,7 @@ void textbackground(int __newcolor)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textcolor(int __newcolor)
 {
-	ti.attribute = (ti.attribute & 0x70) | (__newcolor & 0x8F);
+	ti.attribute = (ti.attribute & 0xF0) | (__newcolor & 0x0F);
 }
 
 
@@ -1448,7 +1448,7 @@ int coniox_basecrt = 0x3D4;
 		#pragma aux coniox_offset =											\
 			"			 .386													   "\
 			"			 xor eax, eax				"\
-			"			 mov al, byte ptr ti + 16				"\
+			"			 mov ax, word ptr ti + 16				"\
 			"			 imul eax, edi										"\
 			"			 add eax, esi									   "\
 			"			 shl eax, 1												 "\
@@ -1468,11 +1468,10 @@ int coniox_basecrt = 0x3D4;
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 		#pragma aux coniox_offset =											\
 				"			 .8086														"\
-				"			 xor ah, ah										"\
-				"			 mov al, byte ptr ti + 16						"\
+				"			 mov ax, word ptr ti + 16						"\
 				"			 mul di														 "\
 				"			 add ax, si										 "\
-				"			 shl ax, 1													"\
+				"			 add ax, ax													"\
 				"			 add ax, word ptr coniox_vram					"\
 				"			 mov dx, word ptr coniox_vram+2					"\
 				parm nomemory [SI][DI]		  \
@@ -1496,8 +1495,7 @@ int coniox_basecrt = 0x3D4;
 				"				  shr ecx, 1											 "\
 				"				  cld											"\
 				"				  rep stosd											   "\
-				"				  test ecx, 1											 "\
-				"				  jz short no_odd										"\
+				"				  jnc short no_odd										"\
 				"				  stosw											   "\
 				"no_odd:																"\
 				parm [EDI][AX][ECX]														 \
@@ -1677,7 +1675,7 @@ int cputs(const char *__str)
 	char c;
 	unsigned int i;
 	char *run;
-	unsigned int runlen;
+	unsigned int runlen, remaining;
 	int k;
 	int oldy;
 	unsigned int winwidth;
@@ -1743,13 +1741,12 @@ int cputs(const char *__str)
 
 		run = (char *) __str;
 		runlen = 0;
-		while (run[runlen] &&
-			   run[runlen] != '\r' &&
-			   run[runlen] != '\n' &&
-			   run[runlen] != '\b' &&
-			   (ti.curx + runlen) <= winwidth)
 		{
-			runlen++;
+			remaining = winwidth - ti.curx + 1;
+			while (run[runlen] && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b' && runlen < remaining)
+			{
+				runlen++;
+			}
 		}
 
 		if (runlen > 0)
@@ -1759,35 +1756,34 @@ int cputs(const char *__str)
 				p = coniox_currentoffset;
 				for (i = 0; i < runlen; i++)
 				{
-					*p = attrword | (unsigned char)run[i];
-					p++;
-					ti.curx++;
+					*p++ = attrword | (unsigned char) run[i];
+				}
+				ti.curx += runlen;
+				coniox_currentoffset = p;
 
-					if (ti.curx > winwidth)
+				if (ti.curx > winwidth)
+				{
+					if (_wscroll)
 					{
-						if (_wscroll)
+						if (ti.cury < winheight)
 						{
-							if (ti.cury < winheight)
-							{
-								ti.curx = 1;
-								ti.cury++;
-							}
-							else
-							{
-								ti.curx = 1;
-								ti.cury = 1;
-								delline();
-								ti.cury = winheight;
-							}
+							ti.curx = 1;
+							ti.cury++;
 						}
 						else
 						{
 							ti.curx = 1;
+							ti.cury = 1;
+							delline();
+							ti.cury = winheight;
 						}
-						p = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 					}
+					else
+					{
+						ti.curx = 1;
+					}
+					coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 				}
-				coniox_currentoffset = p;
 			}
 			else
 			{
@@ -1899,7 +1895,10 @@ int cputs(const char *__str)
 		++k;
 	}
 
-	gotoxy(ti.curx, ti.cury);
+	if (coniox_setcursortype != _NOCURSOR)
+	{
+		gotoxy(ti.curx, ti.cury);
+	}
 	return(k);
 }
 
@@ -1968,7 +1967,7 @@ coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
 	unsigned short coniox_far* p;
-	int y1;
+	int y1, ylim;
 	unsigned short v;
 	union REGS r;
 
@@ -1979,9 +1978,10 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 	if (directvideo)
 	{
+		ylim = y + h;
 		v = (attr << 8) | (ch & 0xFF);
 		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
-		for (y1 = y; y1 < y + h; y1++)
+		for (y1 = y; y1 < ylim; y1++)
 		{
 			coniox_fmemsetw(p, v, w);
 			p += ti.screenwidth;
@@ -1989,23 +1989,24 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	}
 	else
 	{
-		for (y1 = y; y1 < y + h; y1++)
+		ylim = y + h;
+		r.h.bh = 0;
+		r.h.dl = x - 1;
+		#if defined(__WATCOMC__)
+			r.w.cx = w;
+		#else
+			r.x.cx = w;
+		#endif
+		for (y1 = y; y1 < ylim; y1++)
 		{
 			r.h.ah = 2;
-			r.h.bh = 0;
 			r.h.dh = y1 - 1;
-			r.h.dl = x - 1;
 			coniox_int86(0x10, &r, &r);
 
 			r.h.ah = 0x9;
 			r.h.al = ch;
 			r.h.bh = 0;
 			r.h.bl = attr;
-			#if defined(__WATCOMC__)
-				r.w.cx = w;
-			#else
-				r.x.cx = w;
-			#endif
 			coniox_int86(0x10, &r, &r);
 		}
 	}
@@ -2526,10 +2527,10 @@ int kbhit(void)
 	{
 		return(getch_last_extended_key);
 	}
-	coniox_idle();
 
 	if ((directvideo) && (!coniox_is_emulator))
 	{
+		coniox_idle();
 		return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
 	}
 	else
@@ -2539,11 +2540,13 @@ int kbhit(void)
 			memset(&r, 0, sizeof(union REGPACK));
 			r.h.ah = 1;
 			intr(0x16, &r);
+			coniox_idle();
 			return((r.w.flags & 0x40) == 0 ? 1 : 0);
 		#else
 			union REGS r;
 			r.h.ah = 1;
 			coniox_int86(0x16, &r, &r);
+			coniox_idle();
 			return((r.x.flags & 0x40) == 0 ? 1 : 0);
 		#endif
 	}
@@ -2556,7 +2559,11 @@ int getch(void)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short tail, scancode;
-		unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
+		static unsigned short far* keyboard_buffer = NULL;
+		if (!keyboard_buffer)
+		{
+			keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
+		}
 
 		if (getch_last_extended_key)
 		{
@@ -2616,9 +2623,14 @@ int ungetch(int __ch)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short head, tail, new_tail;
-		unsigned short far* keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
 		unsigned short scancode;
-
+		static unsigned short far* keyboard_buffer = NULL;
+		
+		
+		if (!keyboard_buffer)
+		{
+			keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
+		}
 		head = peekw(0x40, 0x1A);
 		tail = peekw(0x40, 0x1C);
 
