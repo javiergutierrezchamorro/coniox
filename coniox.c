@@ -782,7 +782,10 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	for (i = 1; i < total; i <<= 1)
 	{
 		int copy = i;
-		if (copy > total - i) copy = total - i;
+		if (copy > total - i)
+		{
+			copy = total - i;
+		}
 		memcpy(&ci[i], &ci[0], copy * sizeof(CHAR_INFO));
 	}
 
@@ -1511,9 +1514,19 @@ int coniox_basecrt = 0x3D4;
 #else
 	void coniox_far *coniox_fmemsetw (void coniox_far *m, short val, size_t count)
 	{
-		short coniox_far* buf;
+		short coniox_far* buf = (short coniox_far*) m;
 
-		buf = m;
+		/* Unroll x4: reduce el overhead de decrementar/comparar count
+		   en compiladores sin pragma aux (Borland, DJGPP sin Watcom). */
+		while (count >= 4)
+		{
+			buf[0] = val;
+			buf[1] = val;
+			buf[2] = val;
+			buf[3] = val;
+			buf += 4;
+			count -= 4;
+		}
 		while (count--)
 		{
 			*buf++ = val;
@@ -1830,7 +1843,7 @@ int cputs(const char *__str)
 							ti.curx = 1;
 						}
 					}
-					coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+					//coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 				}
 			}
 			__str += runlen;
@@ -1970,6 +1983,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	unsigned short coniox_far* p;
 	int y1, ylim;
 	unsigned short v;
+	unsigned int sw;   /* screenwidth en registro local evita recargar ti.screenwidth en cada iteracion */
 	union REGS r;
 
 	if (w <= 0 || h <= 0)
@@ -1980,12 +1994,13 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	if (directvideo)
 	{
 		ylim = y + h;
-		v = (attr << 8) | (ch & 0xFF);
-		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
+		v    = (unsigned short)((attr << 8) | (ch & 0xFF));
+		sw   = ti.screenwidth;
+		p    = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		for (y1 = y; y1 < ylim; y1++)
 		{
 			coniox_fmemsetw(p, v, w);
-			p += ti.screenwidth;
+			p += sw;
 		}
 	}
 	else
@@ -2453,19 +2468,19 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int movetext(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
 {
-	unsigned short coniox_far* p;
-	unsigned short coniox_far* __destin;
+	unsigned short coniox_far* src;
+	unsigned short coniox_far* dst;
 	int y1;
-	unsigned int width = (__right - __left + 1) << 1;
+	unsigned int width = (__right - __left + 1) << 1;   /* bytes por fila */
 
 	coniox_init(NULL);
-	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
-	__destin = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __top + __desttop - __top - 1);
+	src = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
+	dst = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __desttop - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
-		_fmemmove((unsigned short coniox_far *) __destin, p, width);
-		p += ti.screenwidth;
-		__destin += ti.screenwidth;
+		_fmemmove(dst, src, width);
+		src += ti.screenwidth;
+		dst += ti.screenwidth;
 	}
 	return(1);
 }
@@ -2474,19 +2489,19 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_movetext_nonoverlap(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
 {
-	unsigned short coniox_far* p;
-	unsigned short coniox_far* __destin;
+	unsigned short coniox_far* src;
+	unsigned short coniox_far* dst;
 	int y1;
-	unsigned int width = (__right - __left + 1) << 1;
+	unsigned int width = (__right - __left + 1) << 1;   /* bytes por fila */
 
 	coniox_init(NULL);
-	p = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
-	__destin = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __top + __desttop - __top - 1);
+	src = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
+	dst = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __desttop - 1);
 	for (y1 = __top; y1 <= __bottom; y1++)
 	{
-		_fmemcpy((unsigned short coniox_far *) __destin, p, width);
-		p += ti.screenwidth;
-		__destin += ti.screenwidth;
+		_fmemcpy(dst, src, width);
+		src += ti.screenwidth;
+		dst += ti.screenwidth;
 	}
 	return(1);
 }
@@ -2553,6 +2568,7 @@ int kbhit(void)
 			return((r.w.flags & 0x40) == 0 ? 1 : 0);
 		#else
 			union REGS r;
+			memset(&r, 0, sizeof(union REGS));
 			r.h.ah = 1;
 			coniox_int86(0x16, &r, &r);
 			coniox_idle();
