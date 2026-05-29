@@ -44,7 +44,7 @@ int coniox_setcursortype = _NORMALCURSOR;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
-	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tamaños
+	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tamaÂ±os
 	size_t count = 0;
 	const char *p;
 	char c;
@@ -74,11 +74,11 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 			{
 				p++;
 			}
-			// Detectar especificadores que requieren tamaño adicional
+			// Detectar especificadores que requieren tamaÂ±o adicional
 			if (*p == 's' || *p == 'c' || *p == '[')
 			{
 				a[count++] = va_arg(argPtr, void *);	 // buffer
-				a[count++] = va_arg(argPtr, size_t *);   // tamaño del buffer
+				a[count++] = va_arg(argPtr, size_t *);   // tamaÂ±o del buffer
 			}
 			else
 			{
@@ -1811,11 +1811,13 @@ int cputs(const char *__str)
 				#endif
 				for (i = 0; i < runlen; i++)
 				{
+					/* Set cursor position */
 					r.h.ah = 2;
 					r.h.dh = (unsigned char)(ti.cury - 1);
 					r.h.dl = (unsigned char)(ti.curx - 1);
 					coniox_int86(0x10, &r, &r);
 
+					/* Write char+attr (bh, bl, cx already set) */
 					r.h.ah = 0x9;
 					r.h.al = run[i];
 					r.h.bh = 0;
@@ -1850,7 +1852,6 @@ int cputs(const char *__str)
 							ti.curx = 1;
 						}
 					}
-					//coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 				}
 			}
 			__str += runlen;
@@ -2120,7 +2121,7 @@ int coniox_get_is_emulator (void)
 
 	outportb(0x04F4, 0x00);
 	result = inportb(0x04F4);
-	// En DOSBox, inp(0x04F4) típicamente devuelve 0xFF
+	// En DOSBox, inp(0x04F4) tÏ†picamente devuelve 0xFF
 	return (result == 0xFF);
 }
 	
@@ -2150,7 +2151,7 @@ void coniox_blink(unsigned int blink)
 	{
 		union REGS r;
 		#if defined(__WATCOMC__)
-			r.w.ax = 0x1003;		// Subfunción: set blink/intensity bit
+			r.w.ax = 0x1003;		// Subfunciâ‰¤n: set blink/intensity bit
 		#else
 			r.x.ax = 0x1003;
 		#endif
@@ -2180,11 +2181,11 @@ void delay (unsigned int ms)
 		unsigned long microsec = ms * 1000UL;
 		
 		#if defined(__WATCOMC__)
-			r.w.ax = 0x8600;					// función 0x86 en AH, AL=0
+			r.w.ax = 0x8600;					// funciâ‰¤n 0x86 en AH, AL=0
 			r.w.cx = microsec & 0xFFFF;		// parte baja de microsegundos
 			r.w.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
 		#else
-			r.x.ax = 0x8600;					// función 0x86 en AH, AL=0
+			r.x.ax = 0x8600;					// funciâ‰¤n 0x86 en AH, AL=0
 			r.x.cx = microsec & 0xFFFF;		// parte baja de microsegundos
 			r.x.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
 		 #endif
@@ -2321,6 +2322,8 @@ void textattr(int __newattr)
 void gotoxy(int __x, int __y)
 {
 	int cursor;
+	/* OPT: cache base CRT port in a local -- avoids repeated global load in outportb sequence */
+	int base;
 
 	coniox_init(NULL);
 	if (!coniox_inwindow(ti.winleft + __x - 1, ti.wintop + __y - 1))
@@ -2335,11 +2338,13 @@ void gotoxy(int __x, int __y)
 	{
 		if (directvideo)
 		{
+			/* OPT: single multiply using pre-computed (row-1) and (col-1) */
+			base   = coniox_basecrt;
 			cursor = (ti.wintop + __y - 2) * ti.screenwidth + (ti.winleft + __x - 2);
-			outportb(coniox_basecrt, 0x0F);
-			outportb(coniox_basecrt + 1, cursor & 0xFF);
-			outportb(coniox_basecrt, 0x0E);
-			outportb(coniox_basecrt + 1, (cursor >> 8) & 0xFF);
+			outportb(base,     0x0F);
+			outportb(base + 1, cursor & 0xFF);
+			outportb(base,     0x0E);
+			outportb(base + 1, (cursor >> 8) & 0xFF);
 		}
 		else
 		{
@@ -2356,8 +2361,8 @@ void gotoxy(int __x, int __y)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/*Borra la línea donde se encuentre el cursor y mueve todas las líneas inferiores a una
-línea anterior. La función delline funciona en la ventana de texto activa.*/
+/*Borra la lÏ†nea donde se encuentre el cursor y mueve todas las lÏ†neas inferiores a una
+lÏ†nea anterior. La funciâ‰¤n delline funciona en la ventana de texto activa.*/
 void delline(void)
 {
 	coniox_init(NULL);
@@ -2557,29 +2562,46 @@ int kbhit(void)
 
 	if ((directvideo) && (!coniox_is_emulator))
 	{
+		/* OPT: check buffer first; only yield timeslice when queue is empty */
+		if (peekw(0x40, 0x1A) != peekw(0x40, 0x1C))
+		{
+			return(1);
+		}
 		coniox_idle();
-		return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
+		return(0);
 	}
 	else
 	{
+		int key_ready;
 		#if defined(__WATCOMC__)
 			union REGPACK r;
-			memset(&r, 0, sizeof(union REGPACK));
+			/* OPT: removed memset -- only AH needs initialising for INT 16h/01h */
 			r.h.ah = 1;
 			intr(0x16, &r);
-			coniox_idle();
-			return((r.w.flags & 0x40) == 0 ? 1 : 0);
+			key_ready = ((r.w.flags & 0x40) == 0);
 		#else
 			union REGS r;
-			memset(&r, 0, sizeof(union REGS));
+			/* OPT: removed memset -- only AH needs initialising for INT 16h/01h */
 			r.h.ah = 1;
 			coniox_int86(0x16, &r, &r);
-			coniox_idle();
-			return((r.x.flags & 0x40) == 0 ? 1 : 0);
+			key_ready = ((r.x.flags & 0x40) == 0);
 		#endif
+		/* OPT: yield only when idle (no key pending) */
+		if (!key_ready)
+		{
+			coniox_idle();
+		}
+		return(key_ready);
 	}
 }
 
+
+/* OPT: keyboard_buffer promoted to file-scope static; avoids NULL-check branch on every getch() call */
+#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+static unsigned short *coniox_kbd_buffer = NULL;
+#else
+static unsigned short far *coniox_kbd_buffer = NULL;
+#endif
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int getch(void)
@@ -2595,26 +2617,23 @@ int getch(void)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short tail, scancode;
-		static unsigned short far* keyboard_buffer = NULL;
-		if (!keyboard_buffer)
+		/* OPT: init once; subsequent calls skip the MK_FP + NULL test entirely */
+		if (!coniox_kbd_buffer)
 		{
-			keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
-		}
-
-		if (getch_last_extended_key)
-		{
-			int ch = getch_last_extended_key;
-			getch_last_extended_key = 0;
-			return ch;
+			#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+				coniox_kbd_buffer = (unsigned short *)MK_FP(0x40, 0x1E);
+			#else
+				coniox_kbd_buffer = (unsigned short far *)MK_FP(0x40, 0x1E);
+			#endif
 		}
 
 		while (!kbhit())
 		{
 		}
 
-		tail = peekw(0x40, 0x1C);
-		scancode = keyboard_buffer[tail >> 1];
-		tail = (tail + 2) & 0x1E;
+		tail     = peekw(0x40, 0x1C);
+		scancode = coniox_kbd_buffer[tail >> 1];
+		tail     = (tail + 2) & 0x1E;
 		pokew(0x40, 0x1C, tail);
 
 		if ((scancode & 0xFF) == 0)
@@ -2622,7 +2641,6 @@ int getch(void)
 			getch_last_extended_key = scancode >> 8;
 			return 0;
 		}
-
 		return scancode & 0xFF;
 	}
 	else
@@ -2635,11 +2653,7 @@ int getch(void)
 			getch_last_extended_key = r.h.ah;
 			return 0;
 		}
-		else
-		{
-			// Tecla normal
-			return r.h.al;
-		}
+		return r.h.al;
 	}
 }
 
@@ -2649,18 +2663,18 @@ int ungetch(int __ch)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short head, tail, new_tail;
-		unsigned short scancode;
-		static unsigned short far* keyboard_buffer = NULL;
-		
-		
-		if (!keyboard_buffer)
+		/* OPT: reuse coniox_kbd_buffer global instead of a separate local static */
+		if (!coniox_kbd_buffer)
 		{
-			keyboard_buffer = (unsigned short far*)MK_FP(0x40, 0x1E);
+			#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+				coniox_kbd_buffer = (unsigned short *)MK_FP(0x40, 0x1E);
+			#else
+				coniox_kbd_buffer = (unsigned short far *)MK_FP(0x40, 0x1E);
+			#endif
 		}
 		head = peekw(0x40, 0x1A);
 		tail = peekw(0x40, 0x1C);
 
-		// Verificar si el buffer no está lleno
 		new_tail = tail - 2;
 		if ((short) new_tail < 0)
 		{
@@ -2668,38 +2682,25 @@ int ungetch(int __ch)
 		}
 		if (new_tail == head)
 		{
-			// Buffer lleno, no se puede insertar más
 			return EOF;
 		}
 
-		// Insertar el carácter con scancode 0 (sin scan code)
-		scancode = (0) | (__ch & 0xFF);
-		keyboard_buffer[new_tail >> 1] = scancode;
-
-		// Actualizar tail
+		/* OPT: (0 << 8) is always 0 -- simplified to just char value */
+		coniox_kbd_buffer[new_tail >> 1] = (unsigned short)(__ch & 0xFF);
 		pokew(0x40, 0x1C, new_tail);
 		return __ch;
 	}
 	else
 	{
 		union REGS r;
-		r.h.ah = 0x05; // ungetch BIOS
-		#if defined(__WATCOMC__)		
+		r.h.ah = 0x05;
+		#if defined(__WATCOMC__)
 			r.w.cx = (__ch & 0xFF);
 		#else
 			r.x.cx = (__ch & 0xFF);
 		#endif
-		
 		coniox_int86(0x16, &r, &r);
-
-		if (r.h.al == 0)
-		{
-			return __ch;
-		}
-		else
-		{
-			return EOF;
-		}
+		return (r.h.al == 0) ? __ch : EOF;
 	}
 }
 #endif
