@@ -215,9 +215,6 @@ int putch(int __c)
 			coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
 			if (ti.curx < winwidth)
 			{
-				/* Caso mas comun: avance simple sin wrap. Actualizar solo
-				   ti.curx evita mover el cursor fisico (outportb/SetConsoleCursorPosition)
-				   en cada caracter, lo que supone la mayor ganancia en cputs/cprintf. */
 				ti.curx++;
 			}
 			else
@@ -769,9 +766,6 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 	total = w * h;
 
-	/* Rellenar usando doubling: escribir 1 celda y luego duplicar bloques
-	   en potencias de 2. Sustituye O(n) asignaciones individuales por
-	   O(log n) memcpy, lo que es relevante en clrscr sobre pantallas grandes. */
 	#if UNICODE
 		ci[0].Char.UnicodeChar = (wchar_t) ch;
 	#else
@@ -868,7 +862,6 @@ int getch(void)
 	}
 	if (!ReadConsoleA(coniox_console_input, &car, 1, &leidos, NULL) || leidos == 0)
 	{
-		/* Restaurar modo antes de salir */
 		SetConsoleMode(coniox_console_input, modo);
 		return EOF;
 	}
@@ -1516,8 +1509,6 @@ int coniox_basecrt = 0x3D4;
 	{
 		short coniox_far* buf = (short coniox_far*) m;
 
-		/* Unroll x4: reduce el overhead de decrementar/comparar count
-		   en compiladores sin pragma aux (Borland, DJGPP sin Watcom). */
 		while (count >= 4)
 		{
 			buf[0] = val;
@@ -1983,7 +1974,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	unsigned short coniox_far* p;
 	int y1, ylim;
 	unsigned short v;
-	unsigned int sw;   /* screenwidth en registro local evita recargar ti.screenwidth en cada iteracion */
+	unsigned int sw;
 	union REGS r;
 
 	if (w <= 0 || h <= 0)
@@ -2161,10 +2152,6 @@ void delay (unsigned int ms)
 
 	if (directvideo)
 	{
-		/* 1 tick de reloj BIOS = 1/18.2065 s ≈ 54.925 ms.
-		   La formula original  ms * 182 / 10000  desborda en entero de 16 bits
-		   para ms > 360 (182 * 361 = 65702 > 65535).
-		   Equivalente sin desbordamiento: ms / 55  (error < 0.2 %). */
 		lTicks = peekl(0, 0x46C);
 		while (peekl(0, 0x46C) < (lTicks + (unsigned long) ms / 55))
 		{
@@ -2444,7 +2431,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void* __source)
 	unsigned short coniox_far* p;
 	unsigned short coniox_far* src;
 	int y1;
-	unsigned int width = (__right - __left + 1);  /* en palabras (shorts) */
+	unsigned int width = (__right - __left + 1);
 
 	coniox_init(NULL);
 	if (__right < __left || __bottom < __top)
@@ -2471,7 +2458,7 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	unsigned short coniox_far* src;
 	unsigned short coniox_far* dst;
 	int y1;
-	unsigned int width = (__right - __left + 1) << 1;   /* bytes por fila */
+	unsigned int width = (__right - __left + 1) << 1;
 
 	coniox_init(NULL);
 	src = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
@@ -2492,7 +2479,7 @@ int coniox_movetext_nonoverlap(int __left, int __top, int __right, int __bottom,
 	unsigned short coniox_far* src;
 	unsigned short coniox_far* dst;
 	int y1;
-	unsigned int width = (__right - __left + 1) << 1;   /* bytes por fila */
+	unsigned int width = (__right - __left + 1) << 1;
 
 	coniox_init(NULL);
 	src = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
