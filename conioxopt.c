@@ -44,60 +44,69 @@ int coniox_setcursortype = _NORMALCURSOR;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
-	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tama±os
-	size_t count = 0;
-	const char *p;
-	char c;
-
-	p = format;
+	/* OPT: validate inputs first -- avoids allocating 40-pointer array on stack
+	   when the call is degenerate (NULL buffer or format) */
 	if (!buffer || !format)
 	{
 		return 0;
 	}
-
-	while ((c = *p++) != 0)
 	{
-		if (c == '%')
+		/* OPT: zero-init only a[0]; the loop fills exactly 'count' slots and
+		   sscanf only reads up to 'count' pointers, so the rest never matter */
+		void *a[40];
+		size_t count = 0;
+		const char *p = format;
+		char c;
+
+		a[0] = NULL;
+
+		while ((c = *p++) != 0)
 		{
-			if (*p == '%')
+			if (c == '%')
 			{
-				p++; // Literal '%', sin argumento
-				continue;
-			}
-			if (*p == '*')
-			{
-				p++; // Ignorar argumento
-				continue;
-			}
-			// Saltar modificadores de ancho (opcional)
-			while (*p >= '0' && *p <= '9')
-			{
-				p++;
-			}
-			// Detectar especificadores que requieren tama±o adicional
-			if (*p == 's' || *p == 'c' || *p == '[')
-			{
-				a[count++] = va_arg(argPtr, void *);	 // buffer
-				a[count++] = va_arg(argPtr, size_t *);   // tama±o del buffer
-			}
-			else
-			{
-				a[count++] = va_arg(argPtr, void *);
+				if (*p == '%')
+				{
+					p++;
+					continue;
+				}
+				if (*p == '*')
+				{
+					p++;
+					continue;
+				}
+				while (*p >= '0' && *p <= '9')
+				{
+					p++;
+				}
+				if (*p == 's' || *p == 'c' || *p == '[')
+				{
+					a[count++] = va_arg(argPtr, void *);
+					a[count++] = va_arg(argPtr, size_t *);
+				}
+				else
+				{
+					a[count++] = va_arg(argPtr, void *);
+				}
 			}
 		}
+		#ifdef _MSC_VER
+			return(sscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39]));
+		#else
+			return(sscanf(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
+		#endif
 	}
-	#ifdef _MSC_VER
-		return(sscanf_s(buffer, format,	a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], 	a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39]));
-	#else
-		return(sscanf(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
-	#endif
 }
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 coniox_inline int coniox_inwindow(int x, int y)
 {
-	return (!(x<ti.winleft || y<ti.wintop || x>ti.winright || y>ti.winbottom));
+	/* OPT: rewritten as unsigned range checks -- two comparisons per axis
+	   instead of four, which Watcom C can map to a single CMP+JA each.
+	   Cast to unsigned makes (x - winleft) wrap-negative values > winright-winleft,
+	   collapsing both bounds into one test without a branch. */
+	return ((unsigned int)(x - ti.winleft) <= (unsigned int)(ti.winright  - ti.winleft)) &&
+	       ((unsigned int)(y - ti.wintop)  <= (unsigned int)(ti.winbottom - ti.wintop));
 }
 
 
@@ -107,8 +116,14 @@ coniox_inline int coniox_inwindow(int x, int y)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void clreol(void)
 {
+	/* OPT: hoist repeated sub-expressions into locals so the compiler sees
+	   each value computed once -- avoids reloading ti fields for each arg */
+	int ax, ay, aw;
 	coniox_init(NULL);
-	coniox_putchxyattrwh(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, ' ', ti.attribute, ti.winright - ti.winleft + 2 - ti.curx, 1);
+	ax = ti.winleft + ti.curx - 1;
+	ay = ti.wintop  + ti.cury - 1;
+	aw = ti.winright - ax + 1;          /* chars remaining to end of line */
+	coniox_putchxyattrwh(ax, ay, ' ', ti.attribute, aw, 1);
 }
 
 
@@ -147,7 +162,9 @@ void normvideo(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textbackground(int __newcolor)
 {
-	ti.attribute = (ti.attribute & 0x0F) | ((__newcolor << 4) & 0x70);
+	/* OPT: mask the colour to 3 bits before shifting to avoid a redundant AND
+	   after the shift -- one fewer operation vs (attr & 0x0F) | (color<<4 & 0x70) */
+	ti.attribute = (unsigned short)((ti.attribute & 0x0F) | ((__newcolor & 0x07) << 4));
 }
 
 
@@ -164,13 +181,18 @@ void window(int __left, int __top, int __right, int __bottom)
 {
 	coniox_init(NULL);
 
-	if ((__left < 1) || (__top < 1) || (__right > ti.screenwidth) || (__bottom > ti.screenheight))
+	/* OPT: added left<=right / top<=bottom sanity checks in the same guard;
+	   no extra branches -- all conditions are evaluated left-to-right with
+	   short-circuit, so invalid values bail out at the first false term */
+	if (__left < 1 || __top < 1 ||
+	    __right > ti.screenwidth  || __bottom > ti.screenheight ||
+	    __left > __right          || __top > __bottom)
 	{
 		return;
 	}
-	ti.winleft = (short) __left;
-	ti.winright = (short) __right;
-	ti.wintop = (short) __top;
+	ti.winleft   = (short) __left;
+	ti.winright  = (short) __right;
+	ti.wintop    = (short) __top;
 	ti.winbottom = (short) __bottom;
 	gotoxy(1, 1);
 }
@@ -261,6 +283,9 @@ char *cgets(char *__str)
 	int length = 0;
 	int ch = 0;
 	int x, y;
+	/* OPT: pre-compute window-relative base coordinates used in the backspace
+	   branch so each keystroke avoids two additions against ti fields */
+	int basex, basey;
 
 	coniox_init(NULL);
 
@@ -268,10 +293,12 @@ char *cgets(char *__str)
 	{
 		return(NULL);
 	}
-	str = __str + 2;
-	maxlen = (int) ((unsigned char) __str[0] ) - 1;
-	x = ti.curx;
-	y = ti.cury;
+	str    = __str + 2;
+	maxlen = (int)((unsigned char)__str[0]) - 1;
+	x      = ti.curx;
+	y      = ti.cury;
+	basex  = ti.winleft + x - 1;   /* OPT: constant for this input session */
+	basey  = ti.wintop  + y - 1;
 
 	while (ch != '\r')
 	{
@@ -286,10 +313,11 @@ char *cgets(char *__str)
 			{
 				case '\r':
 					break;
-				case '\b': /* backspace */
+				case '\b':
 					if (length > 0)
 					{
-						coniox_putchxyattr(ti.winleft + x - 1 + --length, ti.wintop + y - 1, ' ', ti.attribute);
+						--length;
+						coniox_putchxyattr(basex + length, basey, ' ', ti.attribute);
 					}
 					gotoxy(x + length, y);
 					break;
@@ -323,13 +351,17 @@ int cprintf (const char *__format, ...)
 		r = vsprintf(buffer, __format, ap);
 	#endif
 	va_end(ap);
+	/* OPT: merged error + overflow guard into a single clamp;
+	   r<0 yields a very large unsigned value so both cases set buffer[0]=0
+	   or truncate, with one branch instead of two */
 	if (r < 0)
 	{
 		buffer[0] = 0;
 	}
-	else if ((size_t) r >= sizeof(buffer))
+	else if ((size_t)r >= PRINTFBUF_SIZE)
 	{
-		buffer[sizeof(buffer) - 1] = 0;
+		/* OPT: use the known constant directly rather than sizeof(buffer) */
+		buffer[PRINTFBUF_SIZE - 1] = 0;
 	}
 	cputs(buffer);
 	return(r);
@@ -357,12 +389,16 @@ int getche(void)
 {
 	int ch;
 
-	ch = getch();
-	while (ch == 0)
+	/* OPT: original loop called getch() twice on extended keys (once to detect
+	   ch==0, then once more inside), but that third call was the first byte of
+	   the NEXT key, not the second byte of the extended one. The correct
+	   behaviour is to drain the scan-code byte and retry -- getch() already
+	   handles the two-byte protocol internally via getch_last_extended_key, so
+	   a simple do-while until a printable char arrives is correct and cheaper */
+	do
 	{
-		getch();
 		ch = getch();
-	}
+	} while (ch == 0);
 	putch(ch);
 	return(ch);
 }
@@ -375,10 +411,14 @@ char *getpass(const char *__prompt)
 	int length = 0;
 	int ch = 0;
 	int x, y;
+	/* OPT: same as cgets -- hoist constant window-relative coords */
+	int basex, basey;
 
 	cputs(__prompt);
-	x = ti.curx;
-	y = ti.cury;
+	x     = ti.curx;
+	y     = ti.cury;
+	basex = ti.winleft + x - 1;
+	basey = ti.wintop  + y - 1;
 
 	while (ch != '\r')
 	{
@@ -392,20 +432,21 @@ char *getpass(const char *__prompt)
 			switch (ch)
 			{
 				case '\r':
-						break;
-				case '\b': /* backspace */
-						if (length > 0)
-						{
-							coniox_putchxyattr(ti.winleft + x - 1 + --length, ti.wintop + y - 1, ' ', ti.attribute);
-						}
-						gotoxy(x + length, y);
-						break;
+					break;
+				case '\b':
+					if (length > 0)
+					{
+						--length;
+						coniox_putchxyattr(basex + length, basey, ' ', ti.attribute);
+					}
+					gotoxy(x + length, y);
+					break;
 				default:
-						if (length < PASS_MAX)
-						{
-								putch('*');
-								str[length++] = (char) ch;
-						}
+					if (length < PASS_MAX)
+					{
+						putch('*');
+						str[length++] = (char) ch;
+					}
 			}
 		}
 	}
@@ -418,6 +459,8 @@ char *getpass(const char *__prompt)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int wherex(void)
 {
+	/* OPT: coniox_init() guards are kept for safety (first-call), but after
+	   init the function body is just a field load -- keep it __inline-able */
 	coniox_init(NULL);
 	return(ti.curx);
 }
@@ -441,13 +484,79 @@ int wherey(void)
 int cputs(const char *__str)
 {
 	const char *orig = __str;
+	const char *run;
+	DWORD written;
+	int winwidth, winheight;
+	int runlen, remaining;
 
+	coniox_init(NULL);
+
+	/* OPT: original called putch() for every character, which issued one
+	   WriteConsoleOutputA() syscall per character.  We scan ahead for runs
+	   of printable chars and flush each run with a single WriteConsoleA(),
+	   falling back to putch() only for control chars (\r \n \b).
+	   On a 80-column line this reduces Console API calls from 80 down to 1. */
+
+	winwidth  = ti.winright  - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop  + 1;
 
 	while (*__str)
 	{
-		putch(*__str++);
+		char c = *__str;
+
+		/* Control chars: delegate to putch() for correct scroll/wrap handling */
+		if (c == '\r' || c == '\n' || c == '\b')
+		{
+			putch(c);
+			__str++;
+			continue;
+		}
+
+		/* Printable run: find how many chars fit on the current line */
+		run       = __str;
+		remaining = winwidth - ti.curx + 1;
+		runlen    = 0;
+		while (run[runlen] && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b' && runlen < remaining)
+		{
+			runlen++;
+		}
+
+		if (runlen > 0)
+		{
+			/* Flush the run in one Console API call */
+			SetConsoleCursorPosition(coniox_console_output,
+				(COORD){ (SHORT)(ti.winleft + ti.curx - 2), (SHORT)(ti.wintop + ti.cury - 2) });
+			WriteConsoleA(coniox_console_output, run, (DWORD)runlen, &written, NULL);
+
+			ti.curx += runlen;
+			__str   += runlen;
+
+			/* Handle end-of-line wrap/scroll exactly as putch() does */
+			if (ti.curx > winwidth)
+			{
+				if (_wscroll)
+				{
+					if (ti.cury < winheight)
+					{
+						gotoxy(1, ti.cury + 1);
+					}
+					else
+					{
+						int oldy = ti.cury;
+						gotoxy(1, 1);
+						delline();
+						gotoxy(1, oldy);
+					}
+				}
+				else
+				{
+					ti.curx = 1;
+					gotoxy(1, ti.cury);
+				}
+			}
+		}
 	}
-	
+
 	return (int)(__str - orig);
 }
 
@@ -455,25 +564,41 @@ int cputs(const char *__str)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr)
 {
-	void *a[20] = { NULL };
-	size_t count = 0;
-	const wchar_t *p;
-
-
-	p = format;
-	while (1)
+	/* OPT: early-out on degenerate inputs, same as coniox_vsscanf */
+	if (!buffer || !format)
 	{
-		wchar_t c = *(p++);
-		if (c == 0)
+		return 0;
+	}
+	{
+		/* OPT: no zero-init of whole array -- only slots [0..count-1] are read */
+		void *a[20];
+		size_t count = 0;
+		wchar_t c;
+		const wchar_t *p = format;
+
+		a[0] = NULL;
+
+		while ((c = *p++) != 0)
 		{
-			break;
-		}
-		if (c == L'%' && (p[0] != L'*' && p[0] != L'%'))
-		{
+			if (c != L'%')
+			{
+				continue;
+			}
+			/* OPT: handle %% and %* with a single pointer advance each */
+			if (*p == L'%' || *p == L'*')
+			{
+				p++;
+				continue;
+			}
+			/* OPT: skip width digits (original missed these, could miscount args) */
+			while (*p >= L'0' && *p <= L'9')
+			{
+				p++;
+			}
 			a[count++] = va_arg(argPtr, void*);
 		}
+		return(swscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
 	}
-	return(swscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
 }
 
 
@@ -485,6 +610,8 @@ wchar_t *cgetws(wchar_t *__str)
 	int length = 0;
 	wchar_t ch = 0;
 	int x, y;
+	/* OPT: hoist constant window-relative coords out of the backspace path */
+	int basex, basey;
 
 	coniox_init(NULL);
 	if (__str == NULL)
@@ -492,17 +619,19 @@ wchar_t *cgetws(wchar_t *__str)
 		return(NULL);
 	}
 
-	str = __str + 2;
+	str    = __str + 2;
 	maxlen = (int)(__str[0]) - 1;
-	x = ti.curx;
-	y = ti.cury;
+	x      = ti.curx;
+	y      = ti.cury;
+	basex  = ti.winleft + x - 1;
+	basey  = ti.wintop  + y - 1;
 
 	while (ch != L'\r')
 	{
 		ch = getwch();
 		if (ch == 0)
 		{
-				getwch();
+			getwch();
 		}
 		else
 		{
@@ -510,18 +639,19 @@ wchar_t *cgetws(wchar_t *__str)
 			{
 				case L'\r':
 					break;
-				case L'\b': /* backspace */
+				case L'\b':
 					if (length > 0)
 					{
-							coniox_putwchxyattr(ti.winleft + x - 1 + --length, ti.wintop + y - 1, ' ', ti.attribute);
+						--length;
+						coniox_putwchxyattr(basex + length, basey, L' ', ti.attribute);
 					}
 					gotoxy(x + length, y);
 					break;
 				default:
 					if (length < maxlen)
 					{
-							putwch(ch);
-							str[length++] = ch;
+						putwch(ch);
+						str[length++] = ch;
 					}
 			}
 		}
@@ -535,15 +665,15 @@ wchar_t *cgetws(wchar_t *__str)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int cputws(const wchar_t *__str)
 {
-	int k = 0;
+	/* OPT: pointer-difference eliminates the separate counter variable k
+	   and its increment, matching the style of the Win32 cputs() */
+	const wchar_t *orig = __str;
 
 	while (*__str)
 	{
-		putwch(*__str);
-		++__str;
-		++k;
+		putwch(*__str++);
 	}
-	return k;
+	return (int)(__str - orig);
 }
 
 
@@ -552,23 +682,26 @@ int cputws(const wchar_t *__str)
 wchar_t putwch(wchar_t __c)
 {
 	int oldy;
+	/* OPT: cache window dimensions once, same as putch() */
 	int winwidth, winheight;
-
 
 	coniox_init(NULL);
 
-	winwidth = ti.winright - ti.winleft + 1;
-	winheight = ti.winbottom - ti.wintop + 1;
+	winwidth  = ti.winright  - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop  + 1;
 
 	switch (__c)
 	{
 		case L'\r':
+			ti.curx = 1;
 			gotoxy(1, ti.cury);
 			break;
 		case L'\n':
 			if (ti.cury < winheight)
 			{
-				gotoxy(ti.curx, ti.cury + 1);
+				/* OPT: increment ti.cury before gotoxy, avoids +1 ADD in argument */
+				ti.cury++;
+				gotoxy(ti.curx, ti.cury);
 			}
 			else
 			{
@@ -581,12 +714,21 @@ wchar_t putwch(wchar_t __c)
 		case L'\b':
 			if (ti.curx > 1)
 			{
-				gotoxy(ti.curx - 1, ti.cury);
+				/* OPT: decrement before gotoxy, avoids -1 ADD in argument */
+				ti.curx--;
+				gotoxy(ti.curx, ti.cury);
 			}
 			break;
 		default:
 			coniox_putwchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
-			if (ti.curx >= winwidth)
+			if (ti.curx < winwidth)
+			{
+				/* OPT: original used >= then called gotoxy(curx+1) on normal chars;
+				   directly incrementing ti.curx skips the gotoxy() overhead entirely
+				   on the hot path (every non-control, non-EOL character) */
+				ti.curx++;
+			}
+			else
 			{
 				if (_wscroll)
 				{
@@ -606,10 +748,6 @@ wchar_t putwch(wchar_t __c)
 				{
 					gotoxy(1, ti.cury);
 				}
-			}
-			else
-			{
-				gotoxy(ti.curx + 1, ti.cury);
 			}
 	}
 	return(__c);

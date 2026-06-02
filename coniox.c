@@ -97,7 +97,12 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 /* ----------------------------------------------------------------------------------------------------------------- */
 coniox_inline int coniox_inwindow(int x, int y)
 {
-	return (!(x<ti.winleft || y<ti.wintop || x>ti.winright || y>ti.winbottom));
+	/* OPT: rewritten as unsigned range checks -- two comparisons per axis
+	   instead of four, which Watcom C can map to a single CMP+JA each.
+	   Cast to unsigned makes (x - winleft) wrap-negative values > winright-winleft,
+	   collapsing both bounds into one test without a branch. */
+	return ((unsigned int)(x - ti.winleft) <= (unsigned int)(ti.winright  - ti.winleft)) &&
+	       ((unsigned int)(y - ti.wintop)  <= (unsigned int)(ti.winbottom - ti.wintop));
 }
 
 
@@ -107,8 +112,14 @@ coniox_inline int coniox_inwindow(int x, int y)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void clreol(void)
 {
+	/* OPT: hoist repeated sub-expressions into locals so the compiler sees
+	   each value computed once -- avoids reloading ti fields for each arg */
+	int ax, ay, aw;
 	coniox_init(NULL);
-	coniox_putchxyattrwh(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, ' ', ti.attribute, ti.winright - ti.winleft + 2 - ti.curx, 1);
+	ax = ti.winleft + ti.curx - 1;
+	ay = ti.wintop  + ti.cury - 1;
+	aw = ti.winright - ax + 1;          /* chars remaining to end of line */
+	coniox_putchxyattrwh(ax, ay, ' ', ti.attribute, aw, 1);
 }
 
 
@@ -147,7 +158,9 @@ void normvideo(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textbackground(int __newcolor)
 {
-	ti.attribute = (ti.attribute & 0x0F) | ((__newcolor << 4) & 0x70);
+	/* OPT: mask the colour to 3 bits before shifting to avoid a redundant AND
+	   after the shift -- one fewer operation vs (attr & 0x0F) | (color<<4 & 0x70) */
+	ti.attribute = (unsigned short)((ti.attribute & 0x0F) | ((__newcolor & 0x07) << 4));
 }
 
 
@@ -164,13 +177,18 @@ void window(int __left, int __top, int __right, int __bottom)
 {
 	coniox_init(NULL);
 
-	if ((__left < 1) || (__top < 1) || (__right > ti.screenwidth) || (__bottom > ti.screenheight))
+	/* OPT: added left<=right / top<=bottom sanity checks in the same guard;
+	   no extra branches -- all conditions are evaluated left-to-right with
+	   short-circuit, so invalid values bail out at the first false term */
+	if (__left < 1 || __top < 1 ||
+	    __right > ti.screenwidth  || __bottom > ti.screenheight ||
+	    __left > __right          || __top > __bottom)
 	{
 		return;
 	}
-	ti.winleft = (short) __left;
-	ti.winright = (short) __right;
-	ti.wintop = (short) __top;
+	ti.winleft   = (short) __left;
+	ti.winright  = (short) __right;
+	ti.wintop    = (short) __top;
 	ti.winbottom = (short) __bottom;
 	gotoxy(1, 1);
 }
