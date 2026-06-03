@@ -1558,6 +1558,8 @@ void coniox_init(const void* title)
 	unsigned int cursor;
 	union REGS r;
 
+	(void) title;					/* W303: suppress unused parameter warning */
+
 	/* Check if already initialized */
 	if (ti.normattr == 7)
 	{
@@ -2324,7 +2326,7 @@ void insline(void)
 	//Seems to be faster using BIOS under emulators
 	if ((directvideo) && (!coniox_is_emulator))
 	{
-		coniox_movetext_nonoverlap(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop + 1);
+		coniox_movetext_nonoverlap(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom - 1, ti.winleft, ti.cury + ti.wintop + 1);
 		coniox_putchxyattrwh(ti.winleft, ti.cury + ti.wintop - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
 	}
 	else
@@ -2428,15 +2430,35 @@ int coniox_movetext_nonoverlap(int __left, int __top, int __right, int __bottom,
 	unsigned short coniox_far* dst;
 	int y1;
 	unsigned int width = (__right - __left + 1) << 1;
+	int rows = __bottom - __top + 1;
 
 	coniox_init(NULL);
-	src = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
-	dst = (unsigned short coniox_far*) coniox_offset(__destleft - 1, __desttop - 1);
-	for (y1 = __top; y1 <= __bottom; y1++)
+
+	if (__desttop <= __top)
 	{
-		_fmemcpy(dst, src, width);
-		src += ti.screenwidth;
-		dst += ti.screenwidth;
+		/* Destino encima o igual: top->bottom, dst < src, sin solapamiento. Caso: delline */
+		/* W112 fix: cast via void coniox_far* para evitar truncacion de segmento en 16-bit */
+		src = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__left     - 1, __top     - 1);
+		dst = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__destleft - 1, __desttop - 1);
+		for (y1 = 0; y1 < rows; y1++)
+		{
+			_fmemcpy(dst, src, width);
+			src += ti.screenwidth;
+			dst += ti.screenwidth;
+		}
+	}
+	else
+	{
+		/* Destino debajo: bottom->top para evitar solapamiento destructivo. Caso: insline */
+		/* W112 fix: cast via void coniox_far* */
+		src = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__left     - 1, __bottom          - 1);
+		dst = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__destleft - 1, __desttop + rows - 2);
+		for (y1 = 0; y1 < rows; y1++)
+		{
+			_fmemcpy(dst, src, width);
+			src -= ti.screenwidth;
+			dst -= ti.screenwidth;
+		}
 	}
 	return(1);
 }
