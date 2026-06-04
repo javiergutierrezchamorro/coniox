@@ -48,7 +48,7 @@ int coniox_setcursortype = _NORMALCURSOR;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
-	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tamaños
+	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tamaÂ±os
 	size_t count = 0;
 	const char *p;
 	char c;
@@ -78,11 +78,11 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 			{
 				p++;
 			}
-			// Detectar especificadores que requieren tamaño adicional
+			// Detectar especificadores que requieren tamaÂ±o adicional
 			if (*p == 's' || *p == 'c' || *p == '[')
 			{
 				a[count++] = va_arg(argPtr, void *);	 // buffer
-				a[count++] = va_arg(argPtr, size_t *);   // tamaño del buffer
+				a[count++] = va_arg(argPtr, size_t *);   // tamaÂ±o del buffer
 			}
 			else
 			{
@@ -1525,18 +1525,19 @@ int coniox_basecrt = 0x3D4;
 
 	void coniox_far *coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);	
 	#if (defined(__FLAT__))
-		#pragma aux coniox_fmemcpy =          \
-	    "   cld                         "  \
-	    "   mov   edi, eax              "  \
-	    "   mov   esi, edx              "  \
-	    "   mov   ecx, ebx              "  \
-	    "   shr   ecx, 2                "  \
-	    "   rep   movsd                 "  \
-	    "   mov   ecx, ebx              "  \
-	    "   and   ecx, 3                "  \
-	    "   rep   movsb                 "  \
-	    parm caller [EAX][EDX][EBX]        \
-	    value [ES EDI]                        \
+		#pragma aux coniox_fmemcpy =                                    \
+	    "   .386                                                 "  \
+	    "   cld                                                  "  \
+	    "   mov   edi, eax   " /* dst  -> EDI (clobbered)    */  \
+	    "   mov   esi, edx   " /* src  -> ESI (clobbered)    */  \
+	    "   mov   ecx, ebx   " /* count -> ECX               */  \
+	    "   shr   ecx, 2     " /* dwords                     */  \
+	    "   rep   movsd      " /* 4 bytes/cycle              */  \
+	    "   mov   ecx, ebx   " /* reload byte count          */  \
+	    "   and   ecx, 3     " /* 0..3 remainder bytes       */  \
+	    "   rep   movsb      "                                    \
+	    parm caller [EAX][EDX][EBX]                                 \
+	    value [EAX]           /* return dst (unchanged in EAX) */  \
 	    modify exact [ECX ESI EDI];
 	#else
 		#pragma aux coniox_fmemcpy =              \
@@ -2076,7 +2077,7 @@ void coniox_blink(unsigned int blink)
 	{
 		union REGS r;
 		#if defined(__WATCOMC__)
-			r.w.ax = 0x1003;		// Subfunción: set blink/intensity bit
+			r.w.ax = 0x1003;		// Subfunciâ‰¤n: set blink/intensity bit
 		#else
 			r.x.ax = 0x1003;
 		#endif
@@ -2106,11 +2107,11 @@ void delay (unsigned int ms)
 		unsigned long microsec = ms * 1000UL;
 		
 		#if defined(__WATCOMC__)
-			r.w.ax = 0x8600;					// función 0x86 en AH, AL=0
+			r.w.ax = 0x8600;					// funciâ‰¤n 0x86 en AH, AL=0
 			r.w.cx = microsec & 0xFFFF;		// parte baja de microsegundos
 			r.w.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
 		#else
-			r.x.ax = 0x8600;					// función 0x86 en AH, AL=0
+			r.x.ax = 0x8600;					// funciâ‰¤n 0x86 en AH, AL=0
 			r.x.cx = microsec & 0xFFFF;		// parte baja de microsegundos
 			r.x.dx = (microsec >> 16) & 0xFFFF; // parte alta de microsegundos
 		 #endif
@@ -2407,6 +2408,9 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 		src = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__left     - 1, __top     - 1);
 		dst = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__destleft - 1, __desttop - 1);
 
+		/* OPT: if the region spans full screen width AND rows are contiguous
+		   in VRAM (screenwidth == window width), collapse all rows into a single
+		   _fmemcpy -- avoids per-row call overhead (24 calls -> 1 for full scroll). */
 		if ((unsigned int)(__right - __left + 1) == ti.screenwidth)
 		{
 			coniox_fmemcpy(dst, src, (unsigned long)width * rows);
@@ -2426,8 +2430,11 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 		src = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__left     - 1, __bottom          - 1);
 		dst = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__destleft - 1, __desttop + rows - 2);
 
+		/* OPT: full-width scroll down -- single _fmemmove (handles overlap). */
 		if ((unsigned int)(__right - __left + 1) == ti.screenwidth)
 		{
+			/* src points to last row; dst points to last+1 row.
+			   We need the start of both regions for _fmemmove. */
 			unsigned short coniox_far* src0 = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__left - 1, __top - 1);
 			unsigned short coniox_far* dst0 = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__destleft - 1, __desttop - 1);
 			_fmemmove(dst0, src0, (unsigned long)width * rows);
@@ -2535,6 +2542,11 @@ int getch(void)
 		{
 		}
 
+		/* FIX: read from HEAD (0x1A), not tail (0x1C).
+		   Use peekw(0x40, head) directly -- avoids the wrong
+		   keyboard_buffer[head>>1] indexing (buffer base is 0x1E,
+		   not 0x00, so x>>1 gives wrong word offset).
+		   Wrap: valid range 0x1E..0x3C, next = head+2 > 0x3C ? 0x1E : head+2 */
 		head = peekw(0x40, 0x1A);
 		scancode = peekw(0x40, head);
 		head = (head + 2 > 0x3C) ? 0x1E : head + 2;
@@ -2575,6 +2587,11 @@ int ungetch(int __ch)
 		head = peekw(0x40, 0x1A);
 		tail = peekw(0x40, 0x1C);
 
+		/* FIX: ungetch inserts by decrementing HEAD (not tail).
+		   Wrap: valid range 0x1E..0x3C; prev = head < 0x20 ? 0x3C : head-2.
+		   Original: decremented tail with `(short)<0` guard that never fires
+		   (tail >= 0x1E always), wrapped to 30 (0x1E-2=0x1C!) -> BDA corruption.
+		   Also used keyboard_buffer[x>>1] with wrong base offset. */
 		new_head = (head < 0x20) ? 0x3C : head - 2;
 		if (new_head == tail)
 		{
