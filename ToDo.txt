@@ -1,3 +1,4 @@
+- Improve performance making FLAT mode use NEAR pointers and not far (coniox_far)
 
 http://pages.suddenlink.net/gspears/CONIO.htm
 
