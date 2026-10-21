@@ -1,6 +1,6 @@
 /**
 @file coniox.h
-CONIOX v5.0                                                     (c) Copyright 1995-2019 by Javier Gutiérrez Chamorro
+CONIOX v5.0                                                     (c) Copyright 1995-2026 by Javier Gutiérrez Chamorro
                                                             https://nikkhokkho.sourceforge.io/static.php?page=CONIOX
 
 
@@ -172,8 +172,6 @@ extern "C" {
 #include <dos.h>
 #include <bios.h>
 
-#define coniox_far __far
-	
 
 #if defined(__WATCOMC__)
 	#include <i86.h>
@@ -185,6 +183,9 @@ extern "C" {
 	#define _fmemmove	memmove
 	#define fmemcpy		memcpy
 	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base)
+	#define coniox_far
+#else
+	#define coniox_far __far
 #endif
 
 
@@ -340,10 +341,9 @@ Structure used by gettext/puttext.
 */
 typedef struct char_info
 {
-	char letter;			/**< character value */
-    unsigned short attr;	/**< attribute value */
+    unsigned char letter;	/**< character value */
+    unsigned char attr;	/**< attribute value: background in bits 4-6, blink in bit 7, foreground in bits 0-3 */
 } char_info;
-
 
 
 /**
@@ -733,11 +733,13 @@ typedef struct wchar_info
     unsigned short attr;	/**< attribute value */
 } wchar_info;
 
-#if _MSC_VER <= 2000
+wchar_t  getwch(void);
+wchar_t  putwch(wchar_t);
+
+
+#if defined(UNICODE)
 	wchar_t *cgetws( wchar_t *__str );
 	int      cputws( const wchar_t *__str );
-	wchar_t  getwch(void);
-	wchar_t  putwch(wchar_t);
 	wchar_t  ungetwch( wchar_t );
 	wchar_t  getwche(void);
 	int cwscanf( const wchar_t *__format, ... );

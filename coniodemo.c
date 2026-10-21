@@ -92,7 +92,7 @@ void init(void)
 	_wscroll = 1;
 	
 	/* Title text */
-	strcpy(line, "CONIO DEMO v5.00 - (c) Copyright 2025 Javier Gutierrez Chamorro (Guti)");
+	strcpy(line, "CONIO DEMO v5.00 - (c) Copyright 2026 Javier Gutierrez Chamorro (Guti)");
 	i = (int) strlen(line);
 	gotoxy((ti.screenwidth - i) >> 1, 1);
 	cputs(line);
