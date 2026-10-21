@@ -177,7 +177,7 @@ void textbackground(int __newcolor)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textcolor(int __newcolor)
 {
-	ti.attribute = (ti.attribute & 0xF0) | (__newcolor & 0x0F);
+	ti.attribute = (unsigned short)((ti.attribute & 0x70) | (__newcolor & 0x8F));
 }
 
 
@@ -1491,19 +1491,19 @@ int coniox_basecrt = 0x3D4;
 	unsigned short coniox_far *coniox_currentoffset;
 	#define coniox_int86 int86
 	#define coniox_int86x int86x
-	#if defined(__WATCOMC__)
+	#if defined(__WATCOMC__) && defined(__SMALL_DATA__)
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
-		#pragma aux coniox_offset =											\
-				"			 .8086														"\
-				"			 mov ax, word ptr ti + 16						"\
-				"			 mul di														 "\
-				"			 add ax, si										 "\
-				"			 add ax, ax													"\
-				"			 add ax, word ptr coniox_vram					"\
-				"			 mov dx, word ptr coniox_vram+2					"\
-				parm nomemory [SI][DI]		  \
-				modify exact nomemory [DX AX]			\
-				value [DX AX];			
+			#pragma aux coniox_offset =											\
+					"			 .8086														"\
+					"			 mov ax, word ptr ti + 16						"\
+					"			 mul di														 "\
+					"			 add ax, si										 "\
+					"			 add ax, ax													"\
+					"			 add ax, word ptr coniox_vram					"\
+					"			 mov dx, word ptr coniox_vram+2					"\
+					parm nomemory [SI][DI]		  \
+					modify exact nomemory [DX AX]			\
+					value [DX AX];
 	#else
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 	#endif
@@ -1992,7 +1992,8 @@ void coniox_idle(void)
 		while it is awaiting user response.
 	*/
 	coniox_int86(0x28, &r, &r);
-
+	return;
+	
 	/*
 		Advanced Power Management v1.0+
 		call when the system is idle and should be suspended until the next
@@ -2068,21 +2069,21 @@ void coniox_blink(unsigned int blink)
 {
 	if (directvideo)
 	{
-		unsigned char v;
-		outportb(0x3DA, 0);
-		outportb(0x3C0, 0x10);
-		v = inportb(0x3C1);
-		if (blink)
-		{
-			v &= ~0x08; // bit 3 = 0. blink ON
-		}
-		else
-		{
-			v |= 0x08;  // bit 3 = 1. blink OFF (fondo extendido)
-		}
-		outportb(0x3DA, 0);
-		outportb(0x3C0, 0x10);
-		outportb(0x3C0, v);
+        unsigned char v;
+        inportb(0x3DA);			/* resetear flip-flop: LEER 3DA, no escribir */
+        outportb(0x3C0, 0x10);		/* índice = registro de modo */
+        v = inportb(0x3C1);
+        if (blink)
+        {
+            v |= 0x08;		/* bit 3 = 1: blink ON */
+        }
+        else
+        {
+            v &= ~0x08;		/* bit 3 = 0: fondos brillantes */
+        }
+        inportb(0x3DA);			/* resetear flip-flop antes de escribir */
+        outportb(0x3C0, 0x10);
+        outportb(0x3C0, v);
 	}
 	else
 	{
@@ -2351,7 +2352,7 @@ void insline(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
+int gettext(int __left, int __top, int __right, int __bottom, void coniox_far* __destin)
 {
 	unsigned short coniox_far* p;
 	unsigned short coniox_far* dst;
@@ -2378,7 +2379,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void* __destin)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int puttext(int __left, int __top, int __right, int __bottom, void* __source)
+int puttext(int __left, int __top, int __right, int __bottom, void coniox_far* __source)
 {
 	unsigned short coniox_far* p;
 	unsigned short coniox_far* src;
@@ -2503,9 +2504,9 @@ int kbhit(void)
 		return(getch_last_extended_key);
 	}
 
+	coniox_idle();
 	if (directvideo)
 	{
-		coniox_idle();
 		return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
 	}
 	else
@@ -2515,14 +2516,12 @@ int kbhit(void)
 			memset(&r, 0, sizeof(union REGPACK));
 			r.h.ah = 1;
 			intr(0x16, &r);
-			coniox_idle();
 			return((r.w.flags & 0x40) == 0 ? 1 : 0);
 		#else
 			union REGS r;
 			memset(&r, 0, sizeof(union REGS));
 			r.h.ah = 1;
 			coniox_int86(0x16, &r, &r);
-			coniox_idle();
 			return((r.x.flags & 0x40) == 0 ? 1 : 0);
 		#endif
 	}

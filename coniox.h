@@ -217,6 +217,9 @@ extern "C" {
 #define pokel(s,o,x)		(*((unsigned long coniox_far *) MK_FP((s),(o))) = (unsigned long)(x))
 #endif
 
+#if !(((__DOS__) || (__MSDOS__)))
+    #define coniox_far
+#endif
 
 #pragma pack(push)
 #pragma pack(1)
@@ -413,7 +416,7 @@ Each position onscreen takes 2 bytes of memory: The first byte is the character 
 @param bottom Bottom coordinate of the rectangle, inclusive, starting from 1.
 @param buf You have to pass buffer of size <TT>(right - left + 1) * (bottom - top + 1) * sizeof(char_info)</TT>.
 */
-int gettext(int __left, int __top, int __right, int __bottom, void *__destin);
+int gettext(int __left, int __top, int __right, int __bottom, void coniox_far *__destin);
 
 
 /**
@@ -431,7 +434,7 @@ puttext is a text mode function performing direct video output.
 @param bottom Bottom coordinate of the rectangle, inclusive, starting from 1.
 @param buf You have to pass buffer of size <TT>(right - left + 1) * (bottom - top + 1) * sizeof(char_info)</TT>.
 */
-int puttext(int __left, int __top, int __right, int __bottom, void *__source);
+int puttext(int __left, int __top, int __right, int __bottom, void coniox_far *__source);
 
 
 /**
