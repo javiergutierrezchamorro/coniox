@@ -359,6 +359,9 @@ _wscroll is a console I/O flag. You can use it to draw along the edges of a wind
 extern int _wscroll;
 
 
+void inittextinfo(void);
+
+
 /**
 Gets text mode video information.
 gettextinfo fills in the text_info structure pointed to by r with the current text video information.

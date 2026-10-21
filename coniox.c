@@ -123,6 +123,18 @@ void clreol(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+void inittextinfo(void)
+{
+	struct text_info ti;
+
+	coniox_init(NULL);
+	gettextinfo(&ti);			/* sincroniza __ti con el estado real */
+	ti.normattr = 7;
+	textattr(ti.normattr);
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
 void gettextinfo(struct text_info *__r)
 {
 	coniox_init(NULL);
