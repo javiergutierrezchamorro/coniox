@@ -1956,16 +1956,16 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 	if (directvideo)
 	{
-		v    = (unsigned short)((attr << 8) | (ch & 0xFF));
+		v = (unsigned short)((attr << 8) | (ch & 0xFF));
 		// fast-path 1x1 -> putcell evita fmemsetw + loop
 		if ((w == 1) && (h == 1))
 		{
 			coniox_putcell(x-1, y-1, v);
 			return;
         }
-		if (w == 1)
+		else if (w == 1)
 		{
-			for (y1=y; y1 < y+h; y1++)
+			for (y1 = y; y1 < y + h; y1++)
 			{
 				coniox_putcell(x-1, y1-1, v);
 			}
@@ -1973,8 +1973,8 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
         }
 	
 		ylim = y + h;
-		sw   = ti.screenwidth;
-		p    = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
+		sw = ti.screenwidth;
+		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		for (y1 = y; y1 < ylim; y1++)
 		{
 			coniox_fmemsetw(p, v, w);
@@ -2025,6 +2025,45 @@ void coniox_idle(void)
 	*/
 	memset(&r, 0, sizeof(r));
 	coniox_int86(0x28, &r, &r);
+	
+	
+	/*
+		Programs can use this function in idle loops to enhance performance
+		under multitaskers; this call is supported by MS Windows 3+, DOS 5+,
+		DPMI 1.0+, and in OS/2 2.0+ for multitasking DOS applications
+		does not block the program; it just gives up the remainder of the time
+		slice
+		should not be used by Windows-specific programs
+		when called very often without intermediate screen output under
+		MS Windows 3.x, the VM will go into an idle-state and will not
+		receive the next slice before 8 seconds have elapsed. This time can
+		be changed in SYSTEM.INI through "IdleVMWakeUpTime=<seconds>".
+		Setting it to zero results in a long wait.
+		this function has no effect under OS/2 2.10-4.0 if the DOS box has an
+		"Idle Sensitivity" setting of 100
+	*/
+	#if defined(__WATCOMC__)
+		r.w.ax = 0x1680;
+	#else
+		r.x.ax = 0x1680;
+	#endif
+	coniox_int86(0x2F, &r, &r);
+	
+
+	/*
+		Under DESQview, if the process issuing this call has hooked INT 08h,
+		the current time-slice is set to expire at the next clock tick rather
+		than immediately
+	*/
+	#if defined(__WATCOMC__)
+		r.w.ax = 0x1000;
+	#else
+		r.x.ax = 0x1000;
+	#endif
+	coniox_int86(0x15, &r, &r);
+
+
+	
 	return;
 	
 	/*
@@ -2049,40 +2088,7 @@ void coniox_idle(void)
 	#endif
 	coniox_int86(0x15, &r, &r);
 
-	/*
-		Programs can use this function in idle loops to enhance performance
-		under multitaskers; this call is supported by MS Windows 3+, DOS 5+,
-		DPMI 1.0+, and in OS/2 2.0+ for multitasking DOS applications
-		does not block the program; it just gives up the remainder of the time
-		slice
-		should not be used by Windows-specific programs
-		when called very often without intermediate screen output under
-		MS Windows 3.x, the VM will go into an idle-state and will not
-		receive the next slice before 8 seconds have elapsed. This time can
-		be changed in SYSTEM.INI through "IdleVMWakeUpTime=<seconds>".
-		Setting it to zero results in a long wait.
-		this function has no effect under OS/2 2.10-4.0 if the DOS box has an
-		"Idle Sensitivity" setting of 100
-	*/
-	#if defined(__WATCOMC__)
-		r.w.ax = 0x1680;
-	#else
-		r.x.ax = 0x1680;
-	#endif
-	coniox_int86(0x2F, &r, &r);
 
-
-	/*
-		Under DESQview, if the process issuing this call has hooked INT 08h,
-		the current time-slice is set to expire at the next clock tick rather
-		than immediately
-	*/
-	#if defined(__WATCOMC__)
-		r.w.ax = 0x1000;
-	#else
-		r.x.ax = 0x1000;
-	#endif
-	coniox_int86(0x15, &r, &r);
 }
 
 
@@ -2126,7 +2132,7 @@ void coniox_blink(unsigned int blink)
 		#else
 			r.x.ax = 0x1003;
 		#endif
-		r.h.bh = blink ? 0 : 1;
+		r.h.bl = blink ? 1 : 0;
 		coniox_int86(0x10, &r, &r);
 	}
 }
@@ -2196,6 +2202,7 @@ void textmode(int __newmode)
 				r.x.ax = 0x1112;
 				r.x.bx = 0;
 			#endif
+			coniox_int86(0x10, &r, &r);
 			/* For 4350 select alternate print screen routine */
 			#if defined(__WATCOMC__)
 				r.w.ax = 0x1200;
