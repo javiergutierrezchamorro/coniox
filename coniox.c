@@ -10,7 +10,7 @@
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
-	#define CONIOX_MAX_CHARINFO	(132 * 60)
+	#define CONIOX_MAX_CHARINFO	(160 * 100)
 	wchar_t coniox_ansi2unicode(char ch);
 	char coniox_unicode2ansi(wchar_t ch);
 	void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
@@ -796,8 +796,12 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	{
 		return;
 	}
-
+	
 	total = w * h;
+	if (total > CONIOX_MAX_CHARINFO)
+	{
+		return;
+	}
 
 	#if UNICODE
 		ci[0].Char.UnicodeChar = (wchar_t) ch;
@@ -1011,6 +1015,13 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 		return(0);
 	}
 
+	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	{
+		return 0;
+	}
+
+
+
 	r.Left = (short) __left - 1;
 	r.Top = (short) __top - 1;
 	r.Right = (short) __right - 1;
@@ -1074,6 +1085,11 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 	{
 		return(0);
 	}
+	
+	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	{
+		return 0;
+	}
 
 	r.Left = (short) __left - 1;
 	r.Top = (short) __top - 1;
@@ -1112,6 +1128,11 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 	{
 		return(0);
 	}
+	
+	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	{
+		return 0;
+	}
 
 	r.Left = (short)__left - 1;
 	r.Top = (short)__top - 1;
@@ -1147,6 +1168,10 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	if (__right < __left || __bottom < __top)
 	{
 		return(0);
+	}
+	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	{
+		return 0;
 	}
 	r.Left = (short) (__left - 1);
 	r.Top = (short) (__top - 1);
@@ -2005,9 +2030,11 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
         }
 		else if (w == 1)
 		{
+			p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 			for (y1 = y; y1 < y + h; y1++)
 			{
-				*(unsigned short coniox_far *) coniox_offset(x - 1, y1 - 1) = v;
+				*p = v;
+				p += ti.screenwidth;
 			}
             return;
         }

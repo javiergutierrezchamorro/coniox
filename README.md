@@ -12,7 +12,7 @@ CONIOX 5 (386)			1.4s	0.3s	0.8s
 
 
 Windows
-CONIOX 5 (WATCOM x86)	3.0s	2.4s	2.7s
+CONIOX 5 (WATCOM x86)	3.0s	2.3s	2.5s
 CONIOX 5 (VC x64)		1.9s	1.5s	1.7s
 
 
