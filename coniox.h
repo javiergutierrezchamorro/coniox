@@ -181,7 +181,7 @@ extern "C" {
 #if defined(__DJGPP__)
 	#include <sys/nearptr.h>
 	#define _fmemmove	memmove
-	#define fmemcpy		memcpy
+	#define _fmemcpy	memcpy
 	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base)
 	#define coniox_far
 #else
