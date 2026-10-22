@@ -1743,19 +1743,17 @@ void coniox_init(const void* title)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------------------------- */
 int cputs(const char *__str)
 {
-	char c;
-	unsigned int i;
-	char *run;
-	unsigned int runlen, remaining;
-	int oldy;
-	unsigned int winwidth;
-	unsigned int winheight;
-	unsigned short attrword;
 	const char *orig = __str;
-	
-	
+	const char *run;
+	unsigned int i;
+	unsigned int runlen, remaining;
+	unsigned int winwidth, winheight;
+	int oldy;
+	unsigned short attrword;
+
 	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 		unsigned short *p;
 		unsigned short *coniox_currentoffset;
@@ -1763,74 +1761,128 @@ int cputs(const char *__str)
 		unsigned short coniox_far *p;
 		unsigned short coniox_far *coniox_currentoffset;
 	#endif
+
 	union REGS r;
+
+	if (__str == NULL)
+	{
+		return 0;
+	}
 
 	coniox_init(NULL);
 
-	winwidth  = ti.winright  - ti.winleft  + 1;
-	winheight = ti.winbottom - ti.wintop   + 1;
-	attrword  = (unsigned short)(ti.attribute << 8);
+	winwidth  = (unsigned int)(ti.winright - ti.winleft + 1);
+	winheight = (unsigned int)(ti.winbottom - ti.wintop + 1);
+
+	if (winwidth == 0 || winheight == 0)
+	{
+		return 0;
+	}
+
+	attrword = (unsigned short)(ti.attribute << 8);
 
 	if (directvideo)
-    {
-   		coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
-	}
-	
-	while ((c = *__str) != 0)
 	{
-		if (c == '\r')
+		coniox_currentoffset =
+			coniox_offset(ti.winleft + ti.curx - 2,
+			              ti.wintop + ti.cury - 2);
+	}
+
+	while (*__str)
+	{
+		/* Carriage return: regresar al inicio de la línea. */
+		if (*__str == '\r')
 		{
-			coniox_currentoffset -= (ti.curx - 1);
+			if (directvideo)
+			{
+				coniox_currentoffset -= ti.curx - 1;
+			}
+
 			ti.curx = 1;
 			++__str;
 			continue;
 		}
-		if (c == '\n')
+
+		/* Line feed: avanzar o desplazar la ventana. */
+		if (*__str == '\n')
 		{
 			if (ti.cury < (int)winheight)
 			{
-				coniox_currentoffset += ti.screenwidth;
+				if (directvideo)
+				{
+					coniox_currentoffset += ti.screenwidth;
+				}
+
 				ti.cury++;
 			}
 			else
 			{
-				coniox_currentoffset -= (ti.curx - 1);
 				oldy = ti.cury;
+
 				ti.curx = 1;
 				ti.cury = 1;
+
 				delline();
+
 				ti.cury = oldy;
+
+				if (directvideo)
+				{
+					coniox_currentoffset =
+						coniox_offset(ti.winleft + ti.curx - 2,
+						              ti.wintop + ti.cury - 2);
+				}
 			}
-			coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
-			++__str;
-			continue;
-		}
-		if (c == '\b')
-		{
-			if (ti.curx > 1)
-			{
-				coniox_currentoffset--;
-				ti.curx--;
-			}
+
 			++__str;
 			continue;
 		}
 
-		run = (char *) __str;
+		/* Backspace: retroceder sin borrar el carácter. */
+		if (*__str == '\b')
+		{
+			if (ti.curx > 1)
+			{
+				if (directvideo)
+				{
+					--coniox_currentoffset;
+				}
+
+				ti.curx--;
+			}
+
+			++__str;
+			continue;
+		}
+
+		/*
+		 * Agrupar caracteres imprimibles hasta el siguiente control
+		 * o hasta el final de la línea de la ventana.
+		 */
+		run = __str;
 		runlen = 0;
-		remaining = winwidth - ti.curx + 1;
-		while (run[runlen] && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b' && runlen < remaining)
+		remaining = winwidth - (unsigned int)ti.curx + 1;
+
+		while (runlen < remaining &&
+		       run[runlen] != '\0' &&
+		       run[runlen] != '\r' &&
+		       run[runlen] != '\n' &&
+		       run[runlen] != '\b')
 		{
 			runlen++;
 		}
 
 		if (directvideo)
 		{
+			/* Ruta rápida: escribir directamente en VRAM. */
 			p = coniox_currentoffset;
+
 			for (i = 0; i < runlen; i++)
 			{
-				*p++ = attrword | (unsigned char) run[i];
+				*p++ = (unsigned short)
+					(attrword | (unsigned char)run[i]);
 			}
+
 			ti.curx += runlen;
 			coniox_currentoffset = p;
 
@@ -1847,41 +1899,55 @@ int cputs(const char *__str)
 					{
 						ti.curx = 1;
 						ti.cury = 1;
+
 						delline();
-						ti.cury = winheight;
+
+						ti.cury = (int)winheight;
 					}
 				}
 				else
 				{
 					ti.curx = 1;
 				}
-				coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+
+				coniox_currentoffset =
+					coniox_offset(ti.winleft + ti.curx - 2,
+					              ti.wintop + ti.cury - 2);
 			}
 		}
 		else
 		{
+			/*
+			 * Ruta BIOS: no calcular ni modificar punteros de VRAM.
+			 * AH=02h posiciona el cursor y AH=09h escribe el carácter.
+			 */
 			for (i = 0; i < runlen; i++)
 			{
-				/* AH=02h uses absolute screen coordinates, not window-relative ones. */
 				r.h.ah = 0x02;
 				r.h.bh = 0;
-				r.h.dh = (unsigned char)(ti.wintop + ti.cury - 2);
-				r.h.dl = (unsigned char)(ti.winleft + ti.curx - 2);
+				r.h.dh = (unsigned char)
+					(ti.wintop + ti.cury - 2);
+				r.h.dl = (unsigned char)
+					(ti.winleft + ti.curx - 2);
+
 				coniox_int86(0x10, &r, &r);
 
-				/* AH=02h may alter registers that AH=09h also consumes. */
+				/* Restaurar todos los registros requeridos por AH=09h. */
 				r.h.ah = 0x09;
 				r.h.al = (unsigned char)run[i];
 				r.h.bh = 0;
 				r.h.bl = (unsigned char)ti.attribute;
+
 				#if defined(__WATCOMC__)
 					r.w.cx = 1;
 				#else
 					r.x.cx = 1;
 				#endif
+
 				coniox_int86(0x10, &r, &r);
 
 				ti.curx++;
+
 				if (ti.curx > (int)winwidth)
 				{
 					if (_wscroll)
@@ -1895,8 +1961,10 @@ int cputs(const char *__str)
 						{
 							ti.curx = 1;
 							ti.cury = 1;
+
 							delline();
-							ti.cury = winheight;
+
+							ti.cury = (int)winheight;
 						}
 					}
 					else
@@ -1906,12 +1974,14 @@ int cputs(const char *__str)
 				}
 			}
 		}
+
 		__str += runlen;
 	}
+
 	gotoxy(ti.curx, ti.cury);
+
 	return (int)(__str - orig);
 }
-
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
@@ -2460,73 +2530,120 @@ void insline(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int gettext(int __left, int __top, int __right, int __bottom, void coniox_far* __destin)
+int gettext(int __left, int __top, int __right, int __bottom,
+            void coniox_far *__destin)
 {
-	unsigned short coniox_far* p;
-	unsigned short coniox_far* dst;
-	int y1;
-	unsigned int width = (__right - __left + 1);
-	
+	unsigned short coniox_far *p;
+	unsigned short coniox_far *dst;
+	unsigned int width;
+	int rows;
+	int y;
+
+	size_t row_bytes;
+	size_t total_bytes;
 
 	coniox_init(NULL);
-	if (__right < __left || __bottom < __top)
+
+	/* Validar destino y rectángulo, con coordenadas absolutas 1-based. */
+	if (__destin == NULL ||
+	    __left < 1 ||
+	    __top < 1 ||
+	    __right < __left ||
+	    __bottom < __top ||
+	    __right > ti.screenwidth ||
+	    __bottom > ti.screenheight)
 	{
-		return(0);
+		return 0;
 	}
-	
-	p   = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
-	dst = (unsigned short coniox_far*) __destin;
-	
-	if ((unsigned int)(__right - __left + 1) == ti.screenwidth)
+
+	width = (unsigned int)(__right - __left + 1);
+	rows = __bottom - __top + 1;
+
+	row_bytes = (size_t)width * sizeof(unsigned short);
+	total_bytes = row_bytes * (size_t)rows;
+
+	p = (unsigned short coniox_far *)
+		coniox_offset(__left - 1, __top - 1);
+
+	dst = (unsigned short coniox_far *)__destin;
+
+	/* Pantalla completa a lo ancho: todas las filas son contiguas. */
+	if (__left == 1 && __right == ti.screenwidth)
 	{
-		coniox_fmemcpy(dst, p, (unsigned long) (width * (__bottom - __top + 1) << 1));
+		coniox_fmemcpy(dst, p, total_bytes);
 	}
 	else
 	{
-		for (y1 = __top; y1 <= __bottom; y1++)
+		/* Copia cada fila respetando el stride real de VRAM. */
+		for (y = 0; y < rows; y++)
 		{
-			coniox_fmemcpy(dst, p, width << 1);
-			p   += ti.screenwidth;
+			coniox_fmemcpy(dst, p, row_bytes);
+
+			p += ti.screenwidth;
 			dst += width;
 		}
 	}
-	return(1);
+
+	return 1;
 }
 
-
 /* ----------------------------------------------------------------------------------------------------------------- */
-int puttext(int __left, int __top, int __right, int __bottom, void coniox_far* __source)
+int puttext(int __left, int __top, int __right, int __bottom,
+            void coniox_far *__source)
 {
-	unsigned short coniox_far* p;
-	unsigned short coniox_far* src;
-	int y1;
-	unsigned int width = (__right - __left + 1);
+	unsigned short coniox_far *p;
+	unsigned short coniox_far *src;
+	unsigned int width;
+	int rows;
+	int y;
+
+	size_t row_bytes;
+	size_t total_bytes;
 
 	coniox_init(NULL);
-	if (__right < __left || __bottom < __top)
+
+	/* Validar origen y rectángulo, con coordenadas absolutas 1-based. */
+	if (__source == NULL ||
+	    __left < 1 ||
+	    __top < 1 ||
+	    __right < __left ||
+	    __bottom < __top ||
+	    __right > ti.screenwidth ||
+	    __bottom > ti.screenheight)
 	{
-		return(0);
+		return 0;
 	}
-	
-	p   = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
-	src = (unsigned short coniox_far*) __source;
-	
-	if ((unsigned int)(__right - __left + 1) == ti.screenwidth)
+
+	width = (unsigned int)(__right - __left + 1);
+	rows = __bottom - __top + 1;
+
+	row_bytes = (size_t)width * sizeof(unsigned short);
+	total_bytes = row_bytes * (size_t)rows;
+
+	p = (unsigned short coniox_far *)
+		coniox_offset(__left - 1, __top - 1);
+
+	src = (unsigned short coniox_far *)__source;
+
+	/* Pantalla completa a lo ancho: todas las filas son contiguas. */
+	if (__left == 1 && __right == ti.screenwidth)
 	{
-		coniox_fmemcpy(p, src, (unsigned long) (width * (__bottom - __top + 1) << 1));
+		coniox_fmemcpy(p, src, total_bytes);
 	}
 	else
 	{
-		for (y1 = __top; y1 <= __bottom; y1++)
+		/* Copiar por filas sin sobrescribir las zonas adyacentes. */
+		for (y = 0; y < rows; y++)
 		{
-			coniox_fmemcpy(p, src, width << 1);
-			p   += ti.screenwidth;
+			coniox_fmemcpy(p, src, row_bytes);
+
+			p += ti.screenwidth;
 			src += width;
 		}
 	}
-	return(1);
-}
 
+	return 1;
+}
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int movetext(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
@@ -2537,9 +2654,14 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	unsigned int row_bytes;
 	int rows;
 	int y1;
-	int x;
+
 
 	coniox_init(NULL);
+	
+	if (__left == __destleft && __top == __desttop)
+	{
+    	return 1;
+	}
 
 	/* Coordinates are absolute screen coordinates. Reject empty/out-of-range rectangles. */
 	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top ||
@@ -2575,17 +2697,13 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 			src = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__left - 1, __top + y1 - 1);
 			dst = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__destleft - 1, __desttop + y1 - 1);
 
-			/* memcpy-style copying is unsafe when this row shifts right over itself. */
 			if (__destleft > __left && __destleft <= __right)
 			{
-				for (x = (int)width - 1; x >= 0; --x)
-				{
-					dst[x] = src[x];
-				}
+			    _fmemmove(dst, src, row_bytes);
 			}
 			else
 			{
-				coniox_fmemcpy(dst, src, row_bytes);
+			    coniox_fmemcpy(dst, src, row_bytes);
 			}
 		}
 	}
@@ -2598,14 +2716,11 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 
 			if (__destleft > __left && __destleft <= __right)
 			{
-				for (x = (int)width - 1; x >= 0; --x)
-				{
-					dst[x] = src[x];
-				}
+			    _fmemmove(dst, src, row_bytes);
 			}
 			else
 			{
-				coniox_fmemcpy(dst, src, row_bytes);
+			    coniox_fmemcpy(dst, src, row_bytes);
 			}
 		}
 	}
