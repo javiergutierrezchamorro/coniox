@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <malloc.h>
 #include <stddef.h>
 #include "coniox.h"
 
@@ -1491,7 +1490,7 @@ int coniox_basecrt = 0x3D4;
 		   "add eax, coniox_vram" \
 		   "mov word ptr [eax], bx" \
 		   parm [ESI][EDI][BX] \
-		   modify exact [EAX];			
+		   modify exact [EAX];
 	#else
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 		#define coniox_putcell(x, y, cell) (*coniox_offset(x,y) = (cell))
@@ -1525,7 +1524,7 @@ int coniox_basecrt = 0x3D4;
 				"mov di, ax" \
 				"mov es:[di], bx" \
 			parm [SI][DI][BX] \
-			modify exact [AX DX DI ES];					
+			modify exact [AX DX DI ES];
 	#else
 		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 		#define coniox_putcell(x, y, cell) (*coniox_offset(x,y) = (cell))
@@ -1535,76 +1534,132 @@ int coniox_basecrt = 0x3D4;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if defined(__WATCOMC__)
-	void coniox_fmemsetw (void coniox_far *m, short val, size_t count);
-	#if (defined(__FLAT__))
-		#pragma aux coniox_fmemsetw =										\
-				"				  movzx edx, ax										  "\
-				"				  shl eax, 16										  "\
-				"				  or eax, edx  										  "\
-				"				  shr ecx, 1											 "\
-				"				  cld											"\
-				"				  rep stosd											   "\
-				"				  jnc short no_odd										"\
-				"				  stosw											   "\
-				"no_odd:																"\
-				parm [EDI][AX][ECX]														 \
-				modify exact [EDI EDX ECX EAX];
-	#else
-		#pragma aux coniox_fmemsetw =										\
-				"			 cld														"\
-				"			 rep stosw												   "\
-				parm [ES DI][AX][CX]													   \
-				modify exact [DI CX];
-	#endif
-
-	void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);	
-	#if (defined(__FLAT__))
-		#pragma aux coniox_fmemcpy = \
-    	"mov ecx, ebx" \
-    	"shr ecx, 2" \
-    	"cld" \
-    	"rep movsd" \
-    	"mov ecx, ebx" \
-    	"and ecx, 3" \
-    	"rep movsb" \
-		parm [EDI][ESI][EBX] \
-    	modify exact [ECX EDI ESI];
-	#else
-		#pragma aux coniox_fmemcpy =              \
-	    "   push  ds                        "  \
-	    "   mov   ds, dx                    "  \
-	    "   cld                             "  \
-	    "   shr   cx, 1                     "  \
-	    "   rep   movsw                     "  \
-	    "   jnc   short _fcpy_done          "  \
-	    "   movsb                           "  \
-	    "_fcpy_done:                        "  \
-	    "   pop   ds                        "  \
-	    parm [ES DI][DX SI][CX]                \
-	    modify exact [CX SI DI];
+    void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
+    void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
+    #if (defined(__FLAT__))
+        void coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
+    #else
+        void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
+    #endif
+    #if (defined(__FLAT__))
+        #pragma aux coniox_fmemsetw =					\
+            "		movzx	edx, ax					"	\
+            "		shl		eax, 16					"	\
+            "		or		eax, edx				"	\
+            "		shr		ecx, 1					"	\
+            "		cld								"	\
+            "		rep		stosd					"	\
+            "		jnc		short no_odd				"	\
+            "		stosw							"	\
+            "no_odd:									"	\
+            parm [EDI][AX][ECX]							\
+            modify exact [EDI EDX ECX EAX];
+        #pragma aux coniox_putrun =					\
+            "		cld								"	\
+            "		test	ecx, 1					"	\
+            "		jz		_preven					"	\
+            "		lodsb							"	\
+            "		mov		ah, bh					"	\
+            "		stosw							"	\
+            "		dec		ecx						"	\
+            "_preven:									"	\
+            "		shr		ecx, 1					"	\
+            "		jecxz	_prdone					"	\
+            "_prpairs:									"	\
+            "		lodsw							"	\
+            "		movzx	eax, ax					"	\
+            "		mov		dl, ah					"	\
+            "		mov		ah, bh					"	\
+            "		mov		dh, bh					"	\
+            "		shl		edx, 16					"	\
+            "		or		eax, edx				"	\
+            "		stosd							"	\
+            "		loop	_prpairs				"	\
+            "_prdone:									"	\
+            parm [EDI][ESI][EBX][ECX]					\
+            modify exact [EDI ESI ECX EDX EAX];
+        #pragma aux coniox_fmemcpy =					\
+            "		mov		ecx, ebx				"	\
+            "		shr		ecx, 2					"	\
+            "		cld								"	\
+            "		rep		movsd					"	\
+            "		mov		ecx, ebx				"	\
+            "		and		ecx, 3					"	\
+            "		rep		movsb					"	\
+            parm [EDI][ESI][EBX]						\
+            modify exact [ECX EDI ESI];
+    #else
+        #pragma aux coniox_fmemsetw =					\
+            "		cld								"	\
+            "		rep		stosw					"	\
+            parm [ES DI][AX][CX]						\
+            modify exact [DI CX];
+        #pragma aux coniox_putrun =					\
+            "		cld								"	\
+            "_prnext:									"	\
+            "		lodsb							"	\
+            "		mov		ah, bh					"	\
+            "		stosw							"	\
+            "		loop	_prnext				"	\
+            parm [ES DI][SI][BX][CX]					\
+            modify exact [DI SI CX AX];
+        #pragma aux coniox_fmemcpy =					\
+            "		push	ds						"	\
+            "		mov		ds, dx					"	\
+            "		cld								"	\
+            "		shr		cx, 1					"	\
+            "		rep		movsw					"	\
+            "		jnc		short _fcpy_done			"	\
+            "		movsb							"	\
+            "_fcpy_done:								"	\
+            "		pop		ds						"	\
+            parm [ES DI][DX SI][CX]					\
+            modify exact [CX SI DI];
     #endif
 #else
-	#define coniox_fmemcpy	_fmemcpy
-	void coniox_fmemsetw (void coniox_far *m, short val, size_t count)
-	{
-		short coniox_far* buf = (short coniox_far*) m;
+    #define coniox_fmemcpy	_fmemcpy
+    void coniox_fmemsetw(void coniox_far *m, short val, size_t count)
+    {
+        short coniox_far *buf = (short coniox_far *) m;
 
-		while (count >= 4)
-		{
-			buf[0] = val;
-			buf[1] = val;
-			buf[2] = val;
-			buf[3] = val;
-			buf += 4;
-			count -= 4;
-		}
-		while (count--)
-		{
-			*buf++ = val;
-		}
-	}
+        while (count >= 4)
+        {
+            buf[0] = val;
+            buf[1] = val;
+            buf[2] = val;
+            buf[3] = val;
+            buf += 4;
+            count -= 4;
+        }
+        while (count--)
+        {
+            *buf++ = val;
+        }
+    }
+
+    void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, unsigned int piCount)
+    {
+        unsigned short coniox_far *d;
+        unsigned short cellword;
+
+        d = piDst;
+        cellword = (unsigned short) (piAttr & 0xFF00);
+        while (piCount >= 4)
+        {
+            d[0] = cellword | (unsigned char) piSrc[0];
+            d[1] = cellword | (unsigned char) piSrc[1];
+            d[2] = cellword | (unsigned char) piSrc[2];
+            d[3] = cellword | (unsigned char) piSrc[3];
+            d += 4;
+            piSrc += 4;
+            piCount -= 4;
+        }
+        while (piCount--)
+        {
+            *d++ = cellword | (unsigned char) *piSrc++;
+        }
+    }
 #endif
-
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_init(const void* title)
@@ -1743,245 +1798,189 @@ void coniox_init(const void* title)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/* ----------------------------------------------------------------------------------------------------------------- */
 int cputs(const char *__str)
 {
-	const char *orig = __str;
-	const char *run;
-	unsigned int i;
-	unsigned int runlen, remaining;
-	unsigned int winwidth, winheight;
-	int oldy;
-	unsigned short attrword;
+    const char *orig = __str;
+    const char *run;
+    unsigned int i;
+    unsigned int runlen, remaining;
+    unsigned int winwidth, winheight;
+    int oldy;
+    unsigned short attrword;
+    union REGS r;
 
-	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
-		unsigned short *p;
-		unsigned short *coniox_currentoffset;
-	#else
-		unsigned short coniox_far *p;
-		unsigned short coniox_far *coniox_currentoffset;
-	#endif
+    #if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+        unsigned short *coniox_currentoffset;
+    #else
+        unsigned short coniox_far *coniox_currentoffset;
+    #endif
 
-	union REGS r;
+    if (__str == NULL)
+    {
+        return 0;
+    }
 
-	if (__str == NULL)
-	{
-		return 0;
-	}
+    coniox_init(NULL);
 
-	coniox_init(NULL);
+    winwidth  = (unsigned int)(ti.winright - ti.winleft + 1);
+    winheight = (unsigned int)(ti.winbottom - ti.wintop + 1);
 
-	winwidth  = (unsigned int)(ti.winright - ti.winleft + 1);
-	winheight = (unsigned int)(ti.winbottom - ti.wintop + 1);
+    if (winwidth == 0 || winheight == 0)
+    {
+        return 0;
+    }
 
-	if (winwidth == 0 || winheight == 0)
-	{
-		return 0;
-	}
+    attrword = (unsigned short)(ti.attribute << 8);
 
-	attrword = (unsigned short)(ti.attribute << 8);
+    if (directvideo)
+    {
+        coniox_currentoffset =
+            coniox_offset(ti.winleft + ti.curx - 2,
+                          ti.wintop + ti.cury - 2);
+    }
 
-	if (directvideo)
-	{
-		coniox_currentoffset =
-			coniox_offset(ti.winleft + ti.curx - 2,
-			              ti.wintop + ti.cury - 2);
-	}
+    while (*__str)
+    {
+        /* Carriage return: regresar al inicio de la línea. */
+        if (*__str == '\r')
+        {
+            if (directvideo)
+            {
+                coniox_currentoffset -= ti.curx - 1;
+            }
+            ti.curx = 1;
+            ++__str;
+            continue;
+        }
 
-	while (*__str)
-	{
-		/* Carriage return: regresar al inicio de la línea. */
-		if (*__str == '\r')
-		{
-			if (directvideo)
-			{
-				coniox_currentoffset -= ti.curx - 1;
-			}
+        /* Line feed: avanzar o desplazar la ventana. */
+        if (*__str == '\n')
+        {
+            if (ti.cury < (int)winheight)
+            {
+                if (directvideo)
+                {
+                    coniox_currentoffset += ti.screenwidth;
+                }
+                ti.cury++;
+            }
+            else
+            {
+                oldy = ti.cury;
+                ti.curx = 1;
+                ti.cury = 1;
+                delline();
+                ti.cury = oldy;
+                if (directvideo)
+                {
+                    coniox_currentoffset =
+                        coniox_offset(ti.winleft + ti.curx - 2,
+                                      ti.wintop + ti.cury - 2);
+                }
+            }
+            ++__str;
+            continue;
+        }
 
-			ti.curx = 1;
-			++__str;
-			continue;
-		}
+        /* Backspace: retroceder sin borrar el carácter. */
+        if (*__str == '\b')
+        {
+            if (ti.curx > 1)
+            {
+                if (directvideo)
+                {
+                    --coniox_currentoffset;
+                }
+                ti.curx--;
+            }
+            ++__str;
+            continue;
+        }
 
-		/* Line feed: avanzar o desplazar la ventana. */
-		if (*__str == '\n')
-		{
-			if (ti.cury < (int)winheight)
-			{
-				if (directvideo)
-				{
-					coniox_currentoffset += ti.screenwidth;
-				}
+        /*
+         * Agrupar caracteres imprimibles hasta el siguiente control
+         * o hasta el final de la línea de la ventana.
+         */
+        run = __str;
+        runlen = 0;
+        remaining = winwidth - (unsigned int)ti.curx + 1;
 
-				ti.cury++;
-			}
-			else
-			{
-				oldy = ti.cury;
+        while (runlen < remaining &&
+               run[runlen] != '\0' &&
+               run[runlen] != '\r' &&
+               run[runlen] != '\n' &&
+               run[runlen] != '\b')
+        {
+            runlen++;
+        }
 
-				ti.curx = 1;
-				ti.cury = 1;
+        if (directvideo)
+        {
+            /* Ruta rápida: el run completo directo a VRAM. */
+            coniox_putrun(coniox_currentoffset, run, attrword, runlen);
+            coniox_currentoffset += runlen;
+        }
+        else
+        {
+            /* Ruta BIOS: AH=02h posiciona, AH=09h escribe. */
+            for (i = 0; i < runlen; i++)
+            {
+                r.h.ah = 0x02;
+                r.h.bh = 0;
+                r.h.dh = (unsigned char)(ti.wintop + ti.cury - 2);
+                r.h.dl = (unsigned char)(ti.winleft + ti.curx - 2 + i);
+                coniox_int86(0x10, &r, &r);
 
-				delline();
+                /* Restaurar los registros que AH=09h exige. */
+                r.h.ah = 0x09;
+                r.h.al = (unsigned char) run[i];
+                r.h.bh = 0;
+                r.h.bl = (unsigned char) ti.attribute;
+                #if defined(__WATCOMC__)
+                    r.w.cx = 1;
+                #else
+                    r.x.cx = 1;
+                #endif
+                coniox_int86(0x10, &r, &r);
+            }
+        }
+        ti.curx += runlen;
 
-				ti.cury = oldy;
-
-				if (directvideo)
-				{
-					coniox_currentoffset =
-						coniox_offset(ti.winleft + ti.curx - 2,
-						              ti.wintop + ti.cury - 2);
-				}
-			}
-
-			++__str;
-			continue;
-		}
-
-		/* Backspace: retroceder sin borrar el carácter. */
-		if (*__str == '\b')
-		{
-			if (ti.curx > 1)
-			{
-				if (directvideo)
-				{
-					--coniox_currentoffset;
-				}
-
-				ti.curx--;
-			}
-
-			++__str;
-			continue;
-		}
-
-		/*
-		 * Agrupar caracteres imprimibles hasta el siguiente control
-		 * o hasta el final de la línea de la ventana.
-		 */
-		run = __str;
-		runlen = 0;
-		remaining = winwidth - (unsigned int)ti.curx + 1;
-
-		while (runlen < remaining &&
-		       run[runlen] != '\0' &&
-		       run[runlen] != '\r' &&
-		       run[runlen] != '\n' &&
-		       run[runlen] != '\b')
-		{
-			runlen++;
-		}
-
-		if (directvideo)
-		{
-			/* Ruta rápida: escribir directamente en VRAM. */
-			p = coniox_currentoffset;
-
-			for (i = 0; i < runlen; i++)
-			{
-				*p++ = (unsigned short)
-					(attrword | (unsigned char)run[i]);
-			}
-
-			ti.curx += runlen;
-			coniox_currentoffset = p;
-
-			if (ti.curx > (int)winwidth)
-			{
-				if (_wscroll)
-				{
-					if (ti.cury < (int)winheight)
-					{
-						ti.curx = 1;
-						ti.cury++;
-					}
-					else
-					{
-						ti.curx = 1;
-						ti.cury = 1;
-
-						delline();
-
-						ti.cury = (int)winheight;
-					}
-				}
-				else
-				{
-					ti.curx = 1;
-				}
-
-				coniox_currentoffset =
-					coniox_offset(ti.winleft + ti.curx - 2,
-					              ti.wintop + ti.cury - 2);
-			}
-		}
-		else
-		{
-			/*
-			 * Ruta BIOS: no calcular ni modificar punteros de VRAM.
-			 * AH=02h posiciona el cursor y AH=09h escribe el carácter.
-			 */
-			for (i = 0; i < runlen; i++)
-			{
-				r.h.ah = 0x02;
-				r.h.bh = 0;
-				r.h.dh = (unsigned char)
-					(ti.wintop + ti.cury - 2);
-				r.h.dl = (unsigned char)
-					(ti.winleft + ti.curx - 2);
-
-				coniox_int86(0x10, &r, &r);
-
-				/* Restaurar todos los registros requeridos por AH=09h. */
-				r.h.ah = 0x09;
-				r.h.al = (unsigned char)run[i];
-				r.h.bh = 0;
-				r.h.bl = (unsigned char)ti.attribute;
-
-				#if defined(__WATCOMC__)
-					r.w.cx = 1;
-				#else
-					r.x.cx = 1;
-				#endif
-
-				coniox_int86(0x10, &r, &r);
-
-				ti.curx++;
-
-				if (ti.curx > (int)winwidth)
-				{
-					if (_wscroll)
-					{
-						if (ti.cury < (int)winheight)
-						{
-							ti.curx = 1;
-							ti.cury++;
-						}
-						else
-						{
-							ti.curx = 1;
-							ti.cury = 1;
-
-							delline();
-
-							ti.cury = (int)winheight;
-						}
-					}
-					else
-					{
-						ti.curx = 1;
-					}
-				}
-			}
-		}
-
-		__str += runlen;
-	}
-
-	gotoxy(ti.curx, ti.cury);
-
-	return (int)(__str - orig);
+        /* El run nunca cruza el borde de la ventana: el wrap se decide una sola vez. */
+        if (ti.curx > (int)winwidth)
+        {
+            if (_wscroll)
+            {
+                if (ti.cury < (int)winheight)
+                {
+                    ti.curx = 1;
+                    ti.cury++;
+                }
+                else
+                {
+                    ti.curx = 1;
+                    ti.cury = 1;
+                    delline();
+                    ti.cury = (int)winheight;
+                }
+            }
+            else
+            {
+                ti.curx = 1;
+            }
+            if (directvideo)
+            {
+                coniox_currentoffset =
+                    coniox_offset(ti.winleft + ti.curx - 2,
+                                  ti.wintop + ti.cury - 2);
+            }
+        }
+        __str += runlen;
+    }
+    gotoxy(ti.curx, ti.cury);
+    return (int)(__str - orig);
 }
+
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
@@ -2184,22 +2183,22 @@ void coniox_enhanced_palette(void)
     unsigned int i;
     static const unsigned char coniox_palette[16][3] =
     {
-        {0x00, 0x00, 0x00},	/* 0: Negro */
-        {0x00, 0x24, 0x00},	/* 1: Verde oscuro */
-        {0x24, 0x04, 0x00},	/* 2: Marrón */
-        {0x22, 0x28, 0x24},	/* 3: Gris verdoso */
-        {0x00, 0x00, 0x28},	/* 4: Azul */
-        {0x08, 0x2A, 0x30},	/* 5: Cian */
-        {0x30, 0x08, 0x2B},	/* 6: Magenta */
-        {0x2B, 0x2B, 0x00},	/* 7: Amarillo apagado */
-        {0x00, 0x1D, 0x04},	/* 8: Verde */
-        {0x08, 0x3C, 0x00},	/* 9: Verde brillante */
-        {0x28, 0x0E, 0x00},	/* 10: Naranja */
-        {0x1F, 0x3F, 0x28},	/* 11: Verde menta */
-        {0x04, 0x10, 0x2C},	/* 12: Azul oscuro */
-        {0x08, 0x3F, 0x30},	/* 13: Turquesa */
-        {0x2A, 0x10, 0x30},	/* 14: Azul verdoso claro */
-        {0x30, 0x3F, 0x30}	/* 15: Lima / Amarillo verdoso */
+		{0x00, 0x00, 0x00},	/* 0: Negro */
+		{0x00, 0x24, 0x00},	/* 1: Verde oscuro */
+		{0x24, 0x04, 0x00},	/* 2: Marrón */
+		{0x22, 0x28, 0x24},	/* 3: Gris verdoso */
+		{0x00, 0x00, 0x28},	/* 4: Azul */
+		{0x08, 0x2A, 0x30},	/* 5: Cian */
+		{0x30, 0x08, 0x2B},	/* 6: Magenta */
+		{0x2B, 0x2B, 0x00},	/* 7: Amarillo apagado */
+		{0x00, 0x1D, 0x04},	/* 8: Verde */
+		{0x08, 0x3C, 0x00},	/* 9: Verde brillante */
+		{0x28, 0x0E, 0x00},	/* 10: Naranja */
+		{0x1F, 0x3F, 0x28},	/* 11: Verde menta */
+		{0x04, 0x10, 0x2C},	/* 12: Azul oscuro */
+		{0x08, 0x3F, 0x30},	/* 13: Turquesa */
+		{0x2A, 0x10, 0x30},	/* 14: Amarillo claro */
+		{0x30, 0x3F, 0x30}	/* 15: Blanco */
     };
 
     if (directvideo)
@@ -2270,37 +2269,36 @@ void coniox_blink(unsigned int blink)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void delay (unsigned int ms)
 {
-	unsigned long lTicks;
-	unsigned long lWait;
+    unsigned long lTicks;
+    unsigned long lWait;
 
-	if (directvideo)
-	{
+    if (directvideo)
+    {
         lTicks = peekl(0, 0x46C);
-        lWait = ((unsigned long) ms * 18UL + 999UL) / 1000UL;
+        lWait = (((unsigned long) ms * 91UL) + 4999UL) / 5000UL;	/* ms -> ticks a 18.2 Hz, redondeo arriba */
         /* Resta modular: sobrevive al reinicio del contador a medianoche */
         while ((peekl(0, 0x46C) - lTicks) < lWait)
         {
             coniox_idle();
         }
     }
-	else
-	{
-		union REGS r;
-		unsigned long microsec = ms * 1000UL;
-		
-		#if defined(__WATCOMC__)
-			r.w.ax = 0x8600;					// función 0x86 en AH, AL=0
-			r.w.cx = (microsec >> 16) & 0xFFFF; // parte baja de microsegundos
-			r.w.dx = microsec & 0xFFFF;		// parte alta de microsegundos
-		#else
-			r.x.ax = 0x8600;					// función 0x86 en AH, AL=0
-			r.x.cx = (microsec >> 16) & 0xFFFF; // parte baja de microsegundos
-			r.x.dx = microsec & 0xFFFF;		// parte alta de microsegundos			
-		 #endif
-		coniox_int86(0x15, &r, &r);			// llamada a BIOS
-	}
-}
+    else
+    {
+        union REGS r;
+        unsigned long microsec = (unsigned long) ms * 1000UL;
 
+        #if defined(__WATCOMC__)
+            r.w.ax = 0x8600;					/* INT 15h AH=86h: espera en microsegundos */
+            r.w.cx = (microsec >> 16) & 0xFFFF;			/* CX: parte ALTA de microsegundos */
+            r.w.dx = microsec & 0xFFFF;				/* DX: parte BAJA de microsegundos */
+        #else
+            r.x.ax = 0x8600;
+            r.x.cx = (microsec >> 16) & 0xFFFF;
+            r.x.dx = microsec & 0xFFFF;
+        #endif
+        coniox_int86(0x15, &r, &r);				/* llamada a BIOS */
+    }
+}
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2562,8 +2560,7 @@ int gettext(int __left, int __top, int __right, int __bottom,
 	row_bytes = (size_t)width * sizeof(unsigned short);
 	total_bytes = row_bytes * (size_t)rows;
 
-	p = (unsigned short coniox_far *)
-		coniox_offset(__left - 1, __top - 1);
+	p = (unsigned short coniox_far *) coniox_offset(__left - 1, __top - 1);
 
 	dst = (unsigned short coniox_far *)__destin;
 
@@ -2620,8 +2617,7 @@ int puttext(int __left, int __top, int __right, int __bottom,
 	row_bytes = (size_t)width * sizeof(unsigned short);
 	total_bytes = row_bytes * (size_t)rows;
 
-	p = (unsigned short coniox_far *)
-		coniox_offset(__left - 1, __top - 1);
+	p = (unsigned short coniox_far *) coniox_offset(__left - 1, __top - 1);
 
 	src = (unsigned short coniox_far *)__source;
 
@@ -2851,7 +2847,7 @@ int getch(void)
 		union REGS r;
 		r.h.ah = 0;
 		coniox_int86(0x16, &r, &r);
-		if (r.h.al == 0)
+		if ((r.h.al == 0) || (r.h.al == 0xE0))
 		{
 			getch_last_extended_key = r.h.ah;
 			return 0;
