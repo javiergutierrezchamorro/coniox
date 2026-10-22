@@ -368,7 +368,7 @@ int cprintf (const char *__format, ...)
 int cscanf(const char *__format, ...)
 {
 	int r;
-	char buffer[PRINTFBUF_SIZE + 3];
+	unsigned char buffer[PRINTFBUF_SIZE + 3];
 
 	va_list ap;
 	buffer[0] = PRINTFBUF_SIZE;
@@ -1767,8 +1767,6 @@ void coniox_init(const void* title)
 	//Activate blink
 	coniox_blink(1);
 	coniox_enhanced_palette();
-
-	//exit(0);
 }
 
 
@@ -2013,10 +2011,9 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 			}
             return;
         }
-	
+		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		ylim = y + h;
 		sw = ti.screenwidth;
-		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		for (y1 = y; y1 < ylim; y1++)
 		{
 			coniox_fmemsetw(p, v, w);
@@ -2152,22 +2149,22 @@ void coniox_enhanced_palette(void)
     unsigned int i;
     static const unsigned char coniox_palette[16][3] =
     {
-		{0x00, 0x00, 0x00},	/* 0: Negro */
-		{0x00, 0x24, 0x00},	/* 1: Verde oscuro */
-		{0x24, 0x04, 0x00},	/* 2: Marrón */
-		{0x22, 0x28, 0x24},	/* 3: Gris verdoso */
-		{0x00, 0x00, 0x28},	/* 4: Azul */
-		{0x08, 0x2A, 0x30},	/* 5: Cian */
-		{0x30, 0x08, 0x2B},	/* 6: Magenta */
-		{0x2B, 0x2B, 0x00},	/* 7: Amarillo apagado */
-		{0x00, 0x1D, 0x04},	/* 8: Verde */
-		{0x08, 0x3C, 0x00},	/* 9: Verde brillante */
-		{0x28, 0x0E, 0x00},	/* 10: Naranja */
-		{0x1F, 0x3F, 0x28},	/* 11: Verde menta */
-		{0x04, 0x10, 0x2C},	/* 12: Azul oscuro */
-		{0x08, 0x3F, 0x30},	/* 13: Turquesa */
-		{0x2A, 0x10, 0x30},	/* 14: Amarillo claro */
-		{0x30, 0x3F, 0x30}	/* 15: Blanco */
+        {0x00, 0x00, 0x00},	/*  0: Negro */
+        {0x00, 0x00, 0x24},	/*  1: Azul (más oscuro que el VGA por defecto) */
+        {0x00, 0x24, 0x04},	/*  2: Verde (más oscuro, tinte azulado) */
+        {0x00, 0x22, 0x28},	/*  3: Cian (más oscuro, menos verde) */
+        {0x24, 0x00, 0x00},	/*  4: Rojo (más oscuro) */
+        {0x28, 0x08, 0x2A},	/*  5: Magenta (algo desaturado) */
+        {0x30, 0x30, 0x08},	/*  6: Marrón (oliva/amarillo oscuro, desvía del VGA estándar) */
+        {0x2B, 0x2B, 0x2B},	/*  7: Gris claro (prácticamente idéntico al default) */
+        {0x00, 0x00, 0x1D},	/*  8: Gris oscuro (se muestra azul marino, desvía del VGA estándar) */
+        {0x04, 0x08, 0x3C},	/*  9: Azul brillante (más oscuro y saturado) */
+        {0x00, 0x28, 0x0E},	/* 10: Verde brillante (tirando a esmeralda) */
+        {0x00, 0x1F, 0x3F},	/* 11: Cian claro (más profundo, sin el rojo lavado del default) */
+        {0x28, 0x04, 0x10},	/* 12: Rojo claro (tinte burdeos) */
+        {0x2C, 0x08, 0x3F},	/* 13: Magenta claro (tirando a violeta) */
+        {0x30, 0x2A, 0x10},	/* 14: Amarillo (apagado, algo anaranjado) */
+        {0x30, 0x30, 0x3F}	/* 15: Blanco (apagado, tinte frío azulado) */
     };
 
     if (directvideo)
@@ -2233,7 +2230,7 @@ void coniox_blink(unsigned int blink)
 			r.w.bx = blink ? 1 : 0;
 		#else
 			r.x.ax = 0x1003;
-			r.w.bx = blink ? 1 : 0;
+			r.x.bx = blink ? 1 : 0;
 		#endif
 		coniox_int86(0x10, &r, &r);
 	}
@@ -2259,7 +2256,12 @@ void delay (unsigned int ms)
     else
     {
         union REGS r;
-		lWait = (((unsigned long) ms * 91UL) + 4999UL) / 5000UL;
+		lWait = ((ms * 91UL) + 4999UL) / 5000UL;
+		if (lWait == 0)
+		{
+			lWait = 1;                    /* sub-tick: esperar 1 tick */
+		}
+		lTicks = 0;
         while (lWait)
         {
             r.h.ah = 0;					/* INT 1Ah AH=00h: leer ticks */
