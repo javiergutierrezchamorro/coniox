@@ -1467,15 +1467,13 @@ int coniox_basecrt = 0x3D4;
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 	unsigned short *coniox_vram;
-	unsigned short *coniox_currentoffset;
 	#define coniox_int86 int386
 	#define coniox_int86x int386x
 	#if defined(__WATCOMC__)
 		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
 		#pragma aux coniox_offset =											\
 			"			 .386													   "\
-			"			 xor eax, eax				"\
-			"			 mov ax, word ptr ti + 16				"\
+			"			 movzx eax, word ptr ti + 16				"\
 			"			 imul eax, edi										"\
 			"			 add eax, esi									   "\
 			"			 shl eax, 1												 "\
@@ -1499,7 +1497,6 @@ int coniox_basecrt = 0x3D4;
 	#endif
 #else
 	unsigned short coniox_far *coniox_vram;
-	unsigned short coniox_far *coniox_currentoffset;
 	#define coniox_int86 int86
 	#define coniox_int86x int86x
 	#if defined(__WATCOMC__) && defined(__SMALL_DATA__)
@@ -1509,7 +1506,7 @@ int coniox_basecrt = 0x3D4;
 					"			 mov ax, word ptr ti + 16						"\
 					"			 mul di														 "\
 					"			 add ax, si										 "\
-					"			 add ax, ax													"\
+					"			 shl ax, 1													"\
 					"			 add ax, word ptr coniox_vram					"\
 					"			 mov dx, word ptr coniox_vram+2					"\
 					parm [SI][DI]		  \
@@ -1540,8 +1537,7 @@ int coniox_basecrt = 0x3D4;
 	void coniox_fmemsetw (void coniox_far *m, short val, size_t count);
 	#if (defined(__FLAT__))
 		#pragma aux coniox_fmemsetw =										\
-				"				  and eax, 0FFFFh										  "\
-				"				  mov edx, eax										  "\
+				"				  movzx edx, ax										  "\
 				"				  shl eax, 16										  "\
 				"				  or eax, edx  										  "\
 				"				  shr ecx, 1											 "\
@@ -1563,7 +1559,6 @@ int coniox_basecrt = 0x3D4;
 	void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);	
 	#if (defined(__FLAT__))
 		#pragma aux coniox_fmemcpy = \
-    	"push edi" \
     	"mov ecx, ebx" \
     	"shr ecx, 2" \
     	"cld" \
@@ -1571,9 +1566,8 @@ int coniox_basecrt = 0x3D4;
     	"mov ecx, ebx" \
     	"and ecx, 3" \
     	"rep movsb" \
-    	"pop eax" \
 		parm [EDI][ESI][EBX] \
-    	modify exact [EAX ECX EDI ESI];
+    	modify exact [ECX EDI ESI];
 	#else
 		#pragma aux coniox_fmemcpy =              \
 	    "   push  ds                        "  \
@@ -1756,8 +1750,10 @@ int cputs(const char *__str)
 	
 	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 		unsigned short *p;
+		unsigned short *coniox_currentoffset;
 	#else
 		unsigned short coniox_far *p;
+		unsigned short coniox_far *coniox_currentoffset;
 	#endif
 	union REGS r;
 
@@ -1919,7 +1915,7 @@ coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 	if (directvideo)
 	{
 		// *(unsigned short coniox_far *) coniox_offset(x - 1, y - 1) = (attr << 8) | (ch & 0xFF);
-		coniox_putcell(x - 1, y - 1, (attr <<8 | (ch)));
+		coniox_putcell(x - 1, y - 1, (attr << 8) | (ch & 0xFF));
 	}
 	else
 	{
@@ -2491,9 +2487,17 @@ void clrscr(void)
 	gotoxy(1, 1);
 	if (directvideo)
 	{
-		coniox_putchxyattrwh(ti.winleft, ti.wintop, ' ', ti.attribute, ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
-	}
-	else
+		if (ti.winright - ti.winleft + 1 == ti.screenwidth)
+		{
+			/* Full-width block: VRAM rows are contiguous, so a single fill covers all rows */
+			coniox_fmemsetw((unsigned short coniox_far*) coniox_offset(ti.winleft - 1, ti.wintop - 1), (short)((ti.attribute << 8) | ' '), (size_t)ti.screenwidth * (ti.winbottom - ti.wintop + 1));
+		}
+        else
+        {
+			coniox_putchxyattrwh(ti.winleft, ti.wintop, ' ', ti.attribute, ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
+        }
+    }
+    else
 	{
 		union REGS r;
 		#if defined(__WATCOMC__)
