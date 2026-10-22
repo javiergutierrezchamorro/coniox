@@ -2108,27 +2108,26 @@ void coniox_blink(unsigned int blink)
 {
 	if (directvideo)
 	{
-        unsigned char v;
-        inportb(0x3DA);			/* resetear flip-flop: LEER 3DA, no escribir */
-        outportb(0x3C0, 0x10);		/* índice = registro de modo */
-        v = inportb(0x3C1);
-        if (blink)
-        {
-            v |= 0x08;		/* bit 3 = 1: blink ON */
-        }
-        else
-        {
-            v &= ~0x08;		/* bit 3 = 0: fondos brillantes */
-        }
-        inportb(0x3DA);			/* resetear flip-flop antes de escribir */
-        outportb(0x3C0, 0x10);
-        outportb(0x3C0, v);
+		unsigned char v;
+		unsigned int status = coniox_basecrt + 6;	/* 3DAh color, 3BAh mono */
+
+		_disable();
+		inportb(status);
+		outportb(0x3C0, 0x10 | 0x20);
+		v = inportb(0x3C1);
+		if (blink)
+			v |= 0x08;
+		else
+			v &= ~0x08;
+		outportb(0x3C0, v);
+		outportb(0x3C0, 0x20);		/* flip-flop en índice, vídeo encendido */
+		_enable();
 	}
 	else
 	{
 		union REGS r;
 		#if defined(__WATCOMC__)
-			r.w.ax = 0x1003;		// Subfunción: set blink/intensity bit
+			r.w.ax = 0x1003;
 		#else
 			r.x.ax = 0x1003;
 		#endif
@@ -2136,7 +2135,6 @@ void coniox_blink(unsigned int blink)
 		coniox_int86(0x10, &r, &r);
 	}
 }
-
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
