@@ -1956,8 +1956,23 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 	if (directvideo)
 	{
-		ylim = y + h;
 		v    = (unsigned short)((attr << 8) | (ch & 0xFF));
+		// fast-path 1x1 -> putcell evita fmemsetw + loop
+		if ((w == 1) && (h == 1))
+		{
+			coniox_putcell(x-1, y-1, v);
+			return;
+        }
+		if (w == 1)
+		{
+			for (y1=y; y1 < y+h; y1++)
+			{
+				coniox_putcell(x-1, y1-1, v);
+			}
+            return;
+        }
+	
+		ylim = y + h;
 		sw   = ti.screenwidth;
 		p    = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		for (y1 = y; y1 < ylim; y1++)
@@ -2389,11 +2404,19 @@ int gettext(int __left, int __top, int __right, int __bottom, void coniox_far* _
 	
 	p   = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	dst = (unsigned short coniox_far*) __destin;
-	for (y1 = __top; y1 <= __bottom; y1++)
+	
+	if ((unsigned int)(__right - __left + 1) == ti.screenwidth)
 	{
-		coniox_fmemcpy(dst, p, width << 1);
-		p   += ti.screenwidth;
-		dst += width;
+		coniox_fmemcpy(dst, p, (unsigned long) (width * (__bottom - __top + 1) << 1));
+	}
+	else
+	{
+		for (y1 = __top; y1 <= __bottom; y1++)
+		{
+			coniox_fmemcpy(dst, p, width << 1);
+			p   += ti.screenwidth;
+			dst += width;
+		}
 	}
 	return(1);
 }
@@ -2415,11 +2438,19 @@ int puttext(int __left, int __top, int __right, int __bottom, void coniox_far* _
 	
 	p   = (unsigned short coniox_far*) coniox_offset(__left - 1, __top - 1);
 	src = (unsigned short coniox_far*) __source;
-	for (y1 = __top; y1 <= __bottom; y1++)
+	
+	if ((unsigned int)(__right - __left + 1) == ti.screenwidth)
 	{
-		coniox_fmemcpy(p, src, width << 1);
-		p   += ti.screenwidth;
-		src += width;
+		coniox_fmemcpy(p, src, (unsigned long) (width * (__bottom - __top + 1) << 1));
+	}
+	else
+	{
+		for (y1 = __top; y1 <= __bottom; y1++)
+		{
+			coniox_fmemcpy(p, src, width << 1);
+			p   += ti.screenwidth;
+			src += width;
+		}
 	}
 	return(1);
 }
@@ -2535,7 +2566,6 @@ int kbhit(void)
 		return(getch_last_extended_key);
 	}
 
-	coniox_idle();
 	if (directvideo)
 	{
 		return(peekw(0x40, 0x1A) != peekw(0x40, 0x1C));
@@ -2575,6 +2605,7 @@ int getch(void)
 
 		while (!kbhit())
 		{
+			coniox_idle();
 		}
 
 		head = peekw(0x40, 0x1A);
