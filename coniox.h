@@ -111,13 +111,18 @@ VERSION HISTORY
 4.99 - 
  - All functions are now working, including ASM pragma aux
  - Several optimizations to Windows and DOS paths
+ 
+ 5.00 - 2026/10/22
+ - All functions are now working, including ASM pragma aux
+ - Several optimizations to Windows and DOS paths
+ - Lots of tests with ZEROFILL
 */
 
 #pragma once
 #ifndef _CONIOX_H_ 
 #define _CONIOX_H_
 
-#define coniox_version (499)
+#define coniox_version (500)
 #define coniox_build (__DATE__)
 
 #ifdef __cplusplus
@@ -184,6 +189,9 @@ extern "C" {
 	#define _fmemcpy	memcpy
 	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base)
 	#define coniox_far
+#elif defined(__FLAT__)
+	/* DOS extender, flat model: every pointer is a 32 bit offset, and the first MB is mapped at linear address 0 */
+	#define coniox_far
 #else
 	#define coniox_far __far
 #endif
@@ -210,12 +218,23 @@ extern "C" {
 #endif
 
 
+#if ((defined(__FLAT__)) && (!defined(__DJGPP__)))
+	/* Flat model: a real mode segment:offset is the linear address seg * 16 + off */
+	#define coniox_linear(s,o)	((((unsigned long) (s)) << 4) + (unsigned long) (o))
+	#define peekb(s,o)			(*((unsigned char *) coniox_linear((s),(o))))
+	#define peekw(s,o)			(*((unsigned short *) coniox_linear((s),(o))))
+	#define peekl(s,o)			(*((unsigned long *) coniox_linear((s),(o))))
+	#define pokeb(s,o,x)		(*((unsigned char *) coniox_linear((s),(o))) = (unsigned char)(x))
+	#define pokew(s,o,x)		(*((unsigned short *) coniox_linear((s),(o))) = (unsigned short)(x))
+	#define pokel(s,o,x)		(*((unsigned long *) coniox_linear((s),(o))) = (unsigned long)(x))
+#else
 #define peekb(s,o)			(*((unsigned char coniox_far *) MK_FP((s),(o))))
 #define peekw(s,o)			(*((unsigned short coniox_far *) MK_FP((s),(o))))
 #define peekl(s,o)			(*((unsigned long coniox_far *) MK_FP((s),(o))))
 #define pokeb(s,o,x)		(*((unsigned char coniox_far *) MK_FP((s),(o))) = (unsigned char)(x))
 #define pokew(s,o,x)		(*((unsigned short coniox_far *) MK_FP((s),(o))) = (unsigned short)(x))
 #define pokel(s,o,x)		(*((unsigned long coniox_far *) MK_FP((s),(o))) = (unsigned long)(x))
+#endif
 #endif
 
 #if !(((__DOS__) || (__MSDOS__)))

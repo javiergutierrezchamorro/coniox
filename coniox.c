@@ -204,7 +204,7 @@ void window(int __left, int __top, int __right, int __bottom)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int putch(int __c)
 {
-	int oldy;
+	int oldx, oldy;
 	int winwidth, winheight;
 
 	coniox_init(NULL);
@@ -226,10 +226,12 @@ int putch(int __c)
 			}
 			else
 			{
+				/* LF: keep the column, like Borland's putch. */
+				oldx = ti.curx;
 				oldy = ti.cury;
 				gotoxy(1, 1);
 				delline();
-				gotoxy(1, oldy);
+				gotoxy(oldx, oldy);
 			}
 			break;
 		case '\b':
@@ -263,7 +265,7 @@ int putch(int __c)
 				}
 				else
 				{
-					gotoxy(1, ti.cury);
+					/* _wscroll = 0: stay on the last column, further output overwrites the edge cell. */
 				}
 			}
 	}
@@ -577,7 +579,7 @@ int cputws(const wchar_t *__str)
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t putwch(wchar_t __c)
 {
-	int oldy;
+	int oldx, oldy;
 	int winwidth, winheight;
 
 
@@ -598,10 +600,12 @@ wchar_t putwch(wchar_t __c)
 			}
 			else
 			{
+				/* LF: keep the column, like Borland putwch. */
+				oldx = ti.curx;
 				oldy = ti.cury;
 				gotoxy(1, 1);
 				delline();
-				gotoxy(1, oldy);
+				gotoxy(oldx, oldy);
 			}
 			break;
 		case L'\b':
@@ -630,7 +634,7 @@ wchar_t putwch(wchar_t __c)
 				}
 				else
 				{
-					gotoxy(1, ti.cury);
+					/* _wscroll = 0: stay on the last column, further output overwrites the edge cell. */
 				}
 			}
 			else
@@ -1340,6 +1344,7 @@ void _setcursortype(int __cur_t)
 {
 	CONSOLE_CURSOR_INFO cci;
 
+	coniox_init(NULL);
 	coniox_setcursortype = __cur_t;
 	switch(__cur_t)
 	{
@@ -1495,7 +1500,7 @@ int coniox_basecrt = 0x3D4;
 	unsigned short *coniox_vram;
 	#define coniox_int86 int386
 	#define coniox_int86x int386x
-	#if defined(__WATCOMC__)
+	#if defined(__WATCOMCDISABLED__)
 		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
 		#pragma aux coniox_offset =											\
 			"			 .386													   "\
@@ -1514,7 +1519,7 @@ int coniox_basecrt = 0x3D4;
 	unsigned short coniox_far *coniox_vram;
 	#define coniox_int86 int86
 	#define coniox_int86x int86x
-	#if defined(__WATCOMC__) && defined(__SMALL_DATA__)
+	#if defined(__WATCOMCDISABLED__) && defined(__SMALL_DATA__)
 		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
 			#pragma aux coniox_offset =											\
 					"			 .8086														"\
@@ -1556,29 +1561,33 @@ int coniox_basecrt = 0x3D4;
             parm [EDI][AX][ECX]							\
             modify exact [EDI EDX ECX EAX];
         #pragma aux coniox_putrun =					\
-            "		cld								"	\
+            "		mov		edx, ebx				"	\
+            "		and		edx, 0FF00h				"	\
+            "		mov		ebx, edx				"	\
+            "		shl		ebx, 16					"	\
+            "		or		ebx, edx				"	\
             "		test	ecx, 1					"	\
             "		jz		_preven					"	\
-            "		lodsb							"	\
-            "		mov		ah, bh					"	\
+            "		movzx	eax, byte ptr [esi]		"	\
+            "		inc		esi						"	\
+            "		or		eax, edx				"	\
             "		stosw							"	\
             "		dec		ecx						"	\
             "_preven:									"	\
             "		shr		ecx, 1					"	\
             "		jecxz	_prdone					"	\
             "_prpairs:									"	\
-            "		lodsw							"	\
-            "		movzx	eax, ax					"	\
-            "		mov		dl, ah					"	\
-            "		mov		ah, bh					"	\
-            "		mov		dh, bh					"	\
+            "		movzx	eax, byte ptr [esi]		"	\
+            "		movzx	edx, byte ptr [esi+1]	"	\
+            "		add		esi, 2					"	\
             "		shl		edx, 16					"	\
             "		or		eax, edx				"	\
+            "		or		eax, ebx				"	\
             "		stosd							"	\
             "		loop	_prpairs				"	\
             "_prdone:									"	\
             parm [EDI][ESI][EBX][ECX]					\
-            modify exact [EDI ESI ECX EDX EAX];
+            modify exact [EDI ESI ECX EDX EAX EBX];
         #pragma aux coniox_fmemcpy =					\
             "		mov		ecx, ebx				"	\
             "		shr		ecx, 2					"	\
@@ -1727,8 +1736,10 @@ void coniox_init(const void* title)
 		}
 	#endif
 
-	/* Base for 6845 CRT controller */
-	coniox_basecrt = peekw(0x40, 0x63);	 /* 0x3D4 */
+	/* Base for 6845 CRT controller: keep the default 0x3D4 even if the adapter
+	   is monochrome (BDA 0040:0063 = 0x3B4). Programming the cursor through
+	   3B4h leaves it broken on emulators and some VGA boards. */
+	//coniox_basecrt = peekw(0x40, 0x63);	 /* 0x3D4 */
 
 	/* Get cursor position */
 	if (directvideo)
@@ -1804,7 +1815,7 @@ int cputs(const char *__str)
     unsigned int i;
     unsigned int runlen, remaining;
     unsigned int winwidth, winheight;
-    int oldy;
+    int oldx, oldy;
     unsigned short attrword;
     union REGS r;
 
@@ -1838,7 +1849,7 @@ int cputs(const char *__str)
 
     while (*__str)
     {
-        /* Carriage return: regresar al inicio de la línea. */
+        /* Carriage return: regresar al inicio de la l?nea. */
         if (*__str == '\r')
         {
             if (directvideo)
@@ -1863,10 +1874,13 @@ int cputs(const char *__str)
             }
             else
             {
+                /* LF: keep the column, like Borland cputs. */
+                oldx = ti.curx;
                 oldy = ti.cury;
                 ti.curx = 1;
                 ti.cury = 1;
                 delline();
+                ti.curx = oldx;
                 ti.cury = oldy;
                 if (directvideo)
                 {
@@ -1877,7 +1891,7 @@ int cputs(const char *__str)
             continue;
         }
 
-        /* Backspace: retroceder sin borrar el carácter. */
+        /* Backspace: retroceder sin borrar el car?cter. */
         if (*__str == '\b')
         {
             if (ti.curx > 1)
@@ -1894,7 +1908,7 @@ int cputs(const char *__str)
 
         /*
          * Agrupar caracteres imprimibles hasta el siguiente control
-         * o hasta el final de la línea de la ventana.
+         * o hasta el final de la l?nea de la ventana.
          */
         run = __str;
         runlen = 0;
@@ -1911,7 +1925,7 @@ int cputs(const char *__str)
 
         if (directvideo)
         {
-            /* Ruta rápida: el run completo directo a VRAM. */
+            /* Ruta r?pida: el run completo directo a VRAM. */
             coniox_putrun(coniox_currentoffset, run, attrword, runlen);
             coniox_currentoffset += runlen;
         }
@@ -1961,7 +1975,7 @@ int cputs(const char *__str)
             }
             else
             {
-                ti.curx = 1;
+                ti.curx = (int)winwidth;    /* _wscroll = 0: stay on the last column, the next run overwrites the edge cell */
             }
             if (directvideo)
             {
@@ -1973,6 +1987,7 @@ int cputs(const char *__str)
     gotoxy(ti.curx, ti.cury);
     return (int)(__str - orig);
 }
+
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2375,9 +2390,11 @@ void textmode(int __newmode)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void _setcursortype(int __cur_t)
 {
-	int cursor_start, cursor_end;
-	coniox_setcursortype = __cur_t;
+	int cursor_start, cursor_end, cellheight;
 	
+	
+	coniox_init(NULL);
+	coniox_setcursortype = __cur_t;
 	switch (__cur_t)
 	{
 		case _NOCURSOR:
@@ -2413,6 +2430,28 @@ void _setcursortype(int __cur_t)
 	
 	if (directvideo)
 	{
+		/* Writing CRTC 0x0A/0x0B directly bypasses BIOS cursor emulation: scale
+		   the shape to the actual cell height from BDA 0040:0085 (h), instead
+		   of the 8 scan line based constants expected by INT 10h AH=01h. */
+		cellheight = peekb(0x40, 0x85);
+		if (cellheight < 2 || cellheight > 32)
+		{
+			cellheight = 16;
+		}
+		switch (__cur_t)
+		{
+			case _NOCURSOR:
+				break;
+			case _SOLIDCURSOR:
+				cursor_start = 0;
+				cursor_end = cellheight - 1;
+				break;
+			case _NORMALCURSOR:
+			default:
+				cursor_start = cellheight - 2;
+				cursor_end = cellheight - 1;
+				break;
+		}
 		outportb(coniox_basecrt, 0x0A);
 		outportb(coniox_basecrt + 1, cursor_start);
 		outportb(coniox_basecrt, 0x0B);
@@ -2429,6 +2468,7 @@ void _setcursortype(int __cur_t)
 		coniox_int86(0x10, &r, &r);
 	}
 }
+
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2875,7 +2915,7 @@ int ungetch(int __ch)
 {
 	if (directvideo)
 	{
-		unsigned short start, end, head, tail, new_head;
+		unsigned short start, end, head, tail, new_tail;
 
 		start = peekw(0x40, 0x80);
 		end   = peekw(0x40, 0x82);
@@ -2885,24 +2925,34 @@ int ungetch(int __ch)
 			end = 0x3E;
 		}
 
+		/* Windows WriteConsoleInput() appends to the input queue, so consecutive
+		   ungetch() calls are read back FIFO. Prepending at the head reverses
+		   them, so coniodemo finish() would type "uoy knahT" instead of
+		   "Thank you". Append at the BIOS keyboard buffer tail to match the
+		   Windows behaviour. */
+		_disable();
 		head = peekw(0x40, 0x1A);
 		tail = peekw(0x40, 0x1C);
-
-		new_head = (head == start) ? (unsigned short)(end - 2) : (unsigned short)(head - 2);
-		if (new_head == tail)
+		new_tail = tail + 2;
+		if (new_tail >= end)
 		{
-			return EOF;  /* buffer lleno */
+			new_tail = start;
 		}
-
-		pokew(0x40, new_head, (__ch & 0xFF));
-		pokew(0x40, 0x1A, new_head);
+		if (new_tail == head)
+		{
+			_enable();
+			return(EOF);	/* buffer lleno */
+		}
+		pokew(0x40, tail, (__ch & 0xFF));
+		pokew(0x40, 0x1C, new_tail);
+		_enable();
 		return __ch;
 	}
 	else
 	{
 		union REGS r;
 		r.h.ah = 0x05; // ungetch BIOS
-		#if defined(__WATCOMC__)		
+		#if defined(__WATCOMC__)			
 			r.w.cx = (__ch & 0xFF);
 		#else
 			r.x.cx = (__ch & 0xFF);
