@@ -173,15 +173,21 @@ extern "C" {
 #include <bios.h>
 
 
-#if defined(__WATCOMC__)
+#if defined(__WATCOMC__) && defined(__DOS__)
 	#include <i86.h>
-	unsigned int outp( int port, int value );
+	unsigned char inportb(unsigned int port);
+	#pragma aux inportb  = "in  al, dx" parm [dx] value [al];
+	unsigned char outportb(unsigned int port, unsigned char value);
+	#pragma aux outportb = "out dx, al" parm [dx] [al];
 #endif
 
 #if defined(__DJGPP__)
 	#include <sys/nearptr.h>
+	#include <pc.h>
 	#define _fmemmove	memmove
 	#define _fmemcpy	memcpy
+    #define _disable disable
+    #define _enable  enable
 	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base)
 	#define coniox_far
 #elif defined(__FLAT__)

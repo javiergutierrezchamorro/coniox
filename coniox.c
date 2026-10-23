@@ -1652,41 +1652,12 @@ int coniox_basecrt = 0x3D4;
 	unsigned short *coniox_vram;
 	#define coniox_int86 int386
 	#define coniox_int86x int386x
-	#if defined(__WATCOMCDISABLED__)
-		unsigned short *coniox_offset(unsigned int piX, unsigned int piY); 
-		#pragma aux coniox_offset =											\
-			"			 .386													   "\
-			"			 movzx eax, word ptr ti + 16				"\
-			"			 imul eax, edi										"\
-			"			 add eax, esi									   "\
-			"			 shl eax, 1												 "\
-			"			 add eax, coniox_vram					   "\
-			parm [ESI][EDI]												   \
-			modify exact nomemory [EAX]																	 \
-			value [EAX];
-	#else
-		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
-	#endif
+	#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 #else
 	unsigned short coniox_far *coniox_vram;
 	#define coniox_int86 int86
 	#define coniox_int86x int86x
-	#if defined(__WATCOMCDISABLED__) && defined(__SMALL_DATA__)
-		unsigned short coniox_far *coniox_offset(unsigned int piX, unsigned int piY);
-			#pragma aux coniox_offset =											\
-					"			 .8086														"\
-					"			 mov ax, word ptr ti + 16						"\
-					"			 mul di														 "\
-					"			 add ax, si										 "\
-					"			 shl ax, 1													"\
-					"			 add ax, word ptr coniox_vram					"\
-					"			 mov dx, word ptr coniox_vram+2					"\
-					parm [SI][DI]		  \
-					modify exact nomemory [DX AX]			\
-					value [DX AX];
-	#else
-		#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
-	#endif
+	#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 #endif
 
 
@@ -2708,7 +2679,9 @@ void delline(void)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		movetext(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop - 1);
-		coniox_putchxyattrwh(ti.winleft, ti.winbottom, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+		//coniox_putchxyattrwh(ti.winleft, ti.winbottom, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+        coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.winbottom - 1), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));
+		
 	}
 	else
 	{
@@ -2736,7 +2709,8 @@ void insline(void)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		movetext(ti.winleft, ti.cury + ti.wintop - 1, ti.winright, ti.winbottom - 1, ti.winleft, ti.cury + ti.wintop);
-		coniox_putchxyattrwh(ti.winleft, ti.cury + ti.wintop - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+		//coniox_putchxyattrwh(ti.winleft, ti.cury + ti.wintop - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+        coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.cury + ti.wintop - 2), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));		
 	}
 	else
 	{
