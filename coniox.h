@@ -165,6 +165,7 @@ extern "C" {
 #endif
 
 #define PRINTFBUF_SIZE	255
+#include <stdarg.h>	/* va_list, para cvprintf */
 
 
 #if ((__DOS__) || (__MSDOS__))
@@ -244,17 +245,17 @@ Structure holding information about screen.
 */
 struct text_info
 {
-	unsigned short winleft;
-	unsigned short wintop;
-	unsigned short winright;
-	unsigned short winbottom;
-	unsigned short attribute;		/**< current text attribute */
-	unsigned short normattr;		/**< original value of text attribute after start of the application. If you don't called the <TT>inittextinfo</TT> on the beginning of the application, this always will be black background and light gray foreground */
-	unsigned short currmode;
-	unsigned short screenheight;	/**< screen width */
-	unsigned short screenwidth;		/**< screen height */
-	unsigned short curx;						/**< cursor coordinate x */
-	unsigned short cury;						/**< cursor coordinate y */
+    unsigned char winleft;
+    unsigned char wintop;
+    unsigned char winright;
+    unsigned char winbottom;
+    unsigned char attribute;
+    unsigned char normattr;
+    unsigned char currmode;
+    unsigned char screenheight;
+    unsigned char screenwidth;
+    unsigned char curx;
+    unsigned char cury;
 };
 
 /**
@@ -583,6 +584,18 @@ Thus, str must be at least str[0] plus 2 bytes long.
 */
 char *cgets(char *__str);
 
+
+/**
+Writes formatted output to the screen using an argument list.
+cvprintf is the va_list equivalent of cprintf, in the same way vprintf relates to printf.
+@see cprintf
+@param __format format string
+@param __arglist pointer to the list of arguments
+*/
+int cvprintf(const char *__format, va_list __arglist);
+
+#define _cvprintf	cvprintf
+#define vcprintf	cvprintf
 
 /**
 Writes formatted output to the screen.

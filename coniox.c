@@ -333,38 +333,47 @@ char *cgets(char *__str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int cprintf (const char *__format, ...)
+int cvprintf(const char *__format, va_list __arglist)
 {
-	int r;
-	va_list ap;
-	char buffer[PRINTFBUF_SIZE];
+    int r;
+    char buffer[PRINTFBUF_SIZE];
 
-	if (!__format || !__format[0])
-	{
-		return(0);
-	}
+    if (!__format || !__format[0])
+    {
+        return(0);
+    }
 
-	va_start(ap, __format);
     #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
-        r = vsnprintf(buffer, PRINTFBUF_SIZE, __format, ap);
+        r = vsnprintf(buffer, PRINTFBUF_SIZE, __format, __arglist);
     #elif defined(__WATCOMC__)
-        r = _vsnprintf(buffer, PRINTFBUF_SIZE, __format, ap);
+        r = _vsnprintf(buffer, PRINTFBUF_SIZE, __format, __arglist);
     #else
-        r = vsprintf(buffer, __format, ap);
+        r = vsprintf(buffer, __format, __arglist);
     #endif
-    va_end(ap);
-	if (r < 0)
-	{
-		buffer[0] = 0;
-	}
-	else if ((size_t) r >= sizeof(buffer))
-	{
-		buffer[sizeof(buffer) - 1] = 0;
-	}
-	cputs(buffer);
-	return(r);
+    if (r < 0)
+    {
+        buffer[0] = 0;
+    }
+    else if ((size_t) r >= sizeof(buffer))
+    {
+        buffer[sizeof(buffer) - 1] = 0;
+    }
+    cputs(buffer);
+    return(r);
 }
 
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+int cprintf(const char *__format, ...)
+{
+    int r;
+    va_list ap;
+
+    va_start(ap, __format);
+    r = cvprintf(__format, ap);
+    va_end(ap);
+    return(r);
+}
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int cscanf(const char *__format, ...)
@@ -2372,6 +2381,10 @@ void coniox_enhanced_palette(unsigned int pal)
         {0x2A, 0x2A, 0x3F}	/* 15: Blanco */
     };
 
+    if (ti.currmode == MONO)
+    {
+        return;
+    }
 
     /* pal = 0: paleta por defecto del VGA. pal != 0: paleta mejorada de CONIOX. */
     coniox_rgb = pal ? coniox_palette : coniox_default;
@@ -2409,7 +2422,7 @@ void coniox_enhanced_palette(unsigned int pal)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_blink(unsigned int blink)
 {
-	if (directvideo)
+	 if ((directvideo) && (ti.currmode != MONO))
 	{
 		unsigned char v;
 		unsigned int status = coniox_basecrt + 6;	/* 3DAh color, 3BAh mono */
