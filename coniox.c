@@ -466,7 +466,7 @@ int wherey(void)
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int cputs(const char *__str)
+int cputsportable(const char *__str)
 {
 	const char *orig = __str;
 
@@ -747,6 +747,149 @@ void coniox_init(const void *title)
 }
 
 
+/* ----------------------------------------------------------------------------------------------------------------- */
+int cputs(const char *__str)
+{
+	const char *orig = __str;
+	const char *run;
+	unsigned int i;
+	unsigned int runlen, remaining;
+	unsigned int winwidth, winheight;
+	int oldx, oldy;
+	COORD c = { 0, 0 };
+	CHAR_INFO ci[CONIOX_MAX_CHARINFO];
+
+	if (__str == NULL)
+	{
+		return(0);
+	}
+
+	coniox_init(NULL);
+
+	winwidth  = (unsigned int)(ti.winright - ti.winleft + 1);
+	winheight = (unsigned int)(ti.winbottom - ti.wintop + 1);
+
+	if (winwidth == 0 || winheight == 0)
+	{
+		return(0);
+	}
+
+	while (*__str)
+	{
+		/* Carriage return: volver al inicio de linea. */
+		if (*__str == '\r')
+		{
+			ti.curx = 1;
+			gotoxy(1, ti.cury);
+			++__str;
+			continue;
+		}
+
+		/* Line feed: avanzar o desplazar la ventana. */
+		if (*__str == '\n')
+		{
+			if (ti.cury < (int) winheight)
+			{
+				ti.cury++;
+				gotoxy(ti.curx, ti.cury);
+			}
+			else
+			{
+				/* LF: keep the column, like Borland cputs. */
+				oldx = ti.curx;
+				oldy = ti.cury;
+				gotoxy(1, 1);
+				delline();
+				gotoxy(oldx, oldy);
+			}
+			++__str;
+			continue;
+		}
+
+		/* Backspace: retroceder sin borrar el caracter. */
+		if (*__str == '\b')
+		{
+			if (ti.curx > 1)
+			{
+				ti.curx--;
+				gotoxy(ti.curx, ti.cury);
+			}
+			++__str;
+			continue;
+		}
+
+		/*
+		 * Agrupar caracteres imprimibles hasta el siguiente control, el borde
+		 * de la ventana o el tamanio del lote: un solo WriteConsoleOutputA por run.
+		 * Los controles ya se filtraron arriba y remaining >= 1, asi que runlen
+		 * siempre es >= 1 (no hay riesgo de bucle infinito).
+		 */
+		run = __str;
+		runlen = 0;
+		remaining = winwidth - (unsigned int) ti.curx + 1;
+		if (remaining > CONIOX_MAX_CHARINFO)
+		{
+			remaining = CONIOX_MAX_CHARINFO;
+		}
+
+		while (runlen < remaining &&
+		       run[runlen] != '\0' &&
+		       run[runlen] != '\r' &&
+		       run[runlen] != '\n' &&
+		       run[runlen] != '\b')
+		{
+			runlen++;
+		}
+
+		for (i = 0; i < runlen; i++)
+		{
+			ci[i].Char.AsciiChar = run[i];
+			ci[i].Attributes = ti.attribute;
+		}
+
+		{
+			SMALL_RECT r;
+			COORD s;
+
+			r.Left   = (short) (ti.winleft + ti.curx - 2);
+			r.Top    = (short) (ti.wintop  + ti.cury - 2);
+			r.Right  = (short) (r.Left + runlen - 1);
+			r.Bottom = r.Top;
+			s.X = (short) runlen;
+			s.Y = 1;
+			WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
+		}
+		ti.curx += runlen;
+
+		/* El run nunca cruza el borde de la ventana: el wrap se decide una sola vez. */
+		if (ti.curx > (int) winwidth)
+		{
+			if (_wscroll)
+			{
+				if (ti.cury < (int) winheight)
+				{
+					ti.curx = 1;
+					ti.cury++;
+				}
+				else
+				{
+					ti.curx = 1;
+					ti.cury = 1;
+					delline();
+					ti.cury = (int) winheight;
+				}
+			}
+			else
+			{
+				ti.curx = (int) winwidth;	/* _wscroll = 0: el siguiente run sobrescribe la celda del borde */
+			}
+		}
+		__str += runlen;
+	}
+	gotoxy(ti.curx, ti.cury);
+	return (int)(__str - orig);
+}
+
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1019,7 +1162,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 		return(0);
 	}
 
-	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	if ((__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
 	{
 		return 0;
 	}
@@ -1090,7 +1233,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 		return(0);
 	}
 	
-	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	if ((__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
 	{
 		return 0;
 	}
@@ -1133,7 +1276,7 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 		return(0);
 	}
 	
-	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	if ((__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
 	{
 		return 0;
 	}
@@ -1173,7 +1316,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	{
 		return(0);
 	}
-	if ((__right - __left + 1) * (__top - __bottom + 1) > CONIOX_MAX_CHARINFO)
+	if ((__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
 	{
 		return 0;
 	}
@@ -1321,7 +1464,7 @@ void textmode(int __newmode)
 				r.Bottom = info.dwSize.Y - 1;
 				SetConsoleWindowInfo(coniox_console_output, TRUE, &r);
 				ti.normattr = info.wAttributes;
-				ti.winleft = info.srWindow.Left + 1;
+				ti.winleft = 1;
 				ti.wintop = 1;
 				ti.winright = info.dwSize.X;
 				ti.winbottom = info.dwSize.Y;
