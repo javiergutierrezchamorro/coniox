@@ -30,7 +30,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
 void coniox_idle(void);
 int coniox_get_is_emulator (void);
 void coniox_blink(unsigned int blink);
-void coniox_enhanced_palette(void);
+void coniox_enhanced_palette(unsigned int pal);
 int coniox_is_emulator = 0;
 
 
@@ -1945,7 +1945,7 @@ void coniox_init(const void* title)
 	
 	//Activate blink
 	coniox_blink(1);
-	coniox_enhanced_palette();
+	coniox_enhanced_palette(1);
 }
 
 
@@ -2329,9 +2329,10 @@ int coniox_get_is_emulator (void)
 	
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_enhanced_palette(void)
+void coniox_enhanced_palette(unsigned int pal)
 {
     unsigned int i;
+    const unsigned char (*coniox_rgb)[3];
     static const unsigned char coniox_palette[16][3] =
     {
         {0x00, 0x00, 0x00},	/*  0: Negro */
@@ -2351,15 +2352,38 @@ void coniox_enhanced_palette(void)
         {0x30, 0x2A, 0x10},	/* 14: Amarillo (apagado, algo anaranjado) */
         {0x30, 0x30, 0x3F}	/* 15: Blanco (apagado, tinte frío azulado) */
     };
+    static const unsigned char coniox_default[16][3] =
+    {
+        {0x00, 0x00, 0x00},	/*  0: Negro */
+        {0x00, 0x00, 0x2A},	/*  1: Azul */
+        {0x00, 0x2A, 0x00},	/*  2: Verde */
+        {0x00, 0x2A, 0x2A},	/*  3: Cian */
+        {0x2A, 0x00, 0x00},	/*  4: Rojo */
+        {0x2A, 0x00, 0x2A},	/*  5: Magenta */
+        {0x2A, 0x2A, 0x00},	/*  6: Marron */
+        {0x2A, 0x2A, 0x2A},	/*  7: Gris claro */
+        {0x00, 0x00, 0x15},	/*  8: Gris oscuro */
+        {0x00, 0x00, 0x3F},	/*  9: Azul brillante */
+        {0x00, 0x2A, 0x15},	/* 10: Verde brillante */
+        {0x00, 0x2A, 0x3F},	/* 11: Cian claro */
+        {0x2A, 0x00, 0x15},	/* 12: Rojo claro */
+        {0x2A, 0x00, 0x3F},	/* 13: Magenta claro */
+        {0x2A, 0x2A, 0x15},	/* 14: Amarillo */
+        {0x2A, 0x2A, 0x3F}	/* 15: Blanco */
+    };
+
+
+    /* pal = 0: paleta por defecto del VGA. pal != 0: paleta mejorada de CONIOX. */
+    coniox_rgb = pal ? coniox_palette : coniox_default;
 
     if (directvideo)
     {
         outportb(0x3C8, 0x00);		/* DAC: escribir desde el registro 0 */
         for (i = 0; i < 16; i++)
         {
-            outportb(0x3C9, coniox_palette[i][0]);	/* R */
-            outportb(0x3C9, coniox_palette[i][1]);	/* G */
-            outportb(0x3C9, coniox_palette[i][2]);	/* B */
+            outportb(0x3C9, coniox_rgb[i][0]);	/* R */
+            outportb(0x3C9, coniox_rgb[i][1]);	/* G */
+            outportb(0x3C9, coniox_rgb[i][2]);	/* B */
         }
     }
     else
@@ -2367,21 +2391,20 @@ void coniox_enhanced_palette(void)
         union REGS r;
         for (i = 0; i < 16; i++)
         {
-			#if defined(__WATCOMC__)
-	            r.w.ax = 0x1010;	/* Subfunción: establecer registro DAC */
-	            r.w.bx = i;		/* BX = índice de color (BH=0) */
-			#else
-	            r.x.ax = 0x1010;
-	            r.x.bx = i;
-			#endif
-            r.h.dh = coniox_palette[i][0];	/* R */
-            r.h.ch = coniox_palette[i][1];	/* G */
-            r.h.cl = coniox_palette[i][2];	/* B */
+            #if defined(__WATCOMC__)
+                r.w.ax = 0x1010;	/* Subfunción: establecer registro DAC */
+                r.w.bx = i;		/* BX = índice de color (BH=0) */
+            #else
+                r.x.ax = 0x1010;
+                r.x.bx = i;
+            #endif
+            r.h.dh = coniox_rgb[i][0];	/* R */
+            r.h.ch = coniox_rgb[i][1];	/* G */
+            r.h.cl = coniox_rgb[i][2];	/* B */
             coniox_int86(0x10, &r, &r);
         }
     }
 }
-
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_blink(unsigned int blink)
