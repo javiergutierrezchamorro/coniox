@@ -48,19 +48,19 @@ int coniox_setcursortype = _NORMALCURSOR;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
-	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tamaños
+	void *a[40] = {NULL}; // Espacio para hasta 20 argumentos + posibles tamaï¿½os
 	size_t count = 0;
 	const char *p;
 	char c;
 
-	if (count >= 40)
-	{
-		return(0);
-	}
 	if (!buffer || !format)
 	{
 		return(0);
 	}
+	if (count >= 40)
+	{
+		return(0);
+	}	
 
 	p = format;
 	while ((c = *p++) != 0)
@@ -82,12 +82,12 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 			{
 				p++;
 			}
-			// Detectar especificadores que requieren tamaño adicional
+			// Detectar especificadores que requieren tamaï¿½o adicional
 			if (*p == 's' || *p == 'c' || *p == '[')
         	{
             	a[count++] = va_arg(argPtr, void *);		/* buffer */
             	#ifdef _MSC_VER
-                	a[count++] = va_arg(argPtr, size_t *);	/* tamaño: solo sscanf_s */
+                	a[count++] = va_arg(argPtr, size_t *);	/* tamaï¿½o: solo sscanf_s */
             	#endif
         	}
         	else
@@ -228,7 +228,7 @@ int putch(int __c)
 				ti.cury++;
 				gotoxy(ti.curx, ti.cury);
 			}
-			else
+			else if (_wscroll)
 			{
 				/* LF: keep the column, like Borland's putch. */
 				oldx = ti.curx;
@@ -237,6 +237,7 @@ int putch(int __c)
 				delline();
 				gotoxy(oldx, oldy);
 			}
+			/* _wscroll = 0: LF on the last line does not scroll. */
 			break;
 		case '\b':
 			if (ti.curx > 1)
@@ -1669,7 +1670,7 @@ int coniox_basecrt = 0x3D4;
 #if defined(__WATCOMC__)
     void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
     void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
-    void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, size_t piCount);
+	void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, size_t piCount);
     #if (defined(__FLAT__))
         #pragma aux coniox_fmemsetw =					\
             "		movzx	edx, ax					"	\
@@ -1815,18 +1816,18 @@ void coniox_init(const void* title)
 	#endif
 
 	/* Get current video mode */
-	if (ti.currmode == C4350)
+	if (ti.currmode != C4350)
 	{
-	}
-	else if (directvideo)
-	{
-		ti.currmode = peekb(0x40, 0x49);
-	}
-	else
-	{
-		r.h.ah = 0xF;
-		coniox_int86(0x10, &r, &r);
-		ti.currmode = r.h.al;
+		if (directvideo)
+		{
+			ti.currmode = peekb(0x40, 0x49);
+		}
+		else
+		{
+			r.h.ah = 0xF;
+			coniox_int86(0x10, &r, &r);
+			ti.currmode = r.h.al;
+		}
 	}
 
 	#if (defined(__FLAT__))
@@ -1995,7 +1996,7 @@ int cputs(const char *__str)
                 }
                 ti.cury++;
             }
-            else
+            else if (_wscroll)
             {
                 /* LF: keep the column, like Borland cputs. */
                 oldx = ti.curx;
@@ -2010,6 +2011,7 @@ int cputs(const char *__str)
                     coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
                 }
             }
+            /* _wscroll = 0: LF on the last line does not scroll. */
             ++__str;
             continue;
         }
@@ -2165,7 +2167,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		{
 			*(unsigned short coniox_far *) coniox_offset(x - 1, y - 1) = v;
 			return;
-        }
+		}
 		else if (w == 1)
 		{
 			p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
@@ -2174,8 +2176,8 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 				*p = v;
 				p += ti.screenwidth;
 			}
-            return;
-        }
+			return;
+		}
 		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		ylim = y + h;
 		sw = ti.screenwidth;
@@ -2267,33 +2269,6 @@ void coniox_idle(void)
 	#endif
 	coniox_int86(0x15, &r, &r);
 
-
-	
-	return;
-	
-	/*
-		Advanced Power Management v1.0+
-		call when the system is idle and should be suspended until the next
-		system event or interrupt
-		should not be called from within a hardware interrupt handler to avoid
-		reentrance problems
-		if an interrupt causes the system to resume normal processing, the
-		interrupt may or may not have been handled when the BIOS returns
-		from this call; thus, the caller should allow interrupts on return
-		interrupt handlers may not retain control if the BIOS allows
-		interrupts while in idle mode even if they are able to determine
-		that they were called from idle mode
-		the caller should issue this call continuously in a loop until it needs
-		to perform some processing of its own
-	*/
-	#if defined(__WATCOMC__)
-		r.w.ax = 0x5305;
-	#else
-		r.x.ax = 0x5305;
-	#endif
-	coniox_int86(0x15, &r, &r);
-
-
 }
 
 
@@ -2316,21 +2291,21 @@ void coniox_enhanced_palette(unsigned int pal)
     static const unsigned char coniox_palette[16][3] =
     {
         {0x00, 0x00, 0x00},	/*  0: Negro */
-        {0x00, 0x00, 0x24},	/*  1: Azul (más oscuro que el VGA por defecto) */
-        {0x00, 0x24, 0x04},	/*  2: Verde (más oscuro, tinte azulado) */
-        {0x00, 0x22, 0x28},	/*  3: Cian (más oscuro, menos verde) */
-        {0x24, 0x00, 0x00},	/*  4: Rojo (más oscuro) */
+        {0x00, 0x00, 0x24},	/*  1: Azul (mï¿½s oscuro que el VGA por defecto) */
+        {0x00, 0x24, 0x04},	/*  2: Verde (mï¿½s oscuro, tinte azulado) */
+        {0x00, 0x22, 0x28},	/*  3: Cian (mï¿½s oscuro, menos verde) */
+        {0x24, 0x00, 0x00},	/*  4: Rojo (mï¿½s oscuro) */
         {0x28, 0x08, 0x2A},	/*  5: Magenta (algo desaturado) */
-        {0x30, 0x30, 0x08},	/*  6: Marrón (oliva/amarillo oscuro, desvía del VGA estándar) */
-        {0x2B, 0x2B, 0x2B},	/*  7: Gris claro (prácticamente idéntico al default) */
-        {0x00, 0x00, 0x1D},	/*  8: Gris oscuro (se muestra azul marino, desvía del VGA estándar) */
-        {0x04, 0x08, 0x3C},	/*  9: Azul brillante (más oscuro y saturado) */
+        {0x30, 0x30, 0x08},	/*  6: Marrï¿½n (oliva/amarillo oscuro, desvï¿½a del VGA estï¿½ndar) */
+        {0x2B, 0x2B, 0x2B},	/*  7: Gris claro (prï¿½cticamente idï¿½ntico al default) */
+        {0x00, 0x00, 0x1D},	/*  8: Gris oscuro (se muestra azul marino, desvï¿½a del VGA estï¿½ndar) */
+        {0x04, 0x08, 0x3C},	/*  9: Azul brillante (mï¿½s oscuro y saturado) */
         {0x00, 0x28, 0x0E},	/* 10: Verde brillante (tirando a esmeralda) */
-        {0x00, 0x1F, 0x3F},	/* 11: Cian claro (más profundo, sin el rojo lavado del default) */
+        {0x00, 0x1F, 0x3F},	/* 11: Cian claro (mï¿½s profundo, sin el rojo lavado del default) */
         {0x28, 0x04, 0x10},	/* 12: Rojo claro (tinte burdeos) */
         {0x2C, 0x08, 0x3F},	/* 13: Magenta claro (tirando a violeta) */
         {0x30, 0x2A, 0x10},	/* 14: Amarillo (apagado, algo anaranjado) */
-        {0x30, 0x30, 0x3F}	/* 15: Blanco (apagado, tinte frío azulado) */
+        {0x30, 0x30, 0x3F}	/* 15: Blanco (apagado, tinte frï¿½o azulado) */
     };
     static const unsigned char coniox_default[16][3] =
     {
@@ -2376,8 +2351,8 @@ void coniox_enhanced_palette(unsigned int pal)
         for (i = 0; i < 16; i++)
         {
             #if defined(__WATCOMC__)
-                r.w.ax = 0x1010;	/* Subfunción: establecer registro DAC */
-                r.w.bx = i;		/* BX = índice de color (BH=0) */
+                r.w.ax = 0x1010;	/* Subfunciï¿½n: establecer registro DAC */
+                r.w.bx = i;		/* BX = ï¿½ndice de color (BH=0) */
             #else
                 r.x.ax = 0x1010;
                 r.x.bx = i;
@@ -2411,7 +2386,7 @@ void coniox_blink(unsigned int blink)
 			v &= ~0x08;
 		}
 		outportb(0x3C0, v);
-		outportb(0x3C0, 0x20);		/* flip-flop en índice, vídeo encendido */
+		outportb(0x3C0, 0x20);		/* flip-flop en ï¿½ndice, vï¿½deo encendido */
 		_enable();
 	}
 	else
@@ -2435,12 +2410,13 @@ void delay (unsigned int ms)
     unsigned long lTicks = 0;
     unsigned long lWait, lNow;
 
+    lWait = (((unsigned long) ms * 91UL) + 4999UL) / 5000UL;        /* ms -> ticks a 18.2 Hz, redondeo arriba */
+
     if (directvideo)
     {
         lTicks = peekl(0, 0x46C);
-        lWait = (((unsigned long) ms * 91UL) + 4999UL) / 5000UL;	/* ms -> ticks a 18.2 Hz, redondeo arriba */
         /* Resta modular: sobrevive al reinicio del contador a medianoche */
-        while ((peekl(0, 0x46C) - lTicks) < lWait)
+        while (lWait != 0 && (peekl(0, 0x46C) - lTicks) < lWait)
         {
             coniox_idle();
         }
@@ -2448,22 +2424,16 @@ void delay (unsigned int ms)
     else
     {
         union REGS r;
-		lWait = ((ms * 91UL) + 4999UL) / 5000UL;
-		if (lWait == 0)
-		{
-			lWait = 1;                    /* sub-tick: esperar 1 tick */
-		}
-		lTicks = 0;
         while (lWait)
         {
-            r.h.ah = 0;					/* INT 1Ah AH=00h: leer ticks */
+            r.h.ah = 0;                                 /* INT 1Ah AH=00h: leer ticks */
             coniox_int86(0x1A, &r, &r);
             #if defined(__WATCOMC__)
                 lNow = ((unsigned long) r.w.cx << 16) | r.w.dx;
             #else
                 lNow = ((unsigned long) r.x.cx << 16) | r.x.dx;
             #endif
-            if (lTicks == 0)				/* primera vuelta: fijar referencia */
+            if (lTicks == 0)                            /* primera vuelta: fijar referencia */
             {
                 lTicks = lNow;
             }
@@ -2482,7 +2452,6 @@ void textmode(int __newmode)
 {
 	union REGS r;
 
-	coniox_init(NULL);
 	if (__newmode == LASTMODE)
 	{
 		__newmode = ti.currmode;
@@ -2608,7 +2577,13 @@ void _setcursortype(int __cur_t)
 		outportb(coniox_basecrt, 0x0B);
 		outportb(coniox_basecrt + 1, cursor_end);
 		
-		pokew(0x40, 0x50, ((ti.wintop  + ti.cury - 2) << 8) | ((ti.winleft + ti.curx - 2) & 0xFF));	/* Put cursor position in BIOS */
+		/* Re-program the cursor address: while the cursor was hidden gotoxy()
+		   skipped the CRTC update, so 0x0E/0x0F can hold a stale position.
+		   gotoxy() syncs both BDA 0040:0050 and CRTC 0x0E/0x0F. */
+	if (__cur_t != _NOCURSOR)
+	{
+		gotoxy(ti.curx, ti.cury);
+	}
 	}
 	else
 	{
@@ -2680,9 +2655,7 @@ void delline(void)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		movetext(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop - 1);
-		//coniox_putchxyattrwh(ti.winleft, ti.winbottom, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
-        coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.winbottom - 1), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));
-		
+		coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.winbottom - 1), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));
 	}
 	else
 	{
@@ -2710,8 +2683,7 @@ void insline(void)
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		movetext(ti.winleft, ti.cury + ti.wintop - 1, ti.winright, ti.winbottom - 1, ti.winleft, ti.cury + ti.wintop);
-		//coniox_putchxyattrwh(ti.winleft, ti.cury + ti.wintop - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
-        coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.cury + ti.wintop - 2), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));		
+		coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.cury + ti.wintop - 2), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));
 	}
 	else
 	{
@@ -2747,14 +2719,8 @@ int gettext(int __left, int __top, int __right, int __bottom,
 
 	coniox_init(NULL);
 
-	/* Validar destino y rectángulo, con coordenadas absolutas 1-based. */
-	if (__destin == NULL ||
-	    __left < 1 ||
-	    __top < 1 ||
-	    __right < __left ||
-	    __bottom < __top ||
-	    __right > ti.screenwidth ||
-	    __bottom > ti.screenheight)
+	/* Validar destino y rectï¿½ngulo, con coordenadas absolutas 1-based. */
+	if (__destin == NULL || __left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
 	{
 		return 0;
 	}
@@ -2804,14 +2770,8 @@ int puttext(int __left, int __top, int __right, int __bottom,
 
 	coniox_init(NULL);
 
-	/* Validar origen y rectángulo, con coordenadas absolutas 1-based. */
-	if (__source == NULL ||
-	    __left < 1 ||
-	    __top < 1 ||
-	    __right < __left ||
-	    __bottom < __top ||
-	    __right > ti.screenwidth ||
-	    __bottom > ti.screenheight)
+	/* Validar origen y rectï¿½ngulo, con coordenadas absolutas 1-based. */
+	if (__source == NULL || __left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
 	{
 		return 0;
 	}
@@ -2941,12 +2901,12 @@ void clrscr(void)
 			/* Full-width block: VRAM rows are contiguous, so a single fill covers all rows */
 			coniox_fmemsetw((unsigned short coniox_far*) coniox_offset(ti.winleft - 1, ti.wintop - 1), (short)((ti.attribute << 8) | ' '), (size_t)ti.screenwidth * (ti.winbottom - ti.wintop + 1));
 		}
-        else
-        {
+		else
+		{
 			coniox_putchxyattrwh(ti.winleft, ti.wintop, ' ', ti.attribute, ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
-        }
-    }
-    else
+		}
+	}
+	else
 	{
 		union REGS r;
 		#if defined(__WATCOMC__)
@@ -3105,13 +3065,14 @@ int ungetch(int __ch)
 	else
 	{
 		union REGS r;
-		r.h.ah = 0x05; // ungetch BIOS
-		#if defined(__WATCOMC__)			
-			r.w.cx = (__ch & 0xFF);
-		#else
-			r.x.cx = (__ch & 0xFF);
-		#endif
-		
+
+		/* INT 16h AH=05h stores the word (scan << 8) | ASCII in the keyboard
+		   buffer: AL = ASCII, CX = scan code. Set AL = __ch and CX = 0 so the
+		   word read back by getch() is exactly __ch. Leaving AL untouched stored
+		   garbage, and CX = __ch turned it into an extended-key word. */
+		memset(&r, 0, sizeof(r));
+		r.h.ah = 0x05;
+		r.h.al = (unsigned char) (__ch & 0xFF);
 		coniox_int86(0x16, &r, &r);
 
 		if (r.h.al == 0)
