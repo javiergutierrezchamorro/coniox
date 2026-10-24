@@ -297,7 +297,7 @@ void clreol(void)
 	coniox_init(NULL);
 	aw = ti.winright - ti.winleft - ti.curx + 2;	/* cells remaining to the end of the line */
 	#if ((__DOS__) || (__MSDOS__))
-		if (directvideo)
+		if ((directvideo) && (aw > 0))
 		{
 			/* coniox_cell already points at the cursor cell: one direct fill, no offset computation. */
 			coniox_fmemsetw(coniox_cell, (short) ((ti.attribute << 8) | ' '), (size_t) aw);
@@ -534,11 +534,11 @@ char *cgets(char *__str)
 	{
 		ch = getch();
 		#if ((__DOS__) || (__MSDOS__))
-		if (ch == 0)
-		{
-			getch();	/* extended key: consume its scan code */
-		}
-		else
+			if (ch == 0)
+			{
+				getch();	/* extended key: consume its scan code */
+			}
+			else
 		#endif
 		if (ch != 0 && ch != '\r' && ch != EOF)
 		{
@@ -658,11 +658,11 @@ char *getpass(const char *__prompt)
 	{
 		ch = getch();
 		#if ((__DOS__) || (__MSDOS__))
-		if (ch == 0)
-		{
-			getch();	/* extended key: consume its scan code */
-		}
-		else
+			if (ch == 0)
+			{
+				getch();	/* extended key: consume its scan code */
+			}
+			else
 		#endif
 		if (ch != 0 && ch != '\r' && ch != EOF)
 		{
