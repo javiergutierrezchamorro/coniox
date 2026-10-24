@@ -2359,7 +2359,12 @@ int cputs(const char *__str)
 		}
 		__str += runlen;
 	}
-	gotoxy(ti.curx, ti.cury);
+	/* C: sync diferido del cursor fisico, mismo patron que putch(): ti ya
+	   lleva la posicion logica y el cursor real se programa en el proximo
+	   punto de espera (kbhit/getch/getche/delay) via coniox_flush_cursor().
+	   Antes cada cputs()/cprintf() pagaba 1 pokew a la BDA + 4 outportb al
+	   CRTC al terminar: I/O de puerto lenta incluso en un 386. */
+	coniox_cursor_dirty = 1;
 	return (int)(__str - orig);
 }
 
@@ -2431,6 +2436,15 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		p = (unsigned short coniox_far*) coniox_offset(x - 1, y - 1);
 		ylim = y + h;
 		sw = ti.screenwidth;
+		if ((int) sw == w)
+		{
+			/* Bloque a lo ancho completo de la pantalla: las filas son
+			   contiguas en VRAM y un solo fill cubre las h filas, el
+			   mismo caso que clrscr() ya trata aparte. clreol() sobre
+			   ventana completa pasa por aqui. */
+			coniox_fmemsetw(p, v, (size_t) sw * (size_t) h);
+			return;
+		}
 		for (y1 = y; y1 < ylim; y1++)
 		{
 			coniox_fmemsetw(p, v, w);
@@ -2673,16 +2687,35 @@ void delay (unsigned int ms)
 
     if (directvideo)
     {
+        unsigned long lIdleTick;
+
         lTicks = peekl(0, 0x46C);
+        lIdleTick = lTicks - 1UL;   /* fuerza un coniox_idle() en la 1a vuelta */
         /* Resta modular: sobrevive al reinicio del contador a medianoche */
-        while (lWait != 0 && (peekl(0, 0x46C) - lTicks) < lWait)
+        while (lWait != 0)
         {
-            coniox_idle();
+            lNow = peekl(0, 0x46C);
+
+            if ((lNow - lTicks) >= lWait)
+            {
+                break;
+            }
+            /* coniox_idle() solo al cambiar el tick (18,2 Hz): lanzaba 3
+               INTs software (28h, 2Fh/1680h, 15h/1000h) en cada vuelta del
+               spin; el propio comentario de coniox_idle() avisa de que
+               llamarlo muy seguido penaliza bajo multitaskers. */
+            if (lNow != lIdleTick)
+            {
+                lIdleTick = lNow;
+                coniox_idle();
+            }
         }
     }
     else
     {
         union REGS r;
+        unsigned long lIdleTick = 0xFFFFFFFFUL;
+
         while (lWait)
         {
             r.h.ah = 0;                                 /* INT 1Ah AH=00h: leer ticks */
@@ -2700,7 +2733,13 @@ void delay (unsigned int ms)
             {
                 break;
             }
-            coniox_idle();
+            /* idle solo al cambiar el tick: entre tick y tick basta con
+               el propio INT 1Ah del sondeo (antes: 3 INTs mas por vuelta). */
+            if (lNow != lIdleTick)
+            {
+                lIdleTick = lNow;
+                coniox_idle();
+            }
         }
     }
 }
@@ -2910,7 +2949,26 @@ void delline(void)
 	//Seems to be faster using BIOS under emulators
 	if ((directvideo) && (!coniox_is_emulator))
 	{
-		movetext(ti.winleft, ti.cury + ti.wintop, ti.winright, ti.winbottom, ti.winleft, ti.cury + ti.wintop - 1);
+		/* Copia directa VRAM->VRAM fila a fila y de arriba abajo: al subir
+		   lineas cada fila fuente se lee justo antes de que la iteracion
+		   siguiente la pise. Sustituye al viajecito movetext()->gettext()->
+		   buffer->puttext(): la mitad de trafico de memoria (el cuello de
+		   botella real en VRAM de 16 bits) y cero chequeos de rectangulo
+		   por llamada. movetext() sigue existiendo como API publica. */
+		unsigned short coniox_far *srcrow;
+		unsigned short coniox_far *dstrow;
+		size_t rowbytes;
+		int y;
+
+		srcrow = coniox_offset(ti.winleft - 1, ti.cury + ti.wintop - 1);
+		dstrow = srcrow - ti.screenwidth;
+		rowbytes = (size_t)(ti.winright - ti.winleft + 1) * sizeof(unsigned short);
+		for (y = ti.cury + ti.wintop; y <= ti.winbottom; y++)
+		{
+			coniox_fmemcpy(dstrow, srcrow, rowbytes);
+			srcrow += ti.screenwidth;
+			dstrow += ti.screenwidth;
+		}
 		coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.winbottom - 1), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));
 	}
 	else
@@ -2938,7 +2996,23 @@ void insline(void)
 	//Seems to be faster using BIOS under emulators
 	if ((directvideo) && (!coniox_is_emulator))
 	{
-		movetext(ti.winleft, ti.cury + ti.wintop - 1, ti.winright, ti.winbottom - 1, ti.winleft, ti.cury + ti.wintop);
+		/* Espejo de delline(): aqui el bloque baja una linea, asi que la
+		   copia va de abajo arriba para leer cada fila antes de que la
+		   pise la anterior. */
+		unsigned short coniox_far *srcrow;
+		unsigned short coniox_far *dstrow;
+		size_t rowbytes;
+		int y;
+
+		srcrow = coniox_offset(ti.winleft - 1, ti.winbottom - 2);
+		dstrow = srcrow + ti.screenwidth;
+		rowbytes = (size_t)(ti.winright - ti.winleft + 1) * sizeof(unsigned short);
+		for (y = ti.winbottom - 1; y >= ti.cury + ti.wintop - 1; y--)
+		{
+			coniox_fmemcpy(dstrow, srcrow, rowbytes);
+			srcrow -= ti.screenwidth;
+			dstrow -= ti.screenwidth;
+		}
 		coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.cury + ti.wintop - 2), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t)(ti.winright - ti.winleft + 1));
 	}
 	else
@@ -3175,10 +3249,20 @@ int getch(void)
 		unsigned short start = peekw(0x40, 0x80);
 		unsigned short end   = peekw(0x40, 0x82);
 		unsigned short head, scancode;
+		unsigned long lIdleTick = peekl(0, 0x46C) - 1UL;    /* fuerza idle en la 1a vuelta */
 	
 		while (!kbhit())
 		{
-			coniox_idle();
+			unsigned long lNowTick = peekl(0, 0x46C);
+
+			/* coniox_idle() solo al cambiar el tick de la BDA (18,2 Hz).
+			   El spin anterior lanzaba 3 INTs software por vuelta: millones
+			   de INTs por segundo mientras se espera una tecla. */
+			if (lNowTick != lIdleTick)
+			{
+				lIdleTick = lNowTick;
+				coniox_idle();
+			}
 		}
 		if (start == 0 || end <= start) { start = 0x1E; end = 0x3E; }
 		_disable();
