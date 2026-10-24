@@ -60,7 +60,7 @@ void init(void)
 	int i;
 	char line[255];
 
-	//directvideo=0;
+	directvideo=1;
 	
 	//Optional: Set window caption
 	#ifdef _CONIOX_H_

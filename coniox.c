@@ -24,7 +24,7 @@
 
 
 #if defined(__WATCOMC__)
-	#define coniox_inline __inline
+	#define coniox_inline static __inline
 #elif defined(__BORLANDC__)
 	#if (__BORLANDC__ >= 0x450)
 		#define coniox_inline static __inline
@@ -131,6 +131,7 @@ static unsigned short coniox_far *coniox_cell;
 			modify exact [DI CX];
 		#pragma aux coniox_putrun =                                     \
 			"           cld                                                             "       \
+			"           jcxz    _prdone                                "       \
 			"_prnext:                                                                   "       \
 			"           lodsb                                                   "       \
 			"           mov             ah, bh                                  "       \
@@ -261,7 +262,7 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 			{
 				a[count++] = va_arg(argPtr, void *);            /* buffer */
 				#ifdef _MSC_VER
-					a[count++] = va_arg(argPtr, size_t *);	/* size: sscanf_s only */
+					a[count++] = va_arg(argPtr, size_t);	/* sscanf_s takes the buffer size by value */
 				#endif
 			}
 			else
@@ -377,10 +378,10 @@ void window(int __left, int __top, int __right, int __bottom)
 	{
 		return;
 	}
-	ti.winleft   = (short) __left;
-	ti.winright  = (short) __right;
-	ti.wintop    = (short) __top;
-	ti.winbottom = (short) __bottom;
+	ti.winleft   = (unsigned short) __left;
+	ti.winright  = (unsigned short) __right;
+	ti.wintop    = (unsigned short) __top;
+	ti.winbottom = (unsigned short) __bottom;
 	gotoxy(1, 1);
 }
 
@@ -714,11 +715,21 @@ int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr
 	const wchar_t *p;
 	wchar_t c;
 
+	if (!buffer || !format)
+	{
+		return(0);
+	}
+
 	p = format;
 	while ((c = *p++) != 0)
 	{
-		if (c == L'%' && p[0] != L'*' && p[0] != L'%')
+		if (c == L'%')
 		{
+			if (p[0] == L'%' || p[0] == L'*')
+			{
+				p++;
+				continue;
+			}
 			if (!p[0])
 			{
 				break;
@@ -978,7 +989,7 @@ void coniox_init(const void *title)
 	ti.attribute = (unsigned short) info.wAttributes;
 	ti.currmode = (unsigned short) ((ti.screenwidth <= 40) ? C40 : C80);
 	acp = GetACP();
-	if (GetConsoleOutputCP() != acp )
+	if (GetConsoleOutputCP() != acp)
 	{
 		SetConsoleOutputCP(acp);
 		SetConsoleCP(acp);
@@ -1447,18 +1458,19 @@ int getch(void)
 {
 	char ch;	/* ReadConsoleA writes 1 byte */
 	DWORD read, mode = 0;
-	int r;
+	int r, ok;
 
 	coniox_init(NULL);	/* getch() may be the first conio call: ensure handles */
 	coniox_flush_cursor();
-	if (GetConsoleMode(coniox_console_input, &mode))
+	ok = GetConsoleMode(coniox_console_input, &mode);
+	if (ok)
 	{
 		SetConsoleMode(coniox_console_input, mode & ~ENABLE_ECHO_INPUT & ~ENABLE_PROCESSED_INPUT & ~ENABLE_LINE_INPUT);
 	}
 	r = (ReadConsoleA(coniox_console_input, &ch, 1, &read, NULL) && read != 0) ? (int) (unsigned char) ch : EOF;
-	if (mode)
+	if (ok)
 	{
-		SetConsoleMode(coniox_console_input, mode);	/* restore only a mode that was really read */
+		SetConsoleMode(coniox_console_input, mode);	/* restore the real mode, even 0 */
 	}
 	return(r);
 }
@@ -2013,7 +2025,7 @@ int kbhit(void)
 			{
 				ti.wintop = ti.winbottom;
 			}
-			if (!coniox_inwindow(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1 ))
+			if (!coniox_inwindow(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1))
 			{
 				gotoxy(1, 1);
 			}
@@ -2203,7 +2215,7 @@ void coniox_init(const void* title)
 		}
 		else
 		{
-			ti.screenheight = 25;   /* Todo: Fill rows */
+			ti.screenheight = 25;	/* INT 10h AH=0Fh reports no row count: assume 25 */
 		}
 	}
 	/* BDA 0040:0084 is only meaningful on EGA/VGA-class systems.
@@ -2877,7 +2889,7 @@ void textmode(int __newmode)
 			#endif
 			coniox_int86(0x10, &r, &r);
 		}
-		ti.currmode = (short int) __newmode;
+		ti.currmode = (unsigned short) __newmode;
 		/* Reinit */
 		ti.screenwidth = 0;	/* force coniox_init() to reinitialize */
 		coniox_init(NULL);
@@ -3433,7 +3445,7 @@ wchar_t getwch(void)
 }
 #endif
 
-int getch_last_extended_key = 0;
+static int getch_last_extended_key = 0;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
@@ -3502,7 +3514,11 @@ int getch(void)
 		}
 		start = peekw(0x40, 0x80);
 		end   = peekw(0x40, 0x82);
-		if (start == 0 || end <= start) { start = 0x1E; end = 0x3E; }
+		if (start == 0 || end <= start)
+		{
+			start = 0x1E;
+			end = 0x3E;
+		}
 		_disable();
 		head = peekw(0x40, 0x1A);
 		scancode = peekw(0x40, head);
