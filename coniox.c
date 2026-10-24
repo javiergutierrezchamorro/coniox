@@ -271,7 +271,7 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 		}
 	}
 	#ifdef _MSC_VER
-		return(sscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19],       a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39]));
+		return(sscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39]));
 	#else
 		return(sscanf(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
 	#endif
@@ -533,11 +533,14 @@ char *cgets(char *__str)
 	while (ch != '\r' && ch != EOF)
 	{
 		ch = getch();
+		#if ((__DOS__) || (__MSDOS__))
 		if (ch == 0)
 		{
-			getch();
+			getch();	/* extended key: consume its scan code */
 		}
-		else if (ch != '\r' && ch != EOF)
+		else
+		#endif
+		if (ch != 0 && ch != '\r' && ch != EOF)
 		{
 			switch (ch)
 			{
@@ -654,11 +657,14 @@ char *getpass(const char *__prompt)
 	while (ch != '\r' && ch != EOF)
 	{
 		ch = getch();
+		#if ((__DOS__) || (__MSDOS__))
 		if (ch == 0)
 		{
-			getch();
+			getch();	/* extended key: consume its scan code */
 		}
-		else if (ch != '\r' && ch != EOF)
+		else
+		#endif
+		if (ch != 0 && ch != '\r' && ch != EOF)
 		{
 			switch (ch)
 			{
@@ -767,11 +773,7 @@ wchar_t *cgetws(wchar_t *__str)
 	while (ch != L'\r' && ch != (wchar_t) EOF)
 	{
 		ch = getwch();
-		if (ch == 0)
-		{
-			getwch();
-		}
-		else if (ch != L'\r' && ch != (wchar_t) EOF)
+		if (ch != 0 && ch != L'\r' && ch != (wchar_t) EOF)
 		{
 			switch (ch)
 			{
@@ -1032,7 +1034,7 @@ int cputs(const char *__str)
 	const char *run;
 	unsigned int i;
 	unsigned int runlen, remaining;
-	unsigned int winwidth, winheight;
+	int winwidth, winheight;
 	int oldx, oldy;
 	COORD c = { 0, 0 };
 	CHAR_INFO *ci = coniox_charinfo;
@@ -1044,8 +1046,8 @@ int cputs(const char *__str)
 
 	coniox_init(NULL);
 
-	winwidth  = (unsigned int)(ti.winright - ti.winleft + 1);
-	winheight = (unsigned int)(ti.winbottom - ti.wintop + 1);
+	winwidth  = ti.winright - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop + 1;
 
 	if (winwidth == 0 || winheight == 0)
 	{
@@ -1065,7 +1067,7 @@ int cputs(const char *__str)
 		/* Line feed: advance or scroll the window. */
 		if (*__str == '\n')
 		{
-			if (ti.cury < (int) winheight)
+			if (ti.cury < winheight)
 			{
 				ti.cury++;
 			}
@@ -1099,11 +1101,11 @@ int cputs(const char *__str)
 		/* Group printable characters up to the next control, the window edge or the batch size: one WriteConsoleOutputA per run. */
 		run = __str;
 		runlen = 0;
-		if (ti.curx > (int) winwidth)
+		if (ti.curx > winwidth)
 		{
-			ti.curx = (int) winwidth;
+			ti.curx = winwidth;
 		}
-		remaining = winwidth - (unsigned int) ti.curx + 1;
+		remaining = winwidth - ti.curx + 1;
 		if (remaining > CONIOX_MAX_CHARINFO)
 		{
 			remaining = CONIOX_MAX_CHARINFO;
@@ -1135,11 +1137,11 @@ int cputs(const char *__str)
 		ti.curx += runlen;
 
 		/* A run never crosses the window edge: the wrap is decided once. */
-		if (ti.curx > (int) winwidth)
+		if (ti.curx > winwidth)
 		{
 			if (_wscroll)
 			{
-				if (ti.cury < (int) winheight)
+				if (ti.cury < winheight)
 				{
 					ti.curx = 1;
 					ti.cury++;
@@ -1149,12 +1151,12 @@ int cputs(const char *__str)
 					ti.curx = 1;
 					ti.cury = 1;
 					delline();
-					ti.cury = (int) winheight;
+					ti.cury = winheight;
 				}
 			}
 			else
 			{
-				ti.curx = (int) winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
+				ti.curx = winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
 			}
 		}
 		__str += runlen;
@@ -1172,7 +1174,7 @@ int cputws(const wchar_t *__str)
 	const wchar_t *run;
 	unsigned int i;
 	unsigned int runlen, remaining;
-	unsigned int winwidth, winheight;
+	int winwidth, winheight;
 	int oldx, oldy;
 	COORD c = { 0, 0 };
 	CHAR_INFO *ci = coniox_charinfo;
@@ -1184,8 +1186,8 @@ int cputws(const wchar_t *__str)
 
 	coniox_init(NULL);
 
-	winwidth  = (unsigned int)(ti.winright - ti.winleft + 1);
-	winheight = (unsigned int)(ti.winbottom - ti.wintop + 1);
+	winwidth  = ti.winright - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop + 1;
 
 	if (winwidth == 0 || winheight == 0)
 	{
@@ -1205,7 +1207,7 @@ int cputws(const wchar_t *__str)
 		/* Line feed: advance or scroll the window. */
 		if (*__str == L'\n')
 		{
-			if (ti.cury < (int) winheight)
+			if (ti.cury < winheight)
 			{
 				ti.cury++;
 			}
@@ -1239,11 +1241,11 @@ int cputws(const wchar_t *__str)
 		/* Unicode twin of cputs(): one WriteConsoleOutputW per run. */
 		run = __str;
 		runlen = 0;
-		if (ti.curx > (int) winwidth)
+		if (ti.curx > winwidth)
 		{
-			ti.curx = (int) winwidth;
+			ti.curx = winwidth;
 		}
-		remaining = winwidth - (unsigned int) ti.curx + 1;
+		remaining = winwidth - ti.curx + 1;
 		if (remaining > CONIOX_MAX_CHARINFO)
 		{
 			remaining = CONIOX_MAX_CHARINFO;
@@ -1275,11 +1277,11 @@ int cputws(const wchar_t *__str)
 		ti.curx += runlen;
 
 		/* A run never crosses the window edge: the wrap is decided once. */
-		if (ti.curx > (int) winwidth)
+		if (ti.curx > winwidth)
 		{
 			if (_wscroll)
 			{
-				if (ti.cury < (int) winheight)
+				if (ti.cury < winheight)
 				{
 					ti.curx = 1;
 					ti.cury++;
@@ -1289,12 +1291,12 @@ int cputws(const wchar_t *__str)
 					ti.curx = 1;
 					ti.cury = 1;
 					delline();
-					ti.cury = (int) winheight;
+					ti.cury = winheight;
 				}
 			}
 			else
 			{
-				ti.curx = (int) winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
+				ti.curx = winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
 			}
 		}
 		__str += runlen;
@@ -2264,7 +2266,7 @@ int cputs(const char *__str)
 	const char *orig = __str;
 	const char *run;
 	unsigned int runlen, remaining;
-	unsigned int winwidth, winheight;
+	int winwidth, winheight;
 	int oldx, oldy;
 	unsigned short attrword;
 
@@ -2281,8 +2283,8 @@ int cputs(const char *__str)
 
 	coniox_init(NULL);
 
-	winwidth  = (unsigned int)(ti.winright - ti.winleft + 1);
-	winheight = (unsigned int)(ti.winbottom - ti.wintop + 1);
+	winwidth  = ti.winright - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop + 1;
 
 	if (winwidth == 0 || winheight == 0)
 	{
@@ -2313,7 +2315,7 @@ int cputs(const char *__str)
 		/* Line feed: advance or scroll the window. */
 		if (*__str == '\n')
 		{
-			if (ti.cury < (int)winheight)
+			if (ti.cury < winheight)
 			{
 				if (directvideo)
 				{
@@ -2358,16 +2360,16 @@ int cputs(const char *__str)
 
 		run = __str;
 		runlen = 0;
-		if (ti.curx > (int)winwidth)
+		if (ti.curx > winwidth)
 		{
-			ti.curx = (int)winwidth;
+			ti.curx = winwidth;
 			if (directvideo)
 			{
 				/* Re-sync the offset with the clamp so the run paints inside the window. */
 				coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 			}
 		}
-		remaining = winwidth - (unsigned int)ti.curx + 1;
+		remaining = winwidth - ti.curx + 1;
 
 		while (runlen < remaining && run[runlen] != '\0' && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')
 		{
@@ -2410,11 +2412,11 @@ int cputs(const char *__str)
 		ti.curx += runlen;
 
 		/* A run never crosses the window edge: the wrap is decided once. */
-		if (ti.curx > (int)winwidth)
+		if (ti.curx > winwidth)
 		{
 			if (_wscroll)
 			{
-				if (ti.cury < (int)winheight)
+				if (ti.cury < winheight)
 				{
 					ti.curx = 1;
 					ti.cury++;
@@ -2428,7 +2430,7 @@ int cputs(const char *__str)
 					ti.curx = 1;
 					ti.cury = 1;
 					delline();
-					ti.cury = (int)winheight;
+					ti.cury = winheight;
 					if (directvideo)
 					{
 						coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
@@ -2437,7 +2439,7 @@ int cputs(const char *__str)
 			}
 			else
 			{
-				ti.curx = (int)winwidth;    /* _wscroll = 0: stay on the last column, the next run overwrites the edge cell */
+				ti.curx = winwidth;    /* _wscroll = 0: stay on the last column, the next run overwrites the edge cell */
 				if (directvideo)
 				{
 					coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
@@ -2726,10 +2728,9 @@ void coniox_blink(unsigned int blink)
 	if ((directvideo) && (ti.currmode != MONO))
 	{
 		unsigned char v;
-		unsigned int status = coniox_basecrt + 6;       /* 3DAh color, 3BAh mono */
 
 		_disable();
-		inportb(status);
+		inportb(coniox_basecrt + 6);	/* 3DAh color input status: reset the ATTR flip-flop */
 		outportb(0x3C0, 0x10 | 0x20);
 		v = inportb(0x3C1);
 		if (blink)
@@ -3594,4 +3595,3 @@ int ungetch(int __ch)
 	}
 }
 #endif /* ((__DOS__) || (__MSDOS__)) */
-
