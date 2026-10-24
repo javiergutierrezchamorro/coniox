@@ -235,6 +235,16 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 			{
 				p++;
 			}
+			// Skip optional length modifiers (l, h, z, j, t, L)
+			while (*p == 'l' || *p == 'h' || *p == 'z' || *p == 'j' || *p == 't' || *p == 'L')
+			{
+				p++;
+			}
+			// A trailing % consumes no argument
+			if (!*p)
+			{
+				break;
+			}
 			// Specifiers that take an extra size argument
 			#ifdef _MSC_VER
 				if (count >= 39)	/* a[40]: buffer+size pair, last index 39 */
@@ -709,6 +719,10 @@ int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr
 	{
 		if (c == L'%' && p[0] != L'*' && p[0] != L'%')
 		{
+			if (!p[0])
+			{
+				break;
+			}
 			if (count >= 20)	/* plain swscanf: one argument per specifier */
 			{
 				break;
@@ -1442,7 +1456,10 @@ int getch(void)
 		SetConsoleMode(coniox_console_input, mode & ~ENABLE_ECHO_INPUT & ~ENABLE_PROCESSED_INPUT & ~ENABLE_LINE_INPUT);
 	}
 	r = (ReadConsoleA(coniox_console_input, &ch, 1, &read, NULL) && read != 0) ? (int) (unsigned char) ch : EOF;
-	SetConsoleMode(coniox_console_input, mode);	/* single restore point */
+	if (mode)
+	{
+		SetConsoleMode(coniox_console_input, mode);	/* restore only a mode that was really read */
+	}
 	return(r);
 }
 
@@ -1706,7 +1723,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 		#ifdef UNICODE
 			buffer[i].Char.UnicodeChar = (wchar_t) (ci[i] & 0xFF);
 		#else
-			buffer[i].Char.AsciiChar = (unsigned char) ci[i] & 0xFF;
+			buffer[i].Char.AsciiChar = (unsigned char) ci[i];
 		#endif
 		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
 	}
@@ -1825,17 +1842,16 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textmode(int __newmode)
 {
-	#if __ZTC__
+	#if defined(__ZTC__)
 		CONSOLE_SCREEN_BUFFER_INFO info;
 	#else
 		CONSOLE_SCREEN_BUFFER_INFOEX info;
 	#endif
-	SMALL_RECT r;
 
 
 	coniox_init(NULL);
 
-	#if __ZTC__
+	#if defined(__ZTC__)
 		GetConsoleScreenBufferInfo(coniox_console_output, &info);
 	#else
 		info.cbSize = sizeof(info);
@@ -1870,9 +1886,8 @@ void textmode(int __newmode)
 				{ _ORIGMODE, 80, 25 }, { MONO, 80, 25 }
 			};
 			unsigned int mi;
-			unsigned int mcount = sizeof(coniox_modes) / sizeof(coniox_modes[0]);
 
-			for (mi = 0; mi < mcount; mi++)
+			for (mi = 0; mi < sizeof(coniox_modes) / sizeof(coniox_modes[0]); mi++)
 			{
 				if (coniox_modes[mi].mode == __newmode)
 				{
@@ -1881,16 +1896,18 @@ void textmode(int __newmode)
 					break;
 				}
 			}
-			if (mi == mcount)
+			if (mi == sizeof(coniox_modes) / sizeof(coniox_modes[0]))
 			{
 				info.dwSize.X = 80;
 				info.dwSize.Y = 25;
 			}
 		}
 		//DigitalMars crashes if used
-		#if (!__ZTC__)
+		#if (!defined(__ZTC__))
 			if (SetConsoleScreenBufferInfoEx(coniox_console_output, &info))
 			{
+				SMALL_RECT r;
+
 				r.Left = 0;
 				r.Top = 0;
 				r.Right = info.dwSize.X - 1;
@@ -2125,11 +2142,11 @@ void coniox_init(const void* title)
 	#elif (defined(__DJGPP__))
 		if (ti.currmode == MONO)
 		{
-			coniox_vram = (unsigned short *) 0x000B0000UL +  __djgpp_conventional_base;
+			coniox_vram = (unsigned short *) (0x000B0000UL + __djgpp_conventional_base);
 		}
 		else
 		{
-			coniox_vram = (unsigned short *) 0x000B8000UL +  __djgpp_conventional_base;
+			coniox_vram = (unsigned short *) (0x000B8000UL + __djgpp_conventional_base);
 		}
 	#else
 		if (ti.currmode == MONO)
@@ -2242,12 +2259,10 @@ int cputs(const char *__str)
 {
 	const char *orig = __str;
 	const char *run;
-	unsigned int i;
 	unsigned int runlen, remaining;
 	unsigned int winwidth, winheight;
 	int oldx, oldy;
 	unsigned short attrword;
-	union REGS r;
 
 	#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 		unsigned short *coniox_currentoffset;
@@ -2369,6 +2384,9 @@ int cputs(const char *__str)
 		else
 		{
 			/* BIOS path: AH=02h positions, AH=09h writes. */
+			unsigned int i;
+			union REGS r;
+
 			for (i = 0; i < runlen; i++)
 			{
 				r.h.ah = 0x02;
@@ -2478,11 +2496,7 @@ coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
-	unsigned short coniox_far* p;
 	int y1, ylim;
-	unsigned short v;
-	unsigned int sw;
-	union REGS r;
 
 	if (w <= 0 || h <= 0)
 	{
@@ -2491,6 +2505,10 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 	if (directvideo)
 	{
+		unsigned short coniox_far *p;
+		unsigned short v;
+		unsigned int sw;
+
 		v = (unsigned short)((attr << 8) | (ch & 0xFF));
 		// fast-path 1x1 avoids fmemsetw + loop
 		if ((w == 1) && (h == 1))
@@ -2525,6 +2543,8 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	}
 	else
 	{
+		union REGS r;
+
 		ylim = y + h;
 		for (y1 = y; y1 < ylim; y1++)
 		{
@@ -3290,14 +3310,29 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 				dst += sw;
 			}
 		}
-		else if (dy > 0 && dy < h)
+		else if (dy > 0 && dy < h && (dx == 0 || dx >= w || dx <= -w))
 		{
-			/* Partial vertical overlap (destination below): copy bottom-up, like insline(), to read each source row before it is overwritten. */
+			/* Partial vertical overlap (destination below), no horizontal overlap: copy bottom-up, like insline(), to read each source row before it is overwritten. */
 			src += (h - 1) * sw;
 			dst += (h - 1) * sw;
 			for (row = 0; row < h; row++)
 			{
 				coniox_fmemcpy(dst, src, (size_t) w * sizeof(unsigned short));
+				src -= sw;
+				dst -= sw;
+			}
+		}
+		else if (dy > 0 && dy < h)
+		{
+			/* Diagonal overlap (destination below and shifted sideways): copy bottom-up and right-to-left, so writes always trail reads. */
+			src += (h - 1) * sw + w - 1;
+			dst += (h - 1) * sw + w - 1;
+			for (row = 0; row < h; row++)
+			{
+				for (i = w - 1; i >= 0; i--)
+				{
+					dst[i] = src[i];
+				}
 				src -= sw;
 				dst -= sw;
 			}
@@ -3569,3 +3604,4 @@ int ungetch(int __ch)
 	}
 }
 #endif /* ((__DOS__) || (__MSDOS__)) */
+
