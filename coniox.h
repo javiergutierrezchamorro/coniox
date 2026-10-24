@@ -1,6 +1,6 @@
 /**
 @file coniox.h
-CONIOX v5.0                                                     (c) Copyright 1995-2026 by Javier Guti�rrez Chamorro
+CONIOX v5.0                                                     (c) Copyright 1995-2026 by Javier Gutiérrez Chamorro
                                                             https://nikkhokkho.sourceforge.io/static.php?page=CONIOX
 
 
@@ -15,9 +15,9 @@ DIRIO 2.4 - Oct 1995
 De Trans Software (D.T.S.)
 
 DIRIO 4.0 - Sep 2000
-Javier Guti�rrez Chamorro
+Javier Gutiérrez Chamorro
 
-CONIO 1.31 - Aug 2005 
+CONIO 1.31 - Aug 2005
 C++ Con Clase (Salvador Pozo Coronado / Fru <elfrucool@yahoo.com.mx>)
 
 Borland-style CONIO 2.1 - Dec 2013
@@ -102,16 +102,16 @@ VERSION HISTORY
 - Small fixes and optimizations.
 - Lots of Windows fixes.
 
-4.98 - 
+4.98 -
 - Fixed Windows ANSI gettext/puttext
 - Added _directvideo.
 - Fixes to DOS _setcursortype.
 - Fixes to DOS textmode C4350
 
-4.99 - 
+4.99 -
  - All functions are now working, including ASM pragma aux
  - Several optimizations to Windows and DOS paths
- 
+
  5.00 - 2026/10/22
  - All functions are now working, including ASM pragma aux
  - Several optimizations to Windows and DOS paths
@@ -119,7 +119,7 @@ VERSION HISTORY
 */
 
 #pragma once
-#ifndef _CONIOX_H_ 
+#ifndef _CONIOX_H_
 #define _CONIOX_H_
 
 #define coniox_version (500)
@@ -165,7 +165,7 @@ extern "C" {
 #endif
 
 #define PRINTFBUF_SIZE	255
-#include <stdarg.h>	/* va_list, para cvprintf */
+#include <stdarg.h>	/* va_list, for cvprintf */
 #include <stddef.h>	/* wchar_t en C estricto (wchar_info, getwch, ...) */
 
 
@@ -187,8 +187,8 @@ extern "C" {
 	#include <pc.h>
 	#define _fmemmove	memmove
 	#define _fmemcpy	memcpy
-    #define _disable disable
-    #define _enable  enable
+	#define _disable disable
+	#define _enable  enable
 	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base)
 	#define coniox_far
 #elif defined(__FLAT__)
@@ -240,7 +240,7 @@ extern "C" {
 #endif
 
 #if !(((__DOS__) || (__MSDOS__)))
-    #define coniox_far
+	#define coniox_far
 #endif
 
 #pragma pack(push)
@@ -252,17 +252,17 @@ Structure holding information about screen.
 */
 struct text_info
 {
-    unsigned short winleft;
-    unsigned short wintop;
-    unsigned short winright;
-    unsigned short winbottom;
-    unsigned short attribute;
-    unsigned short normattr;
-    unsigned short currmode;
-    unsigned short screenheight;
-    unsigned short screenwidth;
-    unsigned short curx;
-    unsigned short cury;
+	unsigned short winleft;
+	unsigned short wintop;
+	unsigned short winright;
+	unsigned short winbottom;
+	unsigned short attribute;
+	unsigned short normattr;
+	unsigned short currmode;
+	unsigned short screenheight;
+	unsigned short screenwidth;
+	unsigned short curx;
+	unsigned short cury;
 };
 
 /**
@@ -291,7 +291,7 @@ Colors which you can use in your application.
 	} COLORS;
 #endif
 
-#define BLINK			128 
+#define BLINK			128
 #define PASS_MAX		8
 
 
@@ -362,13 +362,13 @@ Structure used by gettext/puttext.
 */
 typedef struct char_info
 {
-    unsigned char letter;	/**< character value */
-    unsigned char attr;	/**< attribute value: background in bits 4-6, blink in bit 7, foreground in bits 0-3 */
+	unsigned char letter;	/**< character value */
+	unsigned char attr;	/**< attribute value: background in bits 4-6, blink in bit 7, foreground in bits 0-3 */
 } char_info;
 
 
 /**
-Controls de video output.
+Controls video output.
 directvideo controls where your program's console output goes:
 0: Goes via ROM calls.
 1: (Default). Goes directly to video RAM
@@ -403,8 +403,8 @@ void clreol(void);
 
 /**
 Clears the text-mode window.
-clrscr clears the current text window and places the cursor in the upper 
-left corner (at position 1,1). 
+clrscr clears the current text window and places the cursor in the upper
+left corner (at position 1,1).
 
 */
 void clrscr(void);
@@ -475,7 +475,7 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 
 /**
 Positions cursor in text window.
-gotoxy moves the cursor to the given position in the current text window. If the coordinates are in any way invalid the call to gotoxy is ignored. 
+gotoxy moves the cursor to the given position in the current text window. If the coordinates are in any way invalid the call to gotoxy is ignored.
 An example of this is a call to 40,30) when (35,25) is the bottom right position in the window. Neither argument to gotoxy can be zero.
 @param x horizontal position
 @param y vertical position
@@ -535,7 +535,7 @@ void lowvideo (void);
 
 /**
 Selects new text background color.
-textbackground selects the background color. This function works for functions that produce output in text mode directly to the screen. 
+textbackground selects the background color. This function works for functions that produce output in text mode directly to the screen.
 newcolor selects the new background color. You can set newcolor to an integer from 0 to 7, or to one of the symbolic constants defined in conio.h. If you use symbolic constants, you must include conio.h.
 Once you have called textbackground, all subsequent functions using direct video output (such as cprintf) will use newcolor. textbackground does not affect any characters currently onscreen.
 @see COLORS
@@ -586,7 +586,7 @@ int cscanf(const char *__format, ...);
 Reads a string from the console.
 cgets reads a string of characters from the console, storing the string (and the string length) in the location pointed to by str.
 cgets reads characters until it encounters a carriage-return/linefeed (CR/LF) combination, or until the maximum allowable number of characters have been read. If cgets reads a CR/LF combination, it replaces the combination with a \0 (null terminator) before storing the string.
-Before cgets is called, set str[0] to the maximum length of the string to be read. On return, str[1] is set to the number of characters actually read. The characters read start at str[2] and end with a null terminator. 
+Before cgets is called, set str[0] to the maximum length of the string to be read. On return, str[1] is set to the number of characters actually read. The characters read start at str[2] and end with a null terminator.
 Thus, str must be at least str[0] plus 2 bytes long.
 */
 char *cgets(char *__str);
@@ -659,10 +659,10 @@ int kbhit(void);
 
 /**
 Outputs character to screen.
-putch outputs the character c to the current text window. It is a text mode 
-function performing direct video output to the console. putch does not 
+putch outputs the character c to the current text window. It is a text mode
+function performing direct video output to the console. putch does not
 translate linefeed characters (\n) into carriage-return/linefeed pairs.
-The string is written either directly to screen memory or by way of a BIOS 
+The string is written either directly to screen memory or by way of a BIOS
 call, depending on the value of the global variable _directvideo.
 */
 int putch(int __c);
@@ -770,7 +770,7 @@ Structure used by getwtext/putwtext.
 typedef struct wchar_info
 {
 	wchar_t letter;			/**< character value */
-    unsigned short attr;	/**< attribute value */
+	unsigned short attr;	/**< attribute value */
 } wchar_info;
 
 wchar_t  getwch(void);
@@ -782,9 +782,7 @@ wchar_t  putwch(wchar_t);
 	int      cputws( const wchar_t *__str );
 	wchar_t  ungetwch( wchar_t );
 	wchar_t  getwche(void);
-	/* cwscanf/cwprintf/putwtext/getwtext solo existen en la rama Windows
-	   (el DOS no dispone de swscanf/vswprintf portables); declararlas sin
-	   condicion producia errores de enlace en DOS+UNICODE. */
+	/* cwscanf/cwprintf/putwtext/getwtext are Windows-only (DOS lacks portable swscanf/vswprintf) */
 	#if (((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32))
 		int cwscanf( const wchar_t *__format, ... );
 		int cwprintf( const wchar_t *__format, ... );
