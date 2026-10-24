@@ -19,7 +19,7 @@
 
 #if defined(__WATCOMC__)
 	#define coniox_inline __inline
-#elif (__BORLANDC__)
+#elif defined(__BORLANDC__)
 	#define coniox_inline
 #else
 	#define coniox_inline inline
@@ -53,12 +53,16 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 	const char *p;
 	char c;
 
-	p = format;
+	if (count >= 40)
+	{
+		return(0);
+	}
 	if (!buffer || !format)
 	{
 		return(0);
 	}
 
+	p = format;
 	while ((c = *p++) != 0)
 	{
 		if (c == '%')
@@ -1665,11 +1669,7 @@ int coniox_basecrt = 0x3D4;
 #if defined(__WATCOMC__)
     void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
     void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
-    #if (defined(__FLAT__))
-        void coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
-    #else
-        void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
-    #endif
+    void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, size_t piCount);
     #if (defined(__FLAT__))
         #pragma aux coniox_fmemsetw =					\
             "		movzx	edx, ax					"	\
@@ -2482,6 +2482,7 @@ void textmode(int __newmode)
 {
 	union REGS r;
 
+	coniox_init(NULL);
 	if (__newmode == LASTMODE)
 	{
 		__newmode = ti.currmode;

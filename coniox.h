@@ -210,10 +210,10 @@ extern "C" {
 	unsigned long outpd (int port, unsigned long value);
 	unsigned int outpw (int port, unsigned int value);
 
-	#define outportb		outp
+	//#define outportb		outp
 	#define outport			outpw
 	#define outportd		outpd
-	#define inportb			inp
+	//#define inportb			inp
 	#define inport			inpw
 	#define inportd			inpd
 #endif
@@ -717,9 +717,9 @@ void coniox_init(const void *title);
 	#define _cputws		cputws
 	#define _cwprintf	cwprintf
 	#define _cwscanf	cwscanf
-	#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 3)
+	#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 4)
 #else
-#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 2)
+	#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 2)
 #endif
 
 
