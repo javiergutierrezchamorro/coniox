@@ -177,9 +177,9 @@ extern "C" {
 #if defined(__WATCOMC__) && defined(__DOS__)
 	#include <i86.h>
 	unsigned char inportb(unsigned int port);
-	#pragma aux inportb  = "in  al, dx" parm [dx] value [al];
+	#pragma aux inportb  = "in  al, dx" parm nomemory [dx] value [al] modify nomemory exact [dx al];
 	unsigned char outportb(unsigned int port, unsigned char value);
-	#pragma aux outportb = "out dx, al" parm [dx] [al];
+	#pragma aux outportb = "out dx, al" parm nomemory [dx] [al] modify nomemory exact [dx al];
 #endif
 
 #if defined(__DJGPP__)
@@ -189,7 +189,7 @@ extern "C" {
 	#define _fmemcpy	memcpy
 	#define _disable disable
 	#define _enable  enable
-	#define MK_FP(seg,off) ((((seg)<<4)|(off)) + __djgpp_conventional_base)
+	#define MK_FP(seg,off) ((((seg)<<4)+(off)) + __djgpp_conventional_base)
 	#define coniox_far
 #elif defined(__FLAT__)
 	/* DOS extender, flat model: every pointer is a 32 bit offset, and the first MB is mapped at linear address 0 */
@@ -200,7 +200,7 @@ extern "C" {
 
 
 #ifndef MK_FP
-	#define MK_FP(seg,off) (((seg)<<4)|(off))
+	#define MK_FP(seg,off) (((seg)<<4)+(off))
 #endif
 
 #if !defined(__TURBOC__)
@@ -230,12 +230,12 @@ extern "C" {
 	#define pokew(s,o,x)		(*((unsigned short *) coniox_linear((s),(o))) = (unsigned short)(x))
 	#define pokel(s,o,x)		(*((unsigned long *) coniox_linear((s),(o))) = (unsigned long)(x))
 #else
-#define peekb(s,o)			(*((unsigned char coniox_far *) MK_FP((s),(o))))
-#define peekw(s,o)			(*((unsigned short coniox_far *) MK_FP((s),(o))))
-#define peekl(s,o)			(*((unsigned long coniox_far *) MK_FP((s),(o))))
-#define pokeb(s,o,x)		(*((unsigned char coniox_far *) MK_FP((s),(o))) = (unsigned char)(x))
-#define pokew(s,o,x)		(*((unsigned short coniox_far *) MK_FP((s),(o))) = (unsigned short)(x))
-#define pokel(s,o,x)		(*((unsigned long coniox_far *) MK_FP((s),(o))) = (unsigned long)(x))
+	#define peekb(s,o)			(*((unsigned char coniox_far *) MK_FP((s),(o))))
+	#define peekw(s,o)			(*((unsigned short coniox_far *) MK_FP((s),(o))))
+	#define peekl(s,o)			(*((unsigned long coniox_far *) MK_FP((s),(o))))
+	#define pokeb(s,o,x)		(*((unsigned char coniox_far *) MK_FP((s),(o))) = (unsigned char)(x))
+	#define pokew(s,o,x)		(*((unsigned short coniox_far *) MK_FP((s),(o))) = (unsigned short)(x))
+	#define pokel(s,o,x)		(*((unsigned long coniox_far *) MK_FP((s),(o))) = (unsigned long)(x))
 #endif
 #endif
 
@@ -530,7 +530,7 @@ This function does not affect any characters currently onscreen. It affects only
 @see COLORS
 @see highvideo
 */
-void lowvideo (void);
+void lowvideo(void);
 
 
 /**
