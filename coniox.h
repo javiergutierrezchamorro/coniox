@@ -243,7 +243,7 @@ extern "C" {
 #endif
 
 #pragma pack(push)
-#pragma pack(1)
+//#pragma pack(1)
 
 /**
 Structure holding information about screen.
@@ -251,17 +251,17 @@ Structure holding information about screen.
 */
 struct text_info
 {
-    unsigned char winleft;
-    unsigned char wintop;
-    unsigned char winright;
-    unsigned char winbottom;
-    unsigned char attribute;
-    unsigned char normattr;
-    unsigned char currmode;
-    unsigned char screenheight;
-    unsigned char screenwidth;
-    unsigned char curx;
-    unsigned char cury;
+    unsigned short winleft;
+    unsigned short wintop;
+    unsigned short winright;
+    unsigned short winbottom;
+    unsigned short attribute;
+    unsigned short normattr;
+    unsigned short currmode;
+    unsigned short screenheight;
+    unsigned short screenwidth;
+    unsigned short curx;
+    unsigned short cury;
 };
 
 /**

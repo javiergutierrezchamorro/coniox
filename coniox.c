@@ -9,8 +9,8 @@
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+#define CONIOX_MAX_CHARINFO	(160 * 100)
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
-	#define CONIOX_MAX_CHARINFO	(160 * 100)
 	wchar_t coniox_ansi2unicode(char ch);
 	char coniox_unicode2ansi(wchar_t ch);
 	void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
@@ -20,7 +20,11 @@
 #if defined(__WATCOMC__)
 	#define coniox_inline __inline
 #elif defined(__BORLANDC__)
-	#define coniox_inline
+	#if (__BORLANDC__ >= 0x450)
+		#define coniox_inline static __inline
+	#else
+		#define coniox_inline static
+	#endif
 #else
 	#define coniox_inline inline
 #endif
@@ -31,6 +35,7 @@ void coniox_idle(void);
 int coniox_get_is_emulator (void);
 void coniox_blink(unsigned int blink);
 void coniox_enhanced_palette(unsigned int pal);
+void coniox_readnormattr(void);
 int coniox_is_emulator = 0;
 
 
@@ -41,6 +46,24 @@ int directvideo = 1;
 int _wscroll = 1;
 int coniox_setcursortype = _NORMALCURSOR;
 int coniox_cursor_dirty = 0;	/* B: 1 = el cursor fisico esta por detras de ti (curx, cury) */
+
+#if ((__DOS__) || (__MSDOS__))
+int coniox_basecrt = 0x3D4;
+
+#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
+	unsigned short *coniox_vram;
+	#define coniox_int86 int386
+	#define coniox_int86x int386x
+#else
+	unsigned short coniox_far *coniox_vram;
+	#define coniox_int86 int86
+	#define coniox_int86x int86x
+#endif
+/* C: coniox_vram/coniox_int86/coniox_offset se adelantan para que putch()
+   pueda escribir en VRAM sin llamada a coniox_putchxyattr() por caracter.
+   coniox_offset() toma coordenadas 0-based. */
+#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
+#endif
 
 
 
@@ -54,7 +77,6 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 	const char *p;
 	char c;
 
-	
 	if (!buffer || !format)
 	{
 		return(0);
@@ -247,22 +269,27 @@ int putch(int __c)
 	{
 		case '\r':
 			ti.curx = 1;
-			gotoxy(1, ti.cury);
+			coniox_cursor_dirty = 1;	/* C: sin gotoxy; el sync llega en el proximo punto de espera */
 			break;
 		case '\n':
 			if (ti.cury < winheight)
 			{
 				ti.cury++;
-				gotoxy(ti.curx, ti.cury);
+				coniox_cursor_dirty = 1;
 			}
 			else if (_wscroll)
 			{
-				/* LF: keep the column, like Borland's putch. */
+				/* LF: keep the column, like Borland's putch. delline() no toca el
+				   cursor fisico en ninguna rama, asi que el baile solo toca ti
+				   y deja la marca de sync diferido. */
 				oldx = ti.curx;
 				oldy = ti.cury;
-				gotoxy(1, 1);
+				ti.curx = 1;
+				ti.cury = 1;
 				delline();
-				gotoxy(oldx, oldy);
+				ti.curx = oldx;
+				ti.cury = oldy;
+				coniox_cursor_dirty = 1;
 			}
 			/* _wscroll = 0: LF on the last line does not scroll. */
 			break;
@@ -270,11 +297,25 @@ int putch(int __c)
 			if (ti.curx > 1)
 			{
 				ti.curx--;
-				gotoxy(ti.curx, ti.cury);
+				coniox_cursor_dirty = 1;
 			}
 			break;
 		default:
+#if ((__DOS__) || (__MSDOS__))
+			if (directvideo)
+			{
+				/* C: ruta rapida sin llamada. MISMA celda que coniox_putchxyattr():
+				   coniox_offset() toma coordenadas 0-based, luego restan 2. La
+				   ronda 7 pasaba -1 y cada caracter salia +1 fila/+1 columna. */
+				*(unsigned short coniox_far *) coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2) = (unsigned short) ((ti.attribute << 8) | (__c & 0xFF));
+			}
+			else
+			{
+				coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
+			}
+#else
 			coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
+#endif
 			if (ti.curx < winwidth)
 			{
 				ti.curx++;
@@ -286,14 +327,18 @@ int putch(int __c)
 				{
 					if (ti.cury < winheight)
 					{
-						gotoxy(1, ti.cury + 1);
+						ti.curx = 1;
+						ti.cury++;
+						coniox_cursor_dirty = 1;
 					}
 					else
 					{
 						oldy = ti.cury;
-						gotoxy(1, 1);
+						ti.curx = 1;
+						ti.cury = 1;
 						delline();
-						gotoxy(1, oldy);
+						ti.cury = oldy;
+						coniox_cursor_dirty = 1;
 					}
 				}
 				else
@@ -431,6 +476,7 @@ int getche(void)
 	if (ch != 0)
 	{
 		putch(ch);
+		coniox_flush_cursor();	/* C: el eco deja el cursor fisico al dia */
 	}
 	return(ch);
 }
@@ -504,6 +550,7 @@ int wherey(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
 
+
 /* ----------------------------------------------------------------------------------------------------------------- */
 int cputsportable(const char *__str)
 {
@@ -515,6 +562,7 @@ int cputsportable(const char *__str)
 		putch(*__str++);
 	}
 	
+	coniox_flush_cursor();	/* C: un sync por cadena, no por caracter */
 	return (int)(__str - orig);
 }
 
@@ -614,6 +662,7 @@ int cputws(const wchar_t *__str)
 		++__str;
 		++k;
 	}
+	coniox_flush_cursor();	/* C: un sync por cadena, no por caracter */
 	return k;
 }
 
@@ -634,28 +683,35 @@ wchar_t putwch(wchar_t __c)
 	switch (__c)
 	{
 		case L'\r':
-			gotoxy(1, ti.cury);
+			ti.curx = 1;
+			coniox_cursor_dirty = 1;	/* C: sin gotoxy; el sync llega en el proximo punto de espera */
 			break;
 		case L'\n':
 			if (ti.cury < winheight)
 			{
-				gotoxy(ti.curx, ti.cury + 1);
+				ti.cury++;
+				coniox_cursor_dirty = 1;
 			}
 			else if (_wscroll)
 			{
-				/* LF: keep the column, like Borland putwch. */
+				/* LF: keep the column, like Borland putwch. delline() no toca el
+				   cursor fisico: el baile solo toca ti y marca el sync diferido. */
 				oldx = ti.curx;
 				oldy = ti.cury;
-				gotoxy(1, 1);
+				ti.curx = 1;
+				ti.cury = 1;
 				delline();
-				gotoxy(oldx, oldy);
+				ti.curx = oldx;
+				ti.cury = oldy;
+				coniox_cursor_dirty = 1;
 			}
 			/* _wscroll = 0: LF on the last line does not scroll. */
 			break;
 		case L'\b':
 			if (ti.curx > 1)
 			{
-				gotoxy(ti.curx - 1, ti.cury);
+				ti.curx--;
+				coniox_cursor_dirty = 1;
 			}
 			break;
 		default:
@@ -666,14 +722,18 @@ wchar_t putwch(wchar_t __c)
 				{
 					if (ti.cury < winheight)
 					{
-						gotoxy(1, ti.cury + 1);
+						ti.curx = 1;
+						ti.cury++;
+						coniox_cursor_dirty = 1;
 					}
 					else
 					{
 						oldy = ti.cury;
-						gotoxy(1, 1);
+						ti.curx = 1;
+						ti.cury = 1;
 						delline();
-						gotoxy(1, oldy);
+						ti.cury = oldy;
+						coniox_cursor_dirty = 1;
 					}
 				}
 				else
@@ -807,6 +867,23 @@ void coniox_init(const void *title)
 		SetConsoleTitle(title);
 	}
 }
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+void coniox_readnormattr(void)
+{
+	CONSOLE_SCREEN_BUFFER_INFO info;
+
+	/*
+		C: relee el atributo por defecto de la consola para ti.normattr: es el de
+		arranque del programa, no el que textattr() deja en ti.attribute. Si la
+		lectura falla (salida redirigida) se conserva el valor de coniox_init().
+	*/
+	if (GetConsoleScreenBufferInfo(coniox_console_output, &info))
+	{
+		ti.normattr = (unsigned short) info.wAttributes;
+	}
+}
+
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1067,6 +1144,7 @@ wchar_t getwche(void)
 		ch = getwch();
 	}
 	putwch(ch);
+	coniox_flush_cursor();	/* C: el eco deja el cursor fisico al dia */
 	return(ch);
 }
 
@@ -1186,7 +1264,9 @@ void delline(void)
 		ci.Char.AsciiChar = ' ';
 	#endif
 	ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci);
-	gotoxy(ti.curx, ti.cury);
+	/* C: el scroll no mueve el cursor de consola; el gotoxy() de cierre sobraba
+	   y, durante el baile de scroll de putch()/putwch() (ti apuntando a (1,1)),
+	   llevaba el cursor fisico a la esquina. El sync llega con el flush. */
 }
 
 
@@ -1212,7 +1292,9 @@ void insline(void)
 		ci.Char.AsciiChar = ' ';
 	#endif
 	ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci );
-	gotoxy(ti.curx, ti.cury);
+	/* C: el scroll no mueve el cursor de consola; el gotoxy() de cierre sobraba
+	   y, durante el baile de scroll de putch()/putwch() (ti apuntando a (1,1)),
+	   llevaba el cursor fisico a la esquina. El sync llega con el flush. */
 }
 
 
@@ -1268,11 +1350,14 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	coniox_init(NULL);
 
 	/* Validacion estilo Borland: origen y destino dentro de la pantalla. */
-	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
+	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top ||
+		__right > ti.screenwidth || __bottom > ti.screenheight)
 	{
 		return(0);
 	}
-	if (__destleft < 1 || __desttop < 1 || __destleft + (__right - __left) > ti.screenwidth || __desttop + (__bottom - __top) > ti.screenheight)
+	if (__destleft < 1 || __desttop < 1 ||
+		__destleft + (__right - __left) > ti.screenwidth ||
+		__desttop + (__bottom - __top) > ti.screenheight)
 	{
 		return(0);
 	}
@@ -1702,6 +1787,7 @@ wchar_t ungetwch(wchar_t __ch)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void delay(unsigned int ms)
 {
+	coniox_flush_cursor();	/* C: el cursor fisico al dia durante la espera */
 	Sleep(ms);
 }
 
@@ -1715,20 +1801,6 @@ void delay(unsigned int ms)
 /* DOS ONLY (Non portable) */
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((__DOS__) || (__MSDOS__))
-int coniox_basecrt = 0x3D4;
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-#if ((defined(__FLAT__)) || (defined(__DJGPP__)))
-	unsigned short *coniox_vram;
-	#define coniox_int86 int386
-	#define coniox_int86x int386x
-	#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
-#else
-	unsigned short coniox_far *coniox_vram;
-	#define coniox_int86 int86
-	#define coniox_int86x int86x
-	#define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
-#endif
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1873,11 +1945,12 @@ void coniox_init(const void* title)
 	(void) title;					/* W303: suppress unused parameter warning */
 
 	/* Check if already initialized */
-	if (ti.normattr == 7)
+/* C: guardia sin helper y sin flag escondido: screenwidth solo es 0 antes de
+   la primera coniox_init(), y textmode() lo repone a 0 para reinicializar. */
+	if (ti.screenwidth != 0)
 	{
 		return;
 	}
-	ti.normattr = 7;
 	
 	
 	#if (defined(__DJGPP__))
@@ -1983,6 +2056,7 @@ void coniox_init(const void* title)
 	{
 		ti.screenheight = 25;
 	}
+	ti.normattr = 7;	
 	ti.attribute = 7;
 	ti.winleft = 1;
 	ti.wintop = 1;
@@ -1996,6 +2070,32 @@ void coniox_init(const void* title)
 	//Activate blink
 	coniox_blink(1);
 	coniox_enhanced_palette(1);
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+void coniox_readnormattr(void)
+{
+	union REGS r;
+
+	/*
+		C: atributo REAL de la pantalla para ti.normattr, leyendo la celda del
+		cursor logico: VRAM con directvideo=1, INT 10h AH=08h con directvideo=0
+		(sincronizando antes el cursor fisico diferido). Es el mismo mecanismo
+		que el conio clasico usa para obtener normattr al arrancar.
+	*/
+	if (directvideo)
+	{
+		ti.normattr = (unsigned short)((*coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2) >> 8) & 0xFF);
+	}
+	else
+	{
+		coniox_flush_cursor();
+		r.h.ah = 0x8;
+		r.h.bh = 0;
+		coniox_int86(0x10, &r, &r);
+		ti.normattr = r.h.ah;
+	}
 }
 
 
@@ -2483,6 +2583,8 @@ void delay (unsigned int ms)
     unsigned long lTicks = 0;
     unsigned long lWait, lNow;
 
+    coniox_flush_cursor();	/* C: el cursor fisico al dia durante la espera */
+
     lWait = (((unsigned long) ms * 91UL) + 4999UL) / 5000UL;        /* ms -> ticks a 18.2 Hz, redondeo arriba */
 
     if (directvideo)
@@ -2570,7 +2672,7 @@ void textmode(int __newmode)
 		}
 		ti.currmode = (short int) __newmode;
 		/* Reinit */
-		ti.normattr = 0;
+		ti.screenwidth = 0;	/* C: coniox_init() ahora se guarda en screenwidth, no en normattr */
 		coniox_init(NULL);
 	}
 	window(1, 1, ti.screenwidth, ti.screenheight);
@@ -2794,7 +2896,13 @@ int gettext(int __left, int __top, int __right, int __bottom,
 	coniox_init(NULL);
 
 	/* Validar destino y rect�ngulo, con coordenadas absolutas 1-based. */
-	if (__destin == NULL || __left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
+	if (__destin == NULL ||
+	    __left < 1 ||
+	    __top < 1 ||
+	    __right < __left ||
+	    __bottom < __top ||
+	    __right > ti.screenwidth ||
+	    __bottom > ti.screenheight)
 	{
 		return 0;
 	}
@@ -2845,7 +2953,13 @@ int puttext(int __left, int __top, int __right, int __bottom,
 	coniox_init(NULL);
 
 	/* Validar origen y rect�ngulo, con coordenadas absolutas 1-based. */
-	if (__source == NULL || __left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
+	if (__source == NULL ||
+	    __left < 1 ||
+	    __top < 1 ||
+	    __right < __left ||
+	    __bottom < __top ||
+	    __right > ti.screenwidth ||
+	    __bottom > ti.screenheight)
 	{
 		return 0;
 	}
@@ -2883,75 +2997,39 @@ int puttext(int __left, int __top, int __right, int __bottom,
 /* ----------------------------------------------------------------------------------------------------------------- */
 int movetext(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
 {
-	unsigned short coniox_far* src;
-	unsigned short coniox_far* dst;
-	unsigned int width;
-	unsigned int row_bytes;
-	int rows;
-	int y1;
-	int step;
+	static unsigned short buffer[CONIOX_MAX_CHARINFO];
 
 
 	coniox_init(NULL);
-	
+
 	if (__left == __destleft && __top == __desttop)
 	{
 		return 1;
 	}
 
 	/* Coordinates are absolute screen coordinates. Reject empty/out-of-range rectangles. */
-	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top ||
-	    __right > ti.screenwidth || __bottom > ti.screenheight)
+	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
+	{
+		return 0;
+	}
+	if (__destleft < 1 || __desttop < 1 || __destleft + (__right - __left) > ti.screenwidth || __desttop + (__bottom - __top) > ti.screenheight)
+	{
+		return 0;
+	}
+	if ((__right - __left + 1) * (__bottom - __top + 1) > (int) CONIOX_MAX_CHARINFO)
 	{
 		return 0;
 	}
 
-	width = (unsigned int)(__right - __left + 1);
-	rows = __bottom - __top + 1;
-	if (__destleft < 1 || __desttop < 1 ||
-	    __destleft + (int)width - 1 > ti.screenwidth ||
-	    __desttop + rows - 1 > ti.screenheight)
+	/* C: copia sin borrar via gettext+puttext, como el DOS clasico. El snapshot
+	   intermedio resuelve el solape origen/destino y el rectangulo origen queda
+	   intacto. La rama Windows si borra el origen (ScrollConsoleScreenBuffer):
+	   ahi la semantica es distinta a proposito. */
+	if (!gettext(__left, __top, __right, __bottom, buffer))
 	{
 		return 0;
 	}
-	row_bytes = width * (unsigned int)sizeof(unsigned short);
-
-	/* A full-width move is contiguous in text memory; memmove handles overlap. */
-	if (__left == 1 && __right == ti.screenwidth && __destleft == 1)
-	{
-		src = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(0, __top - 1);
-		dst = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(0, __desttop - 1);
-		_fmemmove(dst, src, (unsigned long)row_bytes * (unsigned long)rows);
-		return 1;
-	}
-
-	/* Copy bottom-up when moving down, otherwise top-down: one loop, two directions. */
-	if (__desttop > __top)
-	{
-		y1 = rows - 1;
-		step = -1;
-	}
-	else
-	{
-		y1 = 0;
-		step = 1;
-	}
-
-	for (; y1 >= 0 && y1 < rows; y1 += step)
-	{
-		src = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__left - 1, __top + y1 - 1);
-		dst = (unsigned short coniox_far*)(void coniox_far*) coniox_offset(__destleft - 1, __desttop + y1 - 1);
-
-		if (__destleft > __left && __destleft <= __right)
-		{
-			_fmemmove(dst, src, row_bytes);
-		}
-		else
-		{
-			coniox_fmemcpy(dst, src, row_bytes);
-		}
-	}
-	return 1;
+	return puttext(__destleft, __desttop, __destleft + (__right - __left), __desttop + (__bottom - __top), buffer);
 }
 
 
