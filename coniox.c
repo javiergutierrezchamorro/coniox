@@ -12,7 +12,7 @@
 #define CONIOX_MAX_CHARINFO     (160 * 100)
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
 	wchar_t coniox_ansi2unicode(char ch);
-		void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
+	void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
 	#include <wchar.h>
 	wchar_t *cgetws(wchar_t *__str);
 	int cputws(const wchar_t *__str);
@@ -62,6 +62,140 @@ int coniox_basecrt = 0x3D4;
 #endif
 #define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 static unsigned short coniox_far *coniox_cell;
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+#if defined(__WATCOMC__)
+	void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
+	void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
+	#if (defined(__FLAT__))
+		void coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
+	#else
+		void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
+	#endif
+	#if (defined(__FLAT__))
+		#pragma aux coniox_fmemsetw =                                   \
+			"           movzx   edx, ax                                 "       \
+			"           shl             eax, 16                                 "       \
+			"           or              eax, edx                                "       \
+			"           shr             ecx, 1                                  "       \
+			"           cld                                                             "       \
+			"           rep             stosd                                   "       \
+			"           jnc             short no_odd                            "       \
+			"           stosw                                                   "       \
+			"no_odd:                                                                    "       \
+			parm [EDI][AX][ECX]                                                 \
+			modify exact [EDI EDX ECX EAX];
+		#pragma aux coniox_putrun =                                     \
+			"           mov             edx, ebx                                "       \
+			"           and             edx, 0FF00h                             "       \
+			"           mov             ebx, edx                                "       \
+			"           shl             ebx, 16                                 "       \
+			"           or              ebx, edx                                "       \
+			"           test    ecx, 1                                  "       \
+			"           jz              _preven                                 "       \
+			"           movzx   eax, byte ptr [esi]             "       \
+			"           inc             esi                                             "       \
+			"           or              eax, edx                                "       \
+			"           stosw                                                   "       \
+			"           dec             ecx                                             "       \
+			"_preven:                                                                   "       \
+			"           shr             ecx, 1                                  "       \
+			"           jecxz   _prdone                                 "       \
+			"_prpairs:                                                                  "       \
+			"           movzx   eax, byte ptr [esi]             "       \
+			"           movzx   edx, byte ptr [esi+1]   "       \
+			"           add             esi, 2                                  "       \
+			"           shl             edx, 16                                 "       \
+			"           or              eax, edx                                "       \
+			"           or              eax, ebx                                "       \
+			"           stosd                                                   "       \
+			"           loop    _prpairs                                "       \
+			"_prdone:                                                                   "       \
+			parm [EDI][ESI][EBX][ECX]                                   \
+			modify exact [EDI ESI ECX EDX EAX EBX];
+		#pragma aux coniox_fmemcpy =                                    \
+			"           mov             ecx, ebx                                "       \
+			"           shr             ecx, 2                                  "       \
+			"           cld                                                             "       \
+			"           rep             movsd                                   "       \
+			"           mov             ecx, ebx                                "       \
+			"           and             ecx, 3                                  "       \
+			"           rep             movsb                                   "       \
+			parm [EDI][ESI][EBX]                                                \
+			modify exact [ECX EDI ESI];
+	#else
+		#pragma aux coniox_fmemsetw =                                   \
+			"           cld                                                             "       \
+			"           rep             stosw                                   "       \
+			parm [ES DI][AX][CX]                                                \
+			modify exact [DI CX];
+		#pragma aux coniox_putrun =                                     \
+			"           cld                                                             "       \
+			"_prnext:                                                                   "       \
+			"           lodsb                                                   "       \
+			"           mov             ah, bh                                  "       \
+			"           stosw                                                   "       \
+			"           loop    _prnext                         "       \
+			parm [ES DI][SI][BX][CX]                                    \
+			modify exact [DI SI CX AX];
+		#pragma aux coniox_fmemcpy =                                    \
+			"           push    ds                                              "       \
+			"           mov             ds, dx                                  "       \
+			"           cld                                                             "       \
+			"           shr             cx, 1                                   "       \
+			"           rep             movsw                                   "       \
+			"           jnc             short _fcpy_done                        "       \
+			"           movsb                                                   "       \
+			"_fcpy_done:                                                                "       \
+			"           pop             ds                                              "       \
+			parm [ES DI][DX SI][CX]                                     \
+			modify exact [CX SI DI];
+	#endif
+#else
+	#define coniox_fmemcpy      _fmemcpy
+	void coniox_fmemsetw(void coniox_far *m, short val, size_t count)
+	{
+		short coniox_far *buf = (short coniox_far *) m;
+
+		while (count >= 4)
+		{
+			buf[0] = val;
+			buf[1] = val;
+			buf[2] = val;
+			buf[3] = val;
+			buf += 4;
+			count -= 4;
+		}
+		while (count--)
+		{
+			*buf++ = val;
+		}
+	}
+
+	void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, unsigned int piCount)
+	{
+		unsigned short coniox_far *d;
+		unsigned short cellword;
+
+		d = piDst;
+		cellword = (unsigned short) (piAttr & 0xFF00);
+		while (piCount >= 4)
+		{
+			d[0] = cellword | (unsigned char) piSrc[0];
+			d[1] = cellword | (unsigned char) piSrc[1];
+			d[2] = cellword | (unsigned char) piSrc[2];
+			d[3] = cellword | (unsigned char) piSrc[3];
+			d += 4;
+			piSrc += 4;
+			piCount -= 4;
+		}
+		while (piCount--)
+		{
+			*d++ = cellword | (unsigned char) *piSrc++;
+		}
+	}
+
+#endif
 #endif
 
 
@@ -147,14 +281,20 @@ coniox_inline int coniox_inwindow(int x, int y)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void clreol(void)
 {
-	int ax, ay, aw;
+	int aw;
 
 
 	coniox_init(NULL);
-	ax = ti.winleft + ti.curx - 1;
-	ay = ti.wintop  + ti.cury - 1;
-	aw = ti.winright - ax + 1;          /* chars remaining to end of line */
-	coniox_putchxyattrwh(ax, ay, ' ', ti.attribute, aw, 1);
+	aw = ti.winright - ti.winleft - ti.curx + 2;	/* cells remaining to the end of the line */
+	#if ((__DOS__) || (__MSDOS__))
+		if (directvideo)
+		{
+			/* coniox_cell already points at the cursor cell: one direct fill, no offset computation. */
+			coniox_fmemsetw(coniox_cell, (short) ((ti.attribute << 8) | ' '), (size_t) aw);
+			return;
+		}
+	#endif
+	coniox_putchxyattrwh(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, ' ', ti.attribute, aw, 1);
 }
 
 
@@ -391,8 +531,6 @@ char *cgets(char *__str)
 		{
 			switch (ch)
 			{
-				case '\r':
-					break;
 				case '\b':
 					if (length > 0)
 					{
@@ -427,7 +565,7 @@ int cvprintf(const char *__format, va_list __arglist)
 		return(0);
 	}
 
-	#if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
+	#if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32) || defined(__DJGPP__)
 		r = vsnprintf(buffer, PRINTFBUF_SIZE, __format, __arglist);
 	#elif defined(__WATCOMC__)
 		r = _vsnprintf(buffer, PRINTFBUF_SIZE, __format, __arglist);
@@ -467,7 +605,7 @@ int cscanf(const char *__format, ...)
 
 	va_list ap;
 	buffer[0] = PRINTFBUF_SIZE;
-	cgets(buffer);
+	cgets((char *) buffer);
 	va_start(ap, __format);
 	r = coniox_vsscanf(buffer + 2, __format, ap);
 	va_end(ap);
@@ -513,8 +651,6 @@ char *getpass(const char *__prompt)
 		{
 			switch (ch)
 			{
-				case '\r':
-					break;
 				case '\b':
 					if (length > 0)
 					{
@@ -614,8 +750,6 @@ wchar_t *cgetws(wchar_t *__str)
 		{
 			switch (ch)
 			{
-				case L'\r':
-					break;
 				case L'\b':
 					if (length > 0)
 					{
@@ -819,7 +953,7 @@ void coniox_init(const void *title)
 	}
 	ti.normattr = (unsigned short) info.wAttributes;
 	ti.winleft = (unsigned short) info.srWindow.Left + 1;
-	ti.wintop = (unsigned short)info.srWindow.Top + 1;
+	ti.wintop = (unsigned short) info.srWindow.Top + 1;
 	ti.winright = (unsigned short) info.srWindow.Right + 1;
 	ti.winbottom = (unsigned short) info.srWindow.Bottom + 1;
 	ti.screenwidth = (unsigned short) info.dwSize.X;
@@ -840,7 +974,7 @@ void coniox_init(const void *title)
 
 	if (title)
 	{
-		SetConsoleTitle(title);
+		SetConsoleTitleA((LPCSTR) title);
 	}
 }
 
@@ -1147,7 +1281,7 @@ int cputws(const wchar_t *__str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-inline void coniox_putchxyattr(int x, int y, int ch, int attr)
+coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 {
 	CHAR_INFO ci;
 	SMALL_RECT r;
@@ -1159,7 +1293,7 @@ inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 	r.Right = (short) (x - 1);
 	r.Bottom = (short) (y - 1);
 	ci.Char.AsciiChar = (char) ch;
-	ci.Attributes = (short) attr;
+	ci.Attributes = (WORD) attr;
 	WriteConsoleOutputA(coniox_console_output, &ci, s, c, &r);
 }
 
@@ -1338,8 +1472,8 @@ void clrscr(void)
 void textattr(int __newattr)
 {
 	coniox_init(NULL);
-	ti.attribute = (unsigned short) __newattr;
-	SetConsoleTextAttribute(coniox_console_output, (unsigned short) ti.attribute);
+	ti.attribute = (unsigned short) (__newattr & 0xFF);
+	SetConsoleTextAttribute(coniox_console_output, ti.attribute);
 }
 
 
@@ -1653,7 +1787,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 		#if UNICODE
 			__destin[i].letter = buffer[i].Char.UnicodeChar;
 		#else
-			__destin[i].letter = (char) buffer[i].Char.AsciiChar;
+			__destin[i].letter = (unsigned char) buffer[i].Char.AsciiChar;
 		#endif
 		__destin[i].attr = buffer[i].Attributes;
 	}
@@ -1933,139 +2067,6 @@ void coniox_enhanced_palette(unsigned int pal);
 int coniox_is_emulator = 0;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-#if defined(__WATCOMC__)
-	void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
-	void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
-	#if (defined(__FLAT__))
-		void coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
-	#else
-		void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
-	#endif
-	#if (defined(__FLAT__))
-		#pragma aux coniox_fmemsetw =                                   \
-			"           movzx   edx, ax                                 "       \
-			"           shl             eax, 16                                 "       \
-			"           or              eax, edx                                "       \
-			"           shr             ecx, 1                                  "       \
-			"           cld                                                             "       \
-			"           rep             stosd                                   "       \
-			"           jnc             short no_odd                            "       \
-			"           stosw                                                   "       \
-			"no_odd:                                                                    "       \
-			parm [EDI][AX][ECX]                                                 \
-			modify exact [EDI EDX ECX EAX];
-		#pragma aux coniox_putrun =                                     \
-			"           mov             edx, ebx                                "       \
-			"           and             edx, 0FF00h                             "       \
-			"           mov             ebx, edx                                "       \
-			"           shl             ebx, 16                                 "       \
-			"           or              ebx, edx                                "       \
-			"           test    ecx, 1                                  "       \
-			"           jz              _preven                                 "       \
-			"           movzx   eax, byte ptr [esi]             "       \
-			"           inc             esi                                             "       \
-			"           or              eax, edx                                "       \
-			"           stosw                                                   "       \
-			"           dec             ecx                                             "       \
-			"_preven:                                                                   "       \
-			"           shr             ecx, 1                                  "       \
-			"           jecxz   _prdone                                 "       \
-			"_prpairs:                                                                  "       \
-			"           movzx   eax, byte ptr [esi]             "       \
-			"           movzx   edx, byte ptr [esi+1]   "       \
-			"           add             esi, 2                                  "       \
-			"           shl             edx, 16                                 "       \
-			"           or              eax, edx                                "       \
-			"           or              eax, ebx                                "       \
-			"           stosd                                                   "       \
-			"           loop    _prpairs                                "       \
-			"_prdone:                                                                   "       \
-			parm [EDI][ESI][EBX][ECX]                                   \
-			modify exact [EDI ESI ECX EDX EAX EBX];
-		#pragma aux coniox_fmemcpy =                                    \
-			"           mov             ecx, ebx                                "       \
-			"           shr             ecx, 2                                  "       \
-			"           cld                                                             "       \
-			"           rep             movsd                                   "       \
-			"           mov             ecx, ebx                                "       \
-			"           and             ecx, 3                                  "       \
-			"           rep             movsb                                   "       \
-			parm [EDI][ESI][EBX]                                                \
-			modify exact [ECX EDI ESI];
-	#else
-		#pragma aux coniox_fmemsetw =                                   \
-			"           cld                                                             "       \
-			"           rep             stosw                                   "       \
-			parm [ES DI][AX][CX]                                                \
-			modify exact [DI CX];
-		#pragma aux coniox_putrun =                                     \
-			"           cld                                                             "       \
-			"_prnext:                                                                   "       \
-			"           lodsb                                                   "       \
-			"           mov             ah, bh                                  "       \
-			"           stosw                                                   "       \
-			"           loop    _prnext                         "       \
-			parm [ES DI][SI][BX][CX]                                    \
-			modify exact [DI SI CX AX];
-		#pragma aux coniox_fmemcpy =                                    \
-			"           push    ds                                              "       \
-			"           mov             ds, dx                                  "       \
-			"           cld                                                             "       \
-			"           shr             cx, 1                                   "       \
-			"           rep             movsw                                   "       \
-			"           jnc             short _fcpy_done                        "       \
-			"           movsb                                                   "       \
-			"_fcpy_done:                                                                "       \
-			"           pop             ds                                              "       \
-			parm [ES DI][DX SI][CX]                                     \
-			modify exact [CX SI DI];
-	#endif
-#else
-	#define coniox_fmemcpy      _fmemcpy
-	void coniox_fmemsetw(void coniox_far *m, short val, size_t count)
-	{
-		short coniox_far *buf = (short coniox_far *) m;
-
-		while (count >= 4)
-		{
-			buf[0] = val;
-			buf[1] = val;
-			buf[2] = val;
-			buf[3] = val;
-			buf += 4;
-			count -= 4;
-		}
-		while (count--)
-		{
-			*buf++ = val;
-		}
-	}
-
-	void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, unsigned int piCount)
-	{
-		unsigned short coniox_far *d;
-		unsigned short cellword;
-
-		d = piDst;
-		cellword = (unsigned short) (piAttr & 0xFF00);
-		while (piCount >= 4)
-		{
-			d[0] = cellword | (unsigned char) piSrc[0];
-			d[1] = cellword | (unsigned char) piSrc[1];
-			d[2] = cellword | (unsigned char) piSrc[2];
-			d[3] = cellword | (unsigned char) piSrc[3];
-			d += 4;
-			piSrc += 4;
-			piCount -= 4;
-		}
-		while (piCount--)
-		{
-			*d++ = cellword | (unsigned char) *piSrc++;
-		}
-	}
-#endif
-
-/* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_init(const void* title)
 {
 	unsigned int cursor;
@@ -2205,10 +2206,11 @@ void coniox_readnormattr(void)
 {
 	union REGS r;
 
-	/* Real screen attribute for ti.normattr, read at the logical cursor cell: VRAM with directvideo=1, INT 10h AH=08h otherwise (the deferred cursor is flushed first). */
+	coniox_init(NULL);
+	/* Real screen attribute for ti.normattr, read at the logical cursor cell: the coniox_cell cache with directvideo=1, INT 10h AH=08h otherwise (the deferred cursor is flushed first). */
 	if (directvideo)
 	{
-		ti.normattr = (unsigned short)((*coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2) >> 8) & 0xFF);
+		ti.normattr = (unsigned short)((*coniox_cell >> 8) & 0xFF);
 	}
 	else
 	{
@@ -2728,7 +2730,7 @@ void coniox_blink(unsigned int blink)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void delay (unsigned int ms)
 {
-	unsigned long lTicks = 0;
+	unsigned long lTicks;
 	unsigned long lWait, lNow;
 
 	coniox_flush_cursor();
@@ -2763,19 +2765,22 @@ void delay (unsigned int ms)
 		union REGS r;
 		unsigned long lIdleTick = 0xFFFFFFFFUL;
 
+		r.h.ah = 0;	/* INT 1Ah AH=00h: read ticks */
+		coniox_int86(0x1A, &r, &r);
+		#if defined(__WATCOMC__)
+			lTicks = ((unsigned long) r.w.cx << 16) | r.w.dx;
+		#else
+			lTicks = ((unsigned long) r.x.cx << 16) | r.x.dx;
+		#endif
 		while (lWait)
 		{
-			r.h.ah = 0;	/* INT 1Ah AH=00h: read ticks */
+			r.h.ah = 0;
 			coniox_int86(0x1A, &r, &r);
 			#if defined(__WATCOMC__)
 				lNow = ((unsigned long) r.w.cx << 16) | r.w.dx;
 			#else
 				lNow = ((unsigned long) r.x.cx << 16) | r.x.dx;
 			#endif
-			if (lTicks == 0)	/* first lap: set reference */
-			{
-				lTicks = lNow;
-			}
 			if ((lNow - lTicks) >= lWait)
 			{
 				break;
@@ -2826,7 +2831,7 @@ void textmode(int __newmode)
 			#endif
 			r.h.bl = 0x20;
 			coniox_int86(0x10, &r, &r);
-			pokeb(0x40, 0x87, peekb(0x40, 0x87) | 1);       /* Disable cursor size emultation */
+			pokeb(0x40, 0x87, peekb(0x40, 0x87) | 1);       /* Disable cursor size emulation */
 			pokew(0x40, 0x4C, 8000);        /* Correct video buffer size */
 		}
 		else
@@ -2946,6 +2951,7 @@ void _setcursortype(int __cur_t)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textattr(int __newattr)
 {
+	coniox_init(NULL);
 	ti.attribute = (unsigned short) (__newattr & 0xFF);
 }
 
@@ -3326,8 +3332,8 @@ void clrscr(void)
 	{
 		if (ti.winright - ti.winleft + 1 == ti.screenwidth)
 		{
-			/* Full-width block: VRAM rows are contiguous, so a single fill covers all rows */
-			coniox_fmemsetw((unsigned short coniox_far*) coniox_offset(ti.winleft - 1, ti.wintop - 1), (short)((ti.attribute << 8) | ' '), (size_t)ti.screenwidth * (ti.winbottom - ti.wintop + 1));
+			/* Full-width block: VRAM rows are contiguous, so a single fill covers all rows. gotoxy() just left coniox_cell at the first cell. */
+			coniox_fmemsetw(coniox_cell, (short)((ti.attribute << 8) | ' '), (size_t)ti.screenwidth * (ti.winbottom - ti.wintop + 1));
 		}
 		else
 		{
@@ -3339,7 +3345,7 @@ void clrscr(void)
 			width = ti.winright - ti.winleft + 1;
 			height = ti.winbottom - ti.wintop + 1;
 			sw = ti.screenwidth;
-			p = (unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.wintop - 1);
+			p = coniox_cell;
 			for (y = 0; y < height; y++)
 			{
 				coniox_fmemsetw(p, (short) v, (size_t) width);

@@ -166,7 +166,7 @@ extern "C" {
 
 #define PRINTFBUF_SIZE	255
 #include <stdarg.h>	/* va_list, for cvprintf */
-#include <stddef.h>	/* wchar_t en C estricto (wchar_info, getwch, ...) */
+#include <stddef.h>	/* wchar_t in strict C (wchar_info, getwch, ...) */
 
 
 #if ((__DOS__) || (__MSDOS__))
