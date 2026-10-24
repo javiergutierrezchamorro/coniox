@@ -152,7 +152,7 @@ static unsigned short coniox_far *coniox_cell;
 			modify exact [CX SI DI];
 	#endif
 #else
-	#define coniox_fmemcpy      _fmemcpy
+	#define coniox_fmemcpy      _fmemmove
 	void coniox_fmemsetw(void coniox_far *m, short val, size_t count)
 	{
 		short coniox_far *buf = (short coniox_far *) m;
@@ -520,14 +520,14 @@ char *cgets(char *__str)
 	x = ti.curx;
 	y = ti.cury;
 
-	while (ch != '\r')
+	while (ch != '\r' && ch != EOF)
 	{
 		ch = getch();
 		if (ch == 0)
 		{
 			getch();
 		}
-		else
+		else if (ch != '\r' && ch != EOF)
 		{
 			switch (ch)
 			{
@@ -581,7 +581,7 @@ int cvprintf(const char *__format, va_list __arglist)
 		buffer[sizeof(buffer) - 1] = 0;
 	}
 	cputs(buffer);
-	return(r);
+	return((int) strlen(buffer));
 }
 
 
@@ -607,7 +607,7 @@ int cscanf(const char *__format, ...)
 	buffer[0] = PRINTFBUF_SIZE;
 	cgets((char *) buffer);
 	va_start(ap, __format);
-	r = coniox_vsscanf(buffer + 2, __format, ap);
+	r = coniox_vsscanf((const char *) buffer + 2, __format, ap);
 	va_end(ap);
 	return r;
 }
@@ -619,7 +619,7 @@ int getche(void)
 	int ch;
 
 	ch = getch();
-	if (ch != 0)
+	if (ch != 0 && ch != EOF)
 	{
 		putch(ch);
 		coniox_flush_cursor();
@@ -636,18 +636,19 @@ char *getpass(const char *__prompt)
 	int ch = 0;
 	int x, y;
 
+	coniox_init(NULL);
 	cputs(__prompt);
 	x = ti.curx;
 	y = ti.cury;
 
-	while (ch != '\r')
+	while (ch != '\r' && ch != EOF)
 	{
 		ch = getch();
 		if (ch == 0)
 		{
 			getch();
 		}
-		else
+		else if (ch != '\r' && ch != EOF)
 		{
 			switch (ch)
 			{
@@ -739,14 +740,14 @@ wchar_t *cgetws(wchar_t *__str)
 	x = ti.curx;
 	y = ti.cury;
 
-	while (ch != L'\r')
+	while (ch != L'\r' && ch != (wchar_t) EOF)
 	{
 		ch = getwch();
 		if (ch == 0)
 		{
 			getwch();
 		}
-		else
+		else if (ch != L'\r' && ch != (wchar_t) EOF)
 		{
 			switch (ch)
 			{
@@ -898,7 +899,7 @@ int cwprintf(const wchar_t *__format, ...)
 		buffer[sizeof(buffer) / sizeof(buffer[0]) - 1] = 0;
 	}
 	cputws(buffer);
-	return(r);
+	return((int) wcslen(buffer));
 }
 #endif
 
@@ -961,6 +962,7 @@ void coniox_init(const void *title)
 	ti.curx = (unsigned short) info.dwCursorPosition.X + 1;
 	ti.cury = (unsigned short) info.dwCursorPosition.Y + 1;
 	ti.attribute = (unsigned short) info.wAttributes;
+	ti.currmode = (unsigned short) ((ti.screenwidth <= 40) ? C40 : C80);
 	acp = GetACP();
 	if (GetConsoleOutputCP() != acp )
 	{
@@ -981,12 +983,19 @@ void coniox_init(const void *title)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_readnormattr(void)
 {
-	CONSOLE_SCREEN_BUFFER_INFO info;
+	CHAR_INFO ci;
+	COORD c = { 0, 0 }, s = { 1, 1 };
+	SMALL_RECT r;
 
-	/* Read the console default attribute again for ti.normattr: the startup value, not the one textattr() left in ti.attribute. If the read fails (redirected output) the coniox_init() value is kept. */
-	if (GetConsoleScreenBufferInfo(coniox_console_output, &info))
+	coniox_init(NULL);
+	/* Read the real startup attribute for ti.normattr from the cell under the cursor, like the DOS version: GetConsoleScreenBufferInfo returns the attribute textattr() left, not the startup one. If the read fails (redirected output) the coniox_init() value is kept. */
+	r.Left = (short) (ti.winleft + ti.curx - 2);
+	r.Top = (short) (ti.wintop + ti.cury - 2);
+	r.Right = r.Left;
+	r.Bottom = r.Top;
+	if (ReadConsoleOutput(coniox_console_output, &ci, s, c, &r))
 	{
-		ti.normattr = (unsigned short) info.wAttributes;
+		ti.normattr = (unsigned short) ci.Attributes;
 	}
 }
 
@@ -1339,7 +1348,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		return;
 	}
 
-	#if UNICODE
+	#ifdef UNICODE
 		ci[0].Char.UnicodeChar = (wchar_t) ch;
 	#else
 		ci[0].Char.AsciiChar = (char) ch;
@@ -1378,7 +1387,9 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t getwch(void)
 {
-	return(coniox_ansi2unicode((char) getch()));
+	int ch = getch();
+
+	return((ch == EOF) ? (wchar_t) EOF : coniox_ansi2unicode((char) ch));
 }
 
 
@@ -1392,8 +1403,11 @@ wchar_t getwche(void)
 	{
 		ch = getwch();
 	}
-	putwch(ch);
-	coniox_flush_cursor();
+	if (ch != (wchar_t) EOF)
+	{
+		putwch(ch);
+		coniox_flush_cursor();
+	}
 	return(ch);
 }
 
@@ -1417,22 +1431,19 @@ wchar_t coniox_ansi2unicode(char ch)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int getch(void)
 {
-	char car;	/* ReadConsoleA writes 1 byte */
-	DWORD leidos, modo = 0;
+	char ch;	/* ReadConsoleA writes 1 byte */
+	DWORD read, mode = 0;
+	int r;
 
 	coniox_init(NULL);	/* getch() may be the first conio call: ensure handles */
 	coniox_flush_cursor();
-	if (GetConsoleMode(coniox_console_input, &modo))
+	if (GetConsoleMode(coniox_console_input, &mode))
 	{
-		SetConsoleMode(coniox_console_input, modo & ~ENABLE_ECHO_INPUT & ~ENABLE_PROCESSED_INPUT & ~ENABLE_LINE_INPUT);
+		SetConsoleMode(coniox_console_input, mode & ~ENABLE_ECHO_INPUT & ~ENABLE_PROCESSED_INPUT & ~ENABLE_LINE_INPUT);
 	}
-	if (!ReadConsoleA(coniox_console_input, &car, 1, &leidos, NULL) || leidos == 0)
-	{
-		SetConsoleMode(coniox_console_input, modo);
-		return EOF;
-	}
-	SetConsoleMode(coniox_console_input, modo);
-	return((int) ((unsigned char) car));
+	r = (ReadConsoleA(coniox_console_input, &ch, 1, &read, NULL) && read != 0) ? (int) (unsigned char) ch : EOF;
+	SetConsoleMode(coniox_console_input, mode);	/* single restore point */
+	return(r);
 }
 
 
@@ -1486,6 +1497,12 @@ void delline(void)
 
 
 	coniox_init(NULL);
+	/* Last window line (or a one-line window): the scroll rectangle is empty and ScrollConsoleScreenBuffer would fail, so clear the line instead. */
+	if (ti.cury >= ti.winbottom - ti.wintop + 1)
+	{
+		coniox_putchxyattrwh(ti.winleft, ti.wintop + ti.cury - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+		return;
+	}
 	c.X = ti.winleft - 1;
 	c.Y = ti.wintop - 1 + ti.cury - 1;
 	r.Left = ti.winleft - 1;
@@ -1493,7 +1510,7 @@ void delline(void)
 	r.Right = ti.winright - 1;
 	r.Bottom = ti.winbottom - 1;
 	ci.Attributes = ti.attribute;
-	#if UNICODE
+	#ifdef UNICODE
 		ci.Char.UnicodeChar = L' ';
 	#else
 		ci.Char.AsciiChar = ' ';
@@ -1512,6 +1529,12 @@ void insline(void)
 
 
 	coniox_init(NULL);
+	/* Last window line (or a one-line window): the scroll rectangle is empty and ScrollConsoleScreenBuffer would fail, so clear the line instead. */
+	if (ti.cury >= ti.winbottom - ti.wintop + 1)
+	{
+		coniox_putchxyattrwh(ti.winleft, ti.wintop + ti.cury - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+		return;
+	}
 	c.X = ti.winleft - 1;
 	c.Y = ti.wintop - 1 + ti.cury;
 	r.Left = ti.winleft - 1;
@@ -1519,7 +1542,7 @@ void insline(void)
 	r.Right = ti.winright - 1;
 	r.Bottom = ti.winbottom - 2;
 	ci.Attributes = ti.attribute;
-	#if UNICODE
+	#ifdef UNICODE
 		ci.Char.UnicodeChar = L' ';
 	#else
 		ci.Char.AsciiChar = ' ';
@@ -1573,7 +1596,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	}
 	for (i = 0; i < s.X * s.Y; i++)
 	{
-		#if UNICODE
+		#ifdef UNICODE
 			buf[i] = (ci[i].Char.UnicodeChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 		#else
 			buf[i] = (ci[i].Char.AsciiChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
@@ -1680,7 +1703,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 	ci = (short *) __source;
 	for (i = 0; i < s.X * s.Y; i++)
 	{
-		#if UNICODE
+		#ifdef UNICODE
 			buffer[i].Char.UnicodeChar = (wchar_t) (ci[i] & 0xFF);
 		#else
 			buffer[i].Char.AsciiChar = (unsigned char) ci[i] & 0xFF;
@@ -1729,7 +1752,7 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 
 	for (i = 0; i < s.X * s.Y; i++)
 	{
-		#if UNICODE
+		#ifdef UNICODE
 			buffer[i].Char.UnicodeChar = __source[i].letter;
 		#else
 			buffer[i].Char.AsciiChar = (char) __source[i].letter;
@@ -1784,7 +1807,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	}
 	for (i = 0; i < s.X * s.Y; i++)
 	{
-		#if UNICODE
+		#ifdef UNICODE
 			__destin[i].letter = buffer[i].Char.UnicodeChar;
 		#else
 			__destin[i].letter = (unsigned char) buffer[i].Char.AsciiChar;
@@ -1945,7 +1968,7 @@ int kbhit(void)
 		{
 			return(0);
 		}
-		if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown)
+		if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown && ir.Event.KeyEvent.uChar.AsciiChar != 0)
 		{
 			return(1);
 		}
@@ -1997,13 +2020,8 @@ int ungetch(int __ch)
 	ir[0].Event.KeyEvent.wVirtualScanCode = 0;
 	ir[0].Event.KeyEvent.uChar.AsciiChar = (CHAR) __ch;
 	ir[0].Event.KeyEvent.dwControlKeyState = 0;
-	ir[1].EventType = KEY_EVENT;
+	ir[1] = ir[0];
 	ir[1].Event.KeyEvent.bKeyDown = FALSE;
-	ir[1].Event.KeyEvent.wRepeatCount = 1;
-	ir[1].Event.KeyEvent.wVirtualKeyCode = 0;
-	ir[1].Event.KeyEvent.wVirtualScanCode = 0;
-	ir[1].Event.KeyEvent.uChar.AsciiChar = (CHAR) __ch;
-	ir[1].Event.KeyEvent.dwControlKeyState = 0;
 	if (WriteConsoleInput(coniox_console_input, ir, 2, &written) && written == 2)
 	{
 		return(__ch);
@@ -2026,13 +2044,8 @@ wchar_t ungetwch(wchar_t __ch)
 	ir[0].Event.KeyEvent.wVirtualScanCode = 0;
 	ir[0].Event.KeyEvent.uChar.UnicodeChar = __ch;
 	ir[0].Event.KeyEvent.dwControlKeyState = 0;
-	ir[1].EventType = KEY_EVENT;
+	ir[1] = ir[0];
 	ir[1].Event.KeyEvent.bKeyDown = FALSE;
-	ir[1].Event.KeyEvent.wRepeatCount = 1;
-	ir[1].Event.KeyEvent.wVirtualKeyCode = 0;
-	ir[1].Event.KeyEvent.wVirtualScanCode = 0;
-	ir[1].Event.KeyEvent.uChar.UnicodeChar = __ch;
-	ir[1].Event.KeyEvent.dwControlKeyState = 0;
 	if (WriteConsoleInput(coniox_console_input, ir, 2, &written) && written == 2)
 	{
 		return(__ch);
@@ -2800,6 +2813,7 @@ void textmode(int __newmode)
 {
 	union REGS r;
 
+	coniox_init(NULL);
 	if (__newmode == LASTMODE)
 	{
 		__newmode = ti.currmode;
@@ -2942,6 +2956,11 @@ void _setcursortype(int __cur_t)
 		r.h.ch = cursor_start;
 		r.h.cl = cursor_end;
 		coniox_int86(0x10, &r, &r);
+		/* While the cursor was hidden gotoxy() skipped the BIOS position update: reposition it when re-enabled. */
+		if (__cur_t != _NOCURSOR)
+		{
+			gotoxy(ti.curx, ti.cury);
+		}
 	}
 
 }
@@ -3231,11 +3250,6 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 
 	coniox_init(NULL);
 
-	if (__left == __destleft && __top == __desttop)
-	{
-		return 1;
-	}
-
 	/* Coordinates are absolute screen coordinates. Reject empty/out-of-range rectangles. */
 	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
 	{
@@ -3244,6 +3258,10 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	if (__destleft < 1 || __desttop < 1 || __destleft + (__right - __left) > ti.screenwidth || __desttop + (__bottom - __top) > ti.screenheight)
 	{
 		return 0;
+	}
+	if (__left == __destleft && __top == __desttop)
+	{
+		return 1;
 	}
 	if (directvideo)
 	{
@@ -3376,9 +3394,7 @@ void clrscr(void)
 wchar_t getwch(void)
 {
 	coniox_init(NULL);
-	coniox_idle();
-	/* Todo: Implement */
-	return(0);
+	return((wchar_t) getch());
 }
 #endif
 
@@ -3532,13 +3548,14 @@ int ungetch(int __ch)
 	{
 		union REGS r;
 
-		/* INT 16h AH=05h stores the word (scan << 8) | ASCII in the keyboard
-		   buffer: AL = ASCII, CX = scan code. Set AL = __ch and CX = 0 so the
-		   word read back by getch() is exactly __ch. Leaving AL untouched stored
-		   garbage, and CX = __ch turned it into an extended-key word. */
+		/* INT 16h AH=05h takes the key in CX ((scan << 8) | ASCII); AL is output only (0 = success). A zero scan code makes getch() read back exactly __ch. */
 		memset(&r, 0, sizeof(r));
 		r.h.ah = 0x05;
-		r.h.al = (unsigned char) (__ch & 0xFF);
+		#if defined(__WATCOMC__)
+			r.w.cx = (unsigned short) (__ch & 0xFF);
+		#else
+			r.x.cx = (unsigned short) (__ch & 0xFF);
+		#endif
 		coniox_int86(0x16, &r, &r);
 
 		if (r.h.al == 0)
