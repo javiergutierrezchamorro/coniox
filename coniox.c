@@ -35,10 +35,11 @@
 	#define coniox_inline inline
 #endif
 
+coniox_inline int coniox_inwindow(int x, int y);
+coniox_inline void coniox_readnormattr(void);
+coniox_inline void coniox_flush_cursor(void);
 coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr);
 void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
-void coniox_readnormattr(void);
-
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -131,7 +132,6 @@ static unsigned short coniox_far *coniox_cell;
 			modify exact [DI CX];
 		#pragma aux coniox_putrun =                                     \
 			"           cld                                                             "       \
-			"           jcxz    _prdone                                "       \
 			"_prnext:                                                                   "       \
 			"           lodsb                                                   "       \
 			"           mov             ah, bh                                  "       \
@@ -413,18 +413,18 @@ int putch(int __c)
 	switch (__c)
 	{
 		case '\r':
-#if ((__DOS__) || (__MSDOS__))
-			coniox_cell -= ti.curx - 1;
-#endif
+			#if ((__DOS__) || (__MSDOS__))
+				coniox_cell -= ti.curx - 1;
+			#endif
 			ti.curx = 1;
 			coniox_cursor_dirty = 1;
 			break;
 		case '\n':
 			if (ti.cury < winheight)
 			{
-#if ((__DOS__) || (__MSDOS__))
-				coniox_cell += ti.screenwidth;
-#endif
+				#if ((__DOS__) || (__MSDOS__))
+					coniox_cell += ti.screenwidth;
+				#endif
 				ti.cury++;
 				coniox_cursor_dirty = 1;
 			}
@@ -445,32 +445,32 @@ int putch(int __c)
 		case '\b':
 			if (ti.curx > 1)
 			{
-#if ((__DOS__) || (__MSDOS__))
-				--coniox_cell;
-#endif
+				#if ((__DOS__) || (__MSDOS__))
+					--coniox_cell;
+				#endif
 				ti.curx--;
 				coniox_cursor_dirty = 1;
 			}
 			break;
 		default:
-#if ((__DOS__) || (__MSDOS__))
-			if (directvideo)
-			{
-				/* Fast path: write straight into the cached coniox_cell (the same cell coniox_putchxyattr() would compute). */
-				*coniox_cell = (unsigned short) ((ti.attribute << 8) | (__c & 0xFF));
-			}
-			else
-			{
+			#if ((__DOS__) || (__MSDOS__))
+				if (directvideo)
+				{
+					/* Fast path: write straight into the cached coniox_cell (the same cell coniox_putchxyattr() would compute). */
+					*coniox_cell = (unsigned short) ((ti.attribute << 8) | (__c & 0xFF));
+				}
+				else
+				{
+					coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
+				}
+			#else
 				coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
-			}
-#else
-			coniox_putchxyattr(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1, __c, ti.attribute);
-#endif
+			#endif
 			if (ti.curx < winwidth)
 			{
-#if ((__DOS__) || (__MSDOS__))
-				++coniox_cell;
-#endif
+				#if ((__DOS__) || (__MSDOS__))
+					++coniox_cell;
+				#endif
 				ti.curx++;
 				coniox_cursor_dirty = 1;
 			}
@@ -480,9 +480,9 @@ int putch(int __c)
 				{
 					if (ti.cury < winheight)
 					{
-#if ((__DOS__) || (__MSDOS__))
-						coniox_cell += ti.screenwidth - winwidth + 1;
-#endif
+						#if ((__DOS__) || (__MSDOS__))
+							coniox_cell += ti.screenwidth - winwidth + 1;
+						#endif
 						ti.curx = 1;
 						ti.cury++;
 						coniox_cursor_dirty = 1;
@@ -494,9 +494,9 @@ int putch(int __c)
 						ti.cury = 1;
 						delline();
 						ti.cury = oldy;
-#if ((__DOS__) || (__MSDOS__))
-						coniox_cell -= winwidth - 1;
-#endif
+						#if ((__DOS__) || (__MSDOS__))
+							coniox_cell -= winwidth - 1;
+						#endif
 						coniox_cursor_dirty = 1;
 					}
 				}
@@ -1006,7 +1006,7 @@ void coniox_init(const void *title)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_readnormattr(void)
+coniox_inline void coniox_readnormattr(void)
 {
 	CHAR_INFO ci;
 	COORD c = { 0, 0 }, s = { 1, 1 };
@@ -2244,7 +2244,7 @@ void coniox_init(const void* title)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_readnormattr(void)
+coniox_inline void coniox_readnormattr(void)
 {
 	union REGS r;
 

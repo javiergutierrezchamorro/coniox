@@ -703,13 +703,6 @@ void delay(unsigned int ms);
 void coniox_init(const void *title);
 
 
-/**
-Re-reads the console startup attribute into text_info.normattr.
-@see inittextinfo
-*/
-void coniox_readnormattr(void);
-
-
 #define _cgets		cgets
 #define _cprintf	cprintf
 #define _cputs		cputs
