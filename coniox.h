@@ -1,6 +1,6 @@
 /**
 @file coniox.h
-CONIOX v5.0                                                     (c) Copyright 1995-2026 by Javier Gutiérrez Chamorro
+CONIOX v5.0                                                     (c) Copyright 1995-2026 by Javier Gutiï¿½rrez Chamorro
                                                             https://nikkhokkho.sourceforge.io/static.php?page=CONIOX
 
 
@@ -15,7 +15,7 @@ DIRIO 2.4 - Oct 1995
 De Trans Software (D.T.S.)
 
 DIRIO 4.0 - Sep 2000
-Javier Gutiérrez Chamorro
+Javier Gutiï¿½rrez Chamorro
 
 CONIO 1.31 - Aug 2005 
 C++ Con Clase (Salvador Pozo Coronado / Fru <elfrucool@yahoo.com.mx>)
@@ -166,6 +166,7 @@ extern "C" {
 
 #define PRINTFBUF_SIZE	255
 #include <stdarg.h>	/* va_list, para cvprintf */
+#include <stddef.h>	/* wchar_t en C estricto (wchar_info, getwch, ...) */
 
 
 #if ((__DOS__) || (__MSDOS__))
@@ -702,6 +703,13 @@ void delay(unsigned int ms);
 void coniox_init(const void *title);
 
 
+/**
+Re-reads the console startup attribute into text_info.normattr.
+@see inittextinfo
+*/
+void coniox_readnormattr(void);
+
+
 #define _cgets		cgets
 #define _cprintf	cprintf
 #define _cputs		cputs
@@ -774,10 +782,15 @@ wchar_t  putwch(wchar_t);
 	int      cputws( const wchar_t *__str );
 	wchar_t  ungetwch( wchar_t );
 	wchar_t  getwche(void);
-	int cwscanf( const wchar_t *__format, ... );
-	int cwprintf( const wchar_t *__format, ... );
-	int putwtext( int __left, int __top, int __right, int __bottom, const wchar_info *__source );
-	int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__destin);
+	/* cwscanf/cwprintf/putwtext/getwtext solo existen en la rama Windows
+	   (el DOS no dispone de swscanf/vswprintf portables); declararlas sin
+	   condicion producia errores de enlace en DOS+UNICODE. */
+	#if (((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32))
+		int cwscanf( const wchar_t *__format, ... );
+		int cwprintf( const wchar_t *__format, ... );
+		int putwtext( int __left, int __top, int __right, int __bottom, const wchar_info *__source );
+		int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__destin);
+	#endif
 #endif
 
 #pragma pack(pop)

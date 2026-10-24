@@ -102,6 +102,13 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 			{
 				p++;
 			}
+			// Saltar modificadores de tamano (h, hh, l, ll): el argumento de tamano
+			// de sscanf_s depende solo del especificador final, y formas como
+			// %ls/%lc tambien lo exigen.
+			while (*p == 'h' || *p == 'l')
+			{
+				p++;
+			}
 			// Detectar especificadores que requieren tama�o adicional
 			#ifdef _MSC_VER
 				if (count >= 39)	/* a[40]: par buffer+tamano, ultimo indice 39 */
@@ -163,7 +170,8 @@ void clreol(void)
 void inittextinfo(void)
 {
 	coniox_init(NULL);
-    ti.normattr = 7;
+    ti.normattr = 7;		/* fallback si la consola no permite leer el atributo real */
+    coniox_readnormattr();	/* C: atributo real de arranque, como el conio clasico (antes: siempre 7) */
     textattr(ti.normattr);
 }
 
@@ -264,6 +272,11 @@ int putch(int __c)
 
 	winwidth  = ti.winright  - ti.winleft + 1;
 	winheight = ti.winbottom - ti.wintop  + 1;
+
+	if (ti.curx > winwidth)
+	{
+		ti.curx = winwidth;	/* la ventana se encogio: mismo clamp defensivo que en cputs() */
+	}
 
 	switch (__c)
 	{
@@ -372,6 +385,9 @@ char *cgets(char *__str)
 	x = ti.curx;
 	y = ti.cury;
 
+	/* La edicion asume que no se cruza el borde de la ventana: el borrado
+	   (\b) repinta en la misma linea y no sigue el envoltorio de putch()
+	   (limitacion heredada del conio clasico). */
 	while (ch != '\r')
 	{
 		ch = getch();
@@ -423,7 +439,13 @@ int cvprintf(const char *__format, va_list __arglist)
 		r = vsnprintf(buffer, PRINTFBUF_SIZE, __format, __arglist);
 	#elif defined(__WATCOMC__)
 		r = _vsnprintf(buffer, PRINTFBUF_SIZE, __format, __arglist);
+	#elif defined(__DJGPP__)
+		r = vsnprintf(buffer, PRINTFBUF_SIZE, __format, __arglist);
 	#else
+		/* Borland/DigitalMars: sin vsnprintf disponible. Una salida que exceda
+		   PRINTFBUF_SIZE seguiria desbordando la pila aqui: mantener los formatos
+		   por debajo de ese tamano (DJGPP y las ramas Windows/Watcom ya recortan
+		   de forma segura). */
 		r = vsprintf(buffer, __format, __arglist);
 	#endif
 	if (r < 0)
@@ -459,9 +481,9 @@ int cscanf(const char *__format, ...)
 
 	va_list ap;
 	buffer[0] = PRINTFBUF_SIZE;
-	cgets(buffer);
+	cgets((char *) buffer);
 	va_start(ap, __format);
-	r = coniox_vsscanf(buffer + 2, __format, ap);
+	r = coniox_vsscanf((const char *) (buffer + 2), __format, ap);
 	va_end(ap);
 	return r;
 }
@@ -494,6 +516,8 @@ char *getpass(const char *__prompt)
 	x = ti.curx;
 	y = ti.cury;
 
+	/* Misma limitacion que cgets(): la edicion no cruza el borde de la
+	   ventana (sin envoltorio durante la entrada). */
 	while (ch != '\r')
 	{
 		ch = getch();
@@ -525,6 +549,57 @@ char *getpass(const char *__prompt)
 	}
 	str[length] = 0;
 	return(str);
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+int movetext(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
+{
+	unsigned short *buffer;
+	int result;
+	
+	
+	coniox_init(NULL);
+	
+	if (__left == __destleft && __top == __desttop)
+	{
+		return 1;
+	}
+	
+	/* Coordinates are absolute screen coordinates. Reject empty/out-of-range rectangles. */
+	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
+	{
+		return 0;
+	}
+	if (__destleft < 1 || __desttop < 1 || __destleft + (__right - __left) > ti.screenwidth || __desttop + (__bottom - __top) > ti.screenheight)
+	{
+		return 0;
+	}
+	if ((unsigned int) (__right - __left + 1) * (unsigned int) (__bottom - __top + 1) > (unsigned int) CONIOX_MAX_CHARINFO)
+	{
+		return 0;
+	}
+	
+	/* C: copia sin borrar via gettext+puttext, como el DOS clasico, ahora en las
+	   dos plataformas (semantica Borland unificada: el rectangulo origen queda
+	   intacto; antes la rama Windows borraba el origen via
+	   ScrollConsoleScreenBuffer). El snapshot intermedio resuelve el solape
+	   origen/destino. El buffer se reserva con malloc del tamano justo: sin los
+	   32 KB estaticos permanentes en DOS16 y con el mismo techo explicito
+	   (CONIOX_MAX_CHARINFO) que gettext()/puttext(). */
+	buffer = (unsigned short *) malloc((size_t) (__right - __left + 1) * (size_t) (__bottom - __top + 1) * sizeof(unsigned short));
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+	if (!gettext(__left, __top, __right, __bottom, buffer))
+	{
+		free(buffer);
+		return 0;
+	}
+	result = puttext(__destleft, __desttop, __destleft + (__right - __left), __desttop + (__bottom - __top), buffer);
+	free(buffer);
+	return(result);
 }
 
 
@@ -570,29 +645,70 @@ int cputsportable(const char *__str)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr)
 {
-	void *a[20] = { NULL };
+	void *a[40] = { NULL };
 	size_t count = 0;
 	const wchar_t *p;
-
-
-	p = format;
-	while (1)
+	wchar_t c;
+	
+	if (!buffer || !format)
 	{
-		wchar_t c = *(p++);
-		if (c == 0)
+		return(0);
+	}
+	
+	p = format;
+	while ((c = *p++) != 0)
+	{
+		if (c == L'%')
 		{
-			break;
-		}
-		if (c == L'%' && (p[0] != L'*' && p[0] != L'%'))
-		{
-			if (count >= 20)	/* swscanf_s se llama con 20 argumentos */
+			if (*p == L'%')
 			{
-				break;
+				p++;
+				continue;
 			}
-			a[count++] = va_arg(argPtr, void*);
+			if (*p == L'*')
+			{
+				p++;
+				continue;
+			}
+			// Saltar ancho y modificadores de tamano: misma clasificacion que
+			// coniox_vsscanf (s, c y [ llevan argumento de tamano solo en sscanf_s).
+			while (*p >= L'0' && *p <= L'9')
+			{
+				p++;
+			}
+			while (*p == L'h' || *p == L'l')
+			{
+				p++;
+			}
+			#ifdef _MSC_VER
+				if (count >= 39)	/* a[40]: par buffer+tamano, ultimo indice 39 */
+				{
+					break;
+				}
+			#else
+				if (count >= 20)	/* swscanf_s se llama con 20 argumentos */
+				{
+					break;
+				}
+			#endif
+			if (*p == L's' || *p == L'c' || *p == L'[')
+			{
+				a[count++] = va_arg(argPtr, void *);		/* buffer */
+				#ifdef _MSC_VER
+					a[count++] = va_arg(argPtr, size_t *);	/* tamano: solo swscanf_s */
+				#endif
+			}
+			else
+			{
+				a[count++] = va_arg(argPtr, void *);
+			}
 		}
 	}
-	return(swscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
+	#ifdef _MSC_VER
+		return(swscanf_s(buffer, format,	a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19],	a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39]));
+	#else
+		return(swscanf_s(buffer, format, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]));
+	#endif
 }
 
 
@@ -679,6 +795,11 @@ wchar_t putwch(wchar_t __c)
 
 	winwidth = ti.winright - ti.winleft + 1;
 	winheight = ti.winbottom - ti.wintop + 1;
+
+	if (ti.curx > winwidth)
+	{
+		ti.curx = winwidth;	/* la ventana se encogio: mismo clamp defensivo que en cputs() */
+	}
 
 	switch (__c)
 	{
@@ -807,6 +928,7 @@ int cwprintf(const wchar_t *__format, ...)
 #include <wchar.h>
 HANDLE coniox_console_output = NULL;
 HANDLE coniox_console_input = NULL;
+static CHAR_INFO coniox_charinfo[CONIOX_MAX_CHARINFO];	/* estatica: 64 KB no caben en la pila. Scratch compartido por cputs, coniox_putchxyattrwh, gettext, puttext, putwtext y getwtext: uso secuencial y nunca solapado; ahorra 5 x 64 KB de BSS. */
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -864,7 +986,7 @@ void coniox_init(const void *title)
 
 	if (title)
 	{
-		SetConsoleTitle(title);
+		SetConsoleTitleA((const char *) title);	/* title es const void*: sin cast no compila en C++ (el header soporta extern "C"); version A, valida con y sin UNICODE */
 	}
 }
 
@@ -896,7 +1018,7 @@ int cputs(const char *__str)
 	unsigned int winwidth, winheight;
 	int oldx, oldy;
 	COORD c = { 0, 0 };
-	static CHAR_INFO ci[CONIOX_MAX_CHARINFO];	/* estatica: 64 KB no caben en la pila (igual que en putchxyattrwh) */
+	CHAR_INFO *ci = coniox_charinfo;	/* scratch compartido (ver coniox_charinfo) */
 
 	if (__str == NULL)
 	{
@@ -934,12 +1056,17 @@ int cputs(const char *__str)
 			}
 			else if (_wscroll)
 			{
-				/* LF: keep the column, like Borland cputs. */
+				/* LF: keep the column, like Borland cputs. delline() solo lee ti:
+				   el baile toca ti directamente, como putch()/putwch(), sin mover
+				   dos veces el cursor fisico. El gotoxy() de cierre de cputs()
+				   deja el sync. */
 				oldx = ti.curx;
 				oldy = ti.cury;
-				gotoxy(1, 1);
+				ti.curx = 1;
+				ti.cury = 1;
 				delline();
-				gotoxy(oldx, oldy);
+				ti.curx = oldx;
+				ti.cury = oldy;
 			}
 			/* _wscroll = 0: LF on the last line does not scroll. */
 			++__str;
@@ -1081,7 +1208,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	int total;
 	SMALL_RECT r;
 	COORD s, c;
-	static CHAR_INFO ci[CONIOX_MAX_CHARINFO];
+	CHAR_INFO *ci = coniox_charinfo;	/* scratch compartido (ver coniox_charinfo) */
 	
 	if (w <= 0 || h <= 0)
 	{
@@ -1138,13 +1265,16 @@ wchar_t getwche(void)
 {
 	wchar_t ch;
 
+	/* Patron DOS preservado: una tecla extendida devuelve 0 aqui y el codigo
+	   en la siguiente llamada, igual que getche() y lo que esperan las
+	   constantes KEY_* de coniox.h. El bucle anterior consumia el 0 y
+	   colapsaba ambas llamadas en una (la flecha arriba llegaba como H). */
 	ch = getwch();
-	while (ch == 0)
+	if (ch != 0)
 	{
-		ch = getwch();
+		putwch(ch);
+		coniox_flush_cursor();	/* C: el eco deja el cursor fisico al dia */
 	}
-	putwch(ch);
-	coniox_flush_cursor();	/* C: el eco deja el cursor fisico al dia */
 	return(ch);
 }
 
@@ -1263,6 +1393,15 @@ void delline(void)
 	#else
 		ci.Char.AsciiChar = ' ';
 	#endif
+	if (r.Top > r.Bottom)
+	{
+		/* Cursor en la ultima fila (o ventana de 1 fila): no hay filas que
+		   desplazar y el rectangulo de scroll seria rechazado. Borland limpia
+		   la fila del cursor; antes ScrollConsoleScreenBuffer fallaba en
+		   silencio y la fila quedaba sin borrar. */
+		coniox_putchxyattrwh(ti.winleft, ti.wintop + ti.cury - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+		return;
+	}
 	ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci);
 	/* C: el scroll no mueve el cursor de consola; el gotoxy() de cierre sobraba
 	   y, durante el baile de scroll de putch()/putwch() (ti apuntando a (1,1)),
@@ -1291,6 +1430,14 @@ void insline(void)
 	#else
 		ci.Char.AsciiChar = ' ';
 	#endif
+	if (r.Top > r.Bottom)
+	{
+		/* Cursor en la ultima fila (o ventana de 1 fila): no cabe insercion y
+		   el rectangulo de scroll seria rechazado. Borland limpia la fila del
+		   cursor; antes ScrollConsoleScreenBuffer fallaba en silencio. */
+		coniox_putchxyattrwh(ti.winleft, ti.wintop + ti.cury - 1, ' ', ti.attribute, ti.winright - ti.winleft + 1, 1);
+		return;
+	}
 	ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci );
 	/* C: el scroll no mueve el cursor de consola; el gotoxy() de cierre sobraba
 	   y, durante el baile de scroll de putch()/putwch() (ti apuntando a (1,1)),
@@ -1306,12 +1453,12 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	SMALL_RECT r;
 	short *buf;
 	COORD s, c = { 0,0 };
-	static CHAR_INFO ci[CONIOX_MAX_CHARINFO];
+	CHAR_INFO *ci = coniox_charinfo;	/* scratch compartido (ver coniox_charinfo) */
 
 
 	coniox_init(NULL);
 	/* Validacion estilo Borland: rectangulo dentro de la pantalla absoluta. */
-	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
+	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (unsigned int) (__right - __left + 1) * (unsigned int) (__bottom - __top + 1) > (unsigned int) CONIOX_MAX_CHARINFO)
 	{
 		return(0);
 	}
@@ -1340,43 +1487,6 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 }
 
 
-/* ----------------------------------------------------------------------------------------------------------------- */
-int movetext(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
-{
-	COORD c;
-	SMALL_RECT r;
-	CHAR_INFO ci;
-
-	coniox_init(NULL);
-
-	/* Validacion estilo Borland: origen y destino dentro de la pantalla. */
-	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top ||
-		__right > ti.screenwidth || __bottom > ti.screenheight)
-	{
-		return(0);
-	}
-	if (__destleft < 1 || __desttop < 1 ||
-		__destleft + (__right - __left) > ti.screenwidth ||
-		__desttop + (__bottom - __top) > ti.screenheight)
-	{
-		return(0);
-	}
-
-	r.Left = (short) __left - 1;
-	r.Top = (short) __top - 1;
-	r.Right = (short)__right - 1;
-	r.Bottom = (short) __bottom - 1;
-	c.X = (short) __destleft - 1;
-	c.Y = (short) __desttop - 1;
-	#if UNICODE
-		ci.Char.UnicodeChar = L' ';
-	#else
-		ci.Char.AsciiChar = ' ';
-	#endif
-	ci.Attributes = ti.attribute;
-	ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci);
-	return(1);
-}
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1386,12 +1496,12 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 	SMALL_RECT r;
 	short *ci;
 	COORD s, c = { 0,0 };
-	static CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
+	CHAR_INFO *buffer = coniox_charinfo;	/* scratch compartido (ver coniox_charinfo) */
 
 
 	coniox_init(NULL);
 	/* Validacion estilo Borland: rectangulo dentro de la pantalla absoluta. */
-	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
+	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (unsigned int) (__right - __left + 1) * (unsigned int) (__bottom - __top + 1) > (unsigned int) CONIOX_MAX_CHARINFO)
 	{
 		return(0);
 	}
@@ -1425,12 +1535,12 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 	int i;
 	SMALL_RECT r;
 	COORD s, c = { 0,0 };
-	static CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
+	CHAR_INFO *buffer = coniox_charinfo;	/* scratch compartido (ver coniox_charinfo) */
 
 
 	coniox_init(NULL);
 	/* Validacion estilo Borland: rectangulo dentro de la pantalla absoluta. */
-	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
+	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (unsigned int) (__right - __left + 1) * (unsigned int) (__bottom - __top + 1) > (unsigned int) CONIOX_MAX_CHARINFO)
 	{
 		return(0);
 	}
@@ -1462,12 +1572,12 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	int i;
 	SMALL_RECT r;
 	COORD s, c = { 0,0 };
-	static CHAR_INFO buffer[CONIOX_MAX_CHARINFO];
+	CHAR_INFO *buffer = coniox_charinfo;	/* scratch compartido (ver coniox_charinfo) */
 
 
 	coniox_init(NULL);
 	/* Validacion estilo Borland: rectangulo dentro de la pantalla absoluta. */
-	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (__right - __left + 1) * (__bottom - __top + 1) > CONIOX_MAX_CHARINFO)
+	if (__left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top || (unsigned int) (__right - __left + 1) * (unsigned int) (__bottom - __top + 1) > (unsigned int) CONIOX_MAX_CHARINFO)
 	{
 		return(0);
 	}
@@ -1503,110 +1613,77 @@ void textmode(int __newmode)
 		CONSOLE_SCREEN_BUFFER_INFOEX info;
 	#endif
 	SMALL_RECT r;
-
-
+	
+	
 	coniox_init(NULL);
-
+	
 	#if __ZTC__
 		GetConsoleScreenBufferInfo(coniox_console_output, &info);
 	#else
 		info.cbSize = sizeof(info);
 		GetConsoleScreenBufferInfoEx(coniox_console_output, &info);
 	#endif
-
+	
 	if (__newmode == LASTMODE)
 	{
 		__newmode = ti.currmode;
 	}
 	if (__newmode != ti.currmode)
 	{
-		switch (__newmode)
+		/* Tabla de modos: equivalente 1:1 al switch anterior, incluido el
+		   default 80x25 para modos desconocidos (unos 100 casos a 20 lineas). */
+		static const struct
 		{
-			case C40X14:
-			case BW40X14:
-				info.dwSize.X = 40;
-				info.dwSize.Y = 14;
+			int mode;
+			int width;
+			int height;
+		} coniox_textmodes[] = {
+			/* DOS-compatible modes */
+			{ BW40, 40, 25 },	{ C40, 40, 25 },
+			{ BW80, 80, 25 },	{ C80, 80, 25 },
+			{ MONO, 80, 25 },	{ C4350, 80, 50 },
+			/* New Color modes */
+			{ C40X14, 40, 14 },	{ C40X21, 40, 21 },	{ C40X28, 40, 28 },
+			{ C40X43, 40, 43 },	{ C40X50, 40, 50 },	{ C40X60, 40, 60 },
+			{ C80X14, 80, 14 },	{ C80X21, 80, 21 },	{ C80X28, 80, 28 },
+			{ C80X43, 80, 43 },	{ C80X50, 80, 50 },	{ C80X60, 80, 60 },
+			/* New Black & White modes */
+			{ BW40X14, 40, 14 },	{ BW40X21, 40, 21 },	{ BW40X28, 40, 28 },
+			{ BW40X43, 40, 43 },	{ BW40X50, 40, 50 },	{ BW40X60, 40, 60 },
+			{ BW80X14, 80, 14 },	{ BW80X21, 80, 21 },	{ BW80X28, 80, 28 },
+			{ BW80X43, 80, 43 },	{ BW80X50, 80, 50 },	{ BW80X60, 80, 60 },
+			/* New Monochrome modes */
+			{ MONO14, 80, 14 },	{ MONO21, 80, 21 },	{ MONO28, 80, 28 },
+			{ MONO43, 80, 43 },	{ MONO50, 80, 50 },	{ MONO60, 80, 60 },
+			/* _ORIGMODE: modo original al arrancar */
+			{ _ORIGMODE, 80, 25 }
+		};
+		unsigned int k;
+	
+		info.dwSize.X = 80;
+		info.dwSize.Y = 25;
+		for (k = 0; k < sizeof(coniox_textmodes) / sizeof(coniox_textmodes[0]); k++)
+		{
+			if (coniox_textmodes[k].mode == __newmode)
+			{
+				info.dwSize.X = coniox_textmodes[k].width;
+				info.dwSize.Y = coniox_textmodes[k].height;
 				break;
-			case C40X21:
-			case BW40X21:
-				info.dwSize.X = 40;
-				info.dwSize.Y = 21;
-				break;
-			case C40X28:
-			case BW40X28:
-				info.dwSize.X = 40;
-				info.dwSize.Y = 28;
-				break;
-			case C40X43:
-			case BW40X43:
-				info.dwSize.X = 40;
-				info.dwSize.Y = 43;
-				break;
-			case C40X50:
-			case BW40X50:
-				info.dwSize.X = 40;
-				info.dwSize.Y = 50;
-				break;
-			case C40X60:
-			case BW40X60:
-				info.dwSize.X = 40;
-				info.dwSize.Y = 60;
-				break;
-			case MONO14:
-			case C80X14:
-			case BW80X14:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 14;
-				break;
-			case MONO21:
-			case C80X21:
-			case BW80X21:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 21;
-				break;
-			case MONO28:
-			case C80X28:
-			case BW80X28:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 28;
-				break;
-			case MONO43:
-			case C80X43:
-			case BW80X43:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 43;
-				break;
-			case MONO50:
-			case C80X50:
-			case BW80X50:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 50;
-				break;
-			case MONO60:
-			case C80X60:
-			case BW80X60:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 60;
-				break;
-			case C4350:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 50;
-				break;
-			case BW40:
-			case C40:
-				info.dwSize.X = 40;
-				info.dwSize.Y = 25;
-				break;
-			case BW80:
-			case C80:
-			case _ORIGMODE:
-			case MONO:
-			default:
-				info.dwSize.X = 80;
-				info.dwSize.Y = 25;
+			}
 		}
+		
 		//DigitalMars crashes if used
 		#if (!__ZTC__)
+			/* SetConsoleScreenBufferInfoEx falla si el nuevo buffer es mas pequeno que
+			   la ventana actual (p. ej. de 80x50 a C80): encoger primero la ventana al
+			   minimo comun, fijar el buffer y despues agrandarla al tamano completo del
+			   nuevo modo. Antes, encoger un modo fallaba en silencio y ti quedaba sin
+			   actualizar. */
+			r.Left = info.srWindow.Left;
+			r.Top = info.srWindow.Top;
+			r.Right = (short) (r.Left + ((info.srWindow.Right - info.srWindow.Left + 1 <= info.dwSize.X) ? (info.srWindow.Right - info.srWindow.Left) : (info.dwSize.X - 1)));
+			r.Bottom = (short) (r.Top + ((info.srWindow.Bottom - info.srWindow.Top + 1 <= info.dwSize.Y) ? (info.srWindow.Bottom - info.srWindow.Top) : (info.dwSize.Y - 1)));
+			SetConsoleWindowInfo(coniox_console_output, TRUE, &r);
 			if (SetConsoleScreenBufferInfoEx(coniox_console_output, &info))
 			{
 				r.Left = 0;
@@ -2450,6 +2527,13 @@ int coniox_get_is_emulator (void)
 {
 	unsigned char result;
 
+	/*
+		Heuristica, no garantia: escribe y lee el puerto 0x4F4. En hardware real
+		los puertos no decodificados suelen leer 0xFF (bus flotante), asi que esta
+		prueba puede dar falsos positivos en maquinas reales. El unico efecto es
+		elegir la ruta BIOS (mas lenta, igual de correcta) en delline()/insline();
+		el resultado pintado no cambia nunca.
+	*/
 	outportb(0x04F4, 0x00);
 	result = inportb(0x04F4);
 	return (result == 0xFF);
@@ -2690,38 +2774,6 @@ void _setcursortype(int __cur_t)
 	
 	coniox_init(NULL);
 	coniox_setcursortype = __cur_t;
-	switch (__cur_t)
-	{
-		case _NOCURSOR:
-			cursor_start = 0x20;
-			cursor_end = 0;
-			break;
-		case _SOLIDCURSOR:
-			if (ti.screenheight == 43)
-			{
-				cursor_start = 0;
-				cursor_end = 8;
-			}
-			else
-			{
-				cursor_start = 0;
-				cursor_end = ti.currmode == MONO ? 12 : 7;
-			}
-			break;
-		case _NORMALCURSOR:
-		default:
-			if (ti.currmode == MONO)
-			{
-				cursor_start = 11;
-				cursor_end = 12;
-			}
-			else
-			{
-				cursor_start = 6;
-				cursor_end = ti.screenheight == 43 ? 0 : 7;
-			}
-	}
-	
 	
 	if (directvideo)
 	{
@@ -2733,9 +2785,14 @@ void _setcursortype(int __cur_t)
 		{
 			cellheight = 16;
 		}
+		/* Un solo switch: antes habia dos (el segundo recalculaba para las formas
+		   escaladas a la celda real lo que el primero ya habia calculado para
+		   INT 10h, y _NOCURSOR heredaba valores entre ambos). */
 		switch (__cur_t)
 		{
 			case _NOCURSOR:
+				cursor_start = 0x20;
+				cursor_end = 0;
 				break;
 			case _SOLIDCURSOR:
 				cursor_start = 0;
@@ -2745,28 +2802,51 @@ void _setcursortype(int __cur_t)
 			default:
 				cursor_start = cellheight - 2;
 				cursor_end = cellheight - 1;
-				break;
 		}
 		outportb(coniox_basecrt, 0x0A);
 		outportb(coniox_basecrt + 1, cursor_start);
 		outportb(coniox_basecrt, 0x0B);
 		outportb(coniox_basecrt + 1, cursor_end);
-		
-		/* Re-program the cursor address: while the cursor was hidden gotoxy()
-		   skipped the CRTC update, so 0x0E/0x0F can hold a stale position.
-		   gotoxy() syncs both BDA 0040:0050 and CRTC 0x0E/0x0F. */
-		if (__cur_t != _NOCURSOR)
-		{
-			gotoxy(ti.curx, ti.cury);
-		}
 	}
 	else
 	{
 		union REGS r;
+		switch (__cur_t)
+		{
+			case _NOCURSOR:
+				cursor_start = 0x20;
+				cursor_end = 0;
+				break;
+			case _SOLIDCURSOR:
+				cursor_start = 0;
+				cursor_end = ti.screenheight == 43 ? 8 : (ti.currmode == MONO ? 12 : 7);
+				break;
+			case _NORMALCURSOR:
+			default:
+				if (ti.currmode == MONO)
+				{
+					cursor_start = 11;
+					cursor_end = 12;
+				}
+				else
+				{
+					cursor_start = 6;
+					cursor_end = ti.screenheight == 43 ? 0 : 7;
+				}
+		}
 		r.h.ah = 0x1;
 		r.h.ch = cursor_start;
 		r.h.cl = cursor_end;
 		coniox_int86(0x10, &r, &r);
+	}
+	
+	/* Re-program the cursor address: while the cursor was hidden gotoxy()
+	   skipped the cursor update, so a stale position can survive on both paths.
+	   gotoxy() syncs BDA 0040:0050 + CRTC 0x0E/0x0F (directvideo) o ejecuta
+	   INT 10h AH=02h (BIOS). La ruta BIOS no reposicionaba antes. */
+	if (__cur_t != _NOCURSOR)
+	{
+		gotoxy(ti.curx, ti.cury);
 	}
 }
 
@@ -2994,43 +3074,6 @@ int puttext(int __left, int __top, int __right, int __bottom,
 	return 1;
 }
 
-/* ----------------------------------------------------------------------------------------------------------------- */
-int movetext(int __left, int __top, int __right, int __bottom, int __destleft, int __desttop)
-{
-	static unsigned short buffer[CONIOX_MAX_CHARINFO];
-
-
-	coniox_init(NULL);
-
-	if (__left == __destleft && __top == __desttop)
-	{
-		return 1;
-	}
-
-	/* Coordinates are absolute screen coordinates. Reject empty/out-of-range rectangles. */
-	if (__left < 1 || __top < 1 || __right < __left || __bottom < __top || __right > ti.screenwidth || __bottom > ti.screenheight)
-	{
-		return 0;
-	}
-	if (__destleft < 1 || __desttop < 1 || __destleft + (__right - __left) > ti.screenwidth || __desttop + (__bottom - __top) > ti.screenheight)
-	{
-		return 0;
-	}
-	if ((__right - __left + 1) * (__bottom - __top + 1) > (int) CONIOX_MAX_CHARINFO)
-	{
-		return 0;
-	}
-
-	/* C: copia sin borrar via gettext+puttext, como el DOS clasico. El snapshot
-	   intermedio resuelve el solape origen/destino y el rectangulo origen queda
-	   intacto. La rama Windows si borra el origen (ScrollConsoleScreenBuffer):
-	   ahi la semantica es distinta a proposito. */
-	if (!gettext(__left, __top, __right, __bottom, buffer))
-	{
-		return 0;
-	}
-	return puttext(__destleft, __desttop, __destleft + (__right - __left), __desttop + (__bottom - __top), buffer);
-}
 
 
 
@@ -3072,10 +3115,12 @@ void clrscr(void)
 #if defined(UNICODE)
 wchar_t getwch(void)
 {
+	/* Las celdas de texto DOS son de 8 bits: el caracter llega en el byte
+	   inferior del wchar_t. Las teclas extendidas conservan el patron DOS
+	   0 + scan code de getch(), que es lo que esperan las constantes KEY_*.
+	   getch() ya cede el timeslice con coniox_idle() mientras espera. */
 	coniox_init(NULL);
-	coniox_idle();
-	/* Todo: Implement */
-	return(0);
+	return((wchar_t) getch());
 }
 #endif
 
@@ -3085,7 +3130,7 @@ int kbhit(void)
 {
 	if (getch_last_extended_key)
 	{
-		return(getch_last_extended_key);
+		return(1);	/* booleano coherente con la rama Windows (antes devolvia el scan code) */
 	}
 
 	coniox_flush_cursor();  /* B: el cursor fisico al dia antes de esperar teclado */
@@ -3235,4 +3280,121 @@ int ungetch(int __ch)
 		}
 	}
 }
+
+#if defined(UNICODE)
+/* ----------------------------------------------------------------------------------------------------------------- */
+wchar_t putwch(wchar_t __c)
+{
+	/* Las celdas de texto DOS son de 8 bits: el caracter se trunca al byte
+	   inferior y el pintado, relleno y envoltorio son exactamente los de
+	   putch(). Antes esta funcion solo existia en Windows mientras el header
+	   la declaraba siempre: usarla en DOS daba error de enlace. */
+	putch((int) (__c & 0xFF));
+	return(__c);
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+wchar_t getwche(void)
+{
+	wchar_t ch;
+	
+	/* Patron DOS preservado: tecla extendida = 0 aqui + codigo en la siguiente
+	   llamada, igual que getche() y lo que esperan las constantes KEY_*. */
+	ch = getwch();
+	if (ch != 0)
+	{
+		putwch(ch);
+		coniox_flush_cursor();	/* C: el eco deja el cursor fisico al dia */
+	}
+	return(ch);
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+wchar_t *cgetws(wchar_t *__str)
+{
+	wchar_t *str;
+	int maxlen;
+	int length = 0;
+	wchar_t ch = 0;
+	int x, y;
+	
+	coniox_init(NULL);
+	if (__str == NULL)
+	{
+		return(NULL);
+	}
+	
+	str = __str + 2;
+	maxlen = (int) __str[0] - 1;
+	x = ti.curx;
+	y = ti.cury;
+	
+	/* Misma limitacion que cgets(): la edicion no cruza el borde de la ventana
+	   (sin envoltorio durante la entrada). */
+	while (ch != L'\r')
+	{
+		ch = getwch();
+		if (ch == 0)
+		{
+			getwch();
+		}
+		else
+		{
+			switch (ch)
+			{
+				case L'\r':
+					break;
+				case L'\b':
+					if (length > 0)
+					{
+						coniox_putchxyattr(ti.winleft + x - 1 + --length, ti.wintop + y - 1, ' ', ti.attribute);
+					}
+					gotoxy(x + length, y);
+					break;
+				default:
+					if (length < maxlen)
+					{
+						putwch(ch);
+						str[length++] = ch;
+					}
+			}
+		}
+	}
+	__str[1] = (wchar_t) length;
+	str[length] = 0;
+	return str;
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+int cputws(const wchar_t *__str)
+{
+	int k = 0;
+	
+	while (*__str)
+	{
+		putwch(*__str);
+		++__str;
+		++k;
+	}
+	coniox_flush_cursor();	/* C: un sync por cadena, no por caracter */
+	return k;
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+wchar_t ungetwch(wchar_t __ch)
+{
+	/* El buffer de teclado BIOS guarda palabras ASCII+scan: solo cabe el byte
+	   inferior del wchar_t. */
+	if (ungetch((int) (__ch & 0xFF)) == EOF)
+	{
+		return((wchar_t) EOF);
+	}
+	return(__ch);
+}
+#endif
+
 #endif
