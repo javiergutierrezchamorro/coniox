@@ -24,22 +24,18 @@
 
 
 #if defined(__WATCOMC__)
-	#define coniox_inline static __inline
-#elif defined(__BORLANDC__)
-	#if (__BORLANDC__ >= 0x450)
-		#define coniox_inline static __inline
-	#else
-		#define coniox_inline static
-	#endif
+	#define coniox_inline __inline
+#elif defined(__TURBOC__) && (__BORLANDC__ >= 0x450)
+	#define coniox_inline __inline
 #else
 	#define coniox_inline inline
 #endif
 
-coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr);
-void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
-coniox_inline int coniox_inwindow(int x, int y);
-coniox_inline void coniox_readnormattr(void);
-coniox_inline void coniox_flush_cursor(void);
+static coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr);
+static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h);
+static coniox_inline int coniox_inwindow(int x, int y);
+static coniox_inline void coniox_readnormattr(void);
+static coniox_inline void coniox_flush_cursor(void);
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -47,17 +43,17 @@ struct text_info ti;
 int directvideo = 1;
 int _wscroll = 1;
 int coniox_setcursortype = _NORMALCURSOR;
-int coniox_cursor_dirty = 0;	/* 1 = physical cursor lags behind ti.curx/ti.cury */
+static int coniox_cursor_dirty = 0;	/* 1 = physical cursor lags behind ti.curx/ti.cury */
 
 #if ((__DOS__) || (__MSDOS__))
-int coniox_basecrt = 0x3D4;
+static int coniox_basecrt = 0x3D4;
 
 #if ((defined(__FLAT__)) || (defined(__DJGPP__)))
-	unsigned short *coniox_vram;
+	static unsigned short *coniox_vram;
 	#define coniox_int86 int386
 	#define coniox_int86x int386x
 #else
-	unsigned short coniox_far *coniox_vram;
+	static unsigned short coniox_far *coniox_vram;
 	#define coniox_int86 int86
 	#define coniox_int86x int86x
 #endif
@@ -66,12 +62,12 @@ static unsigned short coniox_far *coniox_cell;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if defined(__WATCOMC__)
-	void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
-	void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
+	static coniox_inline void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
+	static coniox_inline void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
 	#if (defined(__FLAT__))
-		void coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
+		static coniox_inline void coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
 	#else
-		void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
+		static coniox_inline void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
 	#endif
 	#if (defined(__FLAT__))
 		#pragma aux coniox_fmemsetw = \
@@ -153,7 +149,7 @@ static unsigned short coniox_far *coniox_cell;
 	#endif
 #else
 	#define coniox_fmemcpy      _fmemmove
-	void coniox_fmemsetw(void coniox_far *m, short val, size_t count)
+	static coniox_inline void coniox_fmemsetw(void coniox_far *m, short val, size_t count)
 	{
 		short coniox_far *buf = (short coniox_far *) m;
 
@@ -172,7 +168,7 @@ static unsigned short coniox_far *coniox_cell;
 		}
 	}
 
-	void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, unsigned int piCount)
+	static coniox_inline void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, unsigned int piCount)
 	{
 		unsigned short coniox_far *d;
 		unsigned short cellword;
@@ -279,7 +275,7 @@ int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-coniox_inline int coniox_inwindow(int x, int y)
+static coniox_inline int coniox_inwindow(int x, int y)
 {
 	return ((unsigned int)(x - ti.winleft) <= (unsigned int)(ti.winright  - ti.winleft)) && ((unsigned int)(y - ti.wintop)  <= (unsigned int)(ti.winbottom - ti.wintop));
 }
@@ -386,7 +382,7 @@ void window(int __left, int __top, int __right, int __bottom)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-coniox_inline void coniox_flush_cursor(void)
+static coniox_inline void coniox_flush_cursor(void)
 {
 	/* Deferred physical cursor sync: putch()/putwch() only set coniox_cursor_dirty; the wait points (kbhit/getch) and gotoxy() do the real sync. */
 	if ((!coniox_cursor_dirty) || (coniox_setcursortype == _NOCURSOR))
@@ -1007,7 +1003,7 @@ void coniox_init(const void *title)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-coniox_inline void coniox_readnormattr(void)
+static coniox_inline void coniox_readnormattr(void)
 {
 	CHAR_INFO ci;
 	COORD c = { 0, 0 }, s = { 1, 1 };
@@ -1308,7 +1304,7 @@ int cputws(const wchar_t *__str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
+static coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 {
 	CHAR_INFO ci;
 	SMALL_RECT r;
@@ -1346,7 +1342,7 @@ void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
+static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
 	int i;
 	int total;
@@ -2096,11 +2092,11 @@ void delay(unsigned int ms)
 /* ----------------------------------------------------------------------------------------------------------------- */
 #if ((__DOS__) || (__MSDOS__))
 
-void coniox_idle(void);
-int coniox_get_is_emulator(void);
-void coniox_blink(unsigned int blink);
-void coniox_enhanced_palette(unsigned int pal);
-int coniox_is_emulator = 0;
+static void coniox_idle(void);
+static int coniox_get_is_emulator(void);
+static void coniox_blink(unsigned int blink);
+static void coniox_enhanced_palette(unsigned int pal);
+static int coniox_is_emulator = 0;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_init(const void* title)
@@ -2238,7 +2234,7 @@ void coniox_init(const void* title)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-coniox_inline void coniox_readnormattr(void)
+static coniox_inline void coniox_readnormattr(void)
 {
 	union REGS r;
 
@@ -2465,7 +2461,7 @@ int cputs(const char *__str)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
+static coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 {
 	if (directvideo)
 	{
@@ -2495,7 +2491,7 @@ coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
+static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
 	int y1, ylim;
 
@@ -2573,7 +2569,7 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_idle(void)
+static void coniox_idle(void)
 {
 	union REGS r;
 
@@ -2630,7 +2626,7 @@ void coniox_idle(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int coniox_get_is_emulator(void)
+static int coniox_get_is_emulator(void)
 {
 	unsigned char result;
 
@@ -2641,7 +2637,7 @@ int coniox_get_is_emulator(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_enhanced_palette(unsigned int pal)
+static void coniox_enhanced_palette(unsigned int pal)
 {
 	unsigned int i;
 	const unsigned char (*coniox_rgb)[3];
@@ -2723,7 +2719,7 @@ void coniox_enhanced_palette(unsigned int pal)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_blink(unsigned int blink)
+static void coniox_blink(unsigned int blink)
 {
 	if ((directvideo) && (ti.currmode != MONO))
 	{
