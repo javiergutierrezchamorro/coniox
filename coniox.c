@@ -1624,7 +1624,14 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	r.Top = (short) (coniox_orgy + __desttop - 1);
 	r.Right = (short) (coniox_orgx + __destleft + w - 2);
 	r.Bottom = (short) (coniox_orgy + __desttop + h - 2);
-	WriteConsoleOutput(coniox_console_output, scratch, s, c, &r);
+	if (!WriteConsoleOutput(coniox_console_output, scratch, s, c, &r))
+	{
+		if (scratch != coniox_charinfo)
+		{
+			free(scratch);
+		}
+		return(0);
+	}
 	if (scratch != coniox_charinfo)
 	{
 		free(scratch);
@@ -1670,15 +1677,22 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 		#ifdef UNICODE
 			buffer[i].Char.UnicodeChar = (wchar_t) (ci[i] & 0xFF);
 		#else
-			buffer[i].Char.AsciiChar = (unsigned char) ci[i];
+			buffer[i].Char.AsciiChar = (unsigned char) (ci[i] & 0xFF);
 		#endif
 		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
 	}
 	#ifdef UNICODE
-		WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
+		if (!WriteConsoleOutput(coniox_console_output, buffer, s, c, &r))
 	#else
-		WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r);
+		if (!WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r))
 	#endif
+	{
+		if (buffer != coniox_charinfo)
+		{
+			free(buffer);
+		}
+		return(0);
+	}
 	if (buffer != coniox_charinfo)
 	{
 		free(buffer);
@@ -1726,7 +1740,14 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 		#endif
 		buffer[i].Attributes = __source[i].attr;
 	}
-	WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
+	if (!WriteConsoleOutput(coniox_console_output, buffer, s, c, &r))
+	{
+		if (buffer != coniox_charinfo)
+		{
+			free(buffer);
+		}
+		return(0);
+	}
 	if (buffer != coniox_charinfo)
 	{
 		free(buffer);
