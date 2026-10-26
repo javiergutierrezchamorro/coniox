@@ -10,8 +10,8 @@
 /* ----------------------------------------------------------------------------------------------------------------- */
 #define CONIOX_MAX_CHARINFO     (160 * 100)
 #if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
-	wchar_t coniox_ansi2unicode(char ch);
-	void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
+	static wchar_t coniox_ansi2unicode(char ch);
+	static void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
 	#include <wchar.h>
 	wchar_t *cgetws(wchar_t *__str);
 	int cputws(const wchar_t *__str);
@@ -198,7 +198,7 @@ static unsigned short coniox_far *coniox_cell;
 /* ----------------------------------------------------------------------------------------------------------------- */
 /* INTERNAL (Private)*/
 /* ----------------------------------------------------------------------------------------------------------------- */
-int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
+static int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
 	void *a[40] = {NULL};	// Room for up to 20 arguments plus possible sizes
 	size_t count = 0;
@@ -576,9 +576,9 @@ int cprintf(const char *__format, ...)
 int cscanf(const char *__format, ...)
 {
 	int r;
+	va_list ap;
 	unsigned char buffer[PRINTFBUF_SIZE + 3];
 
-	va_list ap;
 	buffer[0] = PRINTFBUF_SIZE;
 	cgets((char *) buffer);
 	va_start(ap, __format);
@@ -671,7 +671,7 @@ int wherey(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr)
+static int coniox_vswscanf(const wchar_t* buffer, const wchar_t* format, va_list argPtr)
 {
 	void *a[20] = { NULL };
 	size_t count = 0;
@@ -1261,7 +1261,7 @@ static coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
+static void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
 {
 	CHAR_INFO ci;
 	SMALL_RECT r;
@@ -1299,11 +1299,7 @@ static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		return;
 	}
 
-	#ifdef UNICODE
-		ci[0].Char.UnicodeChar = (wchar_t) ch;
-	#else
-		ci[0].Char.AsciiChar = (char) ch;
-	#endif
+	ci[0].Char.AsciiChar = (char) ch;
 	ci[0].Attributes = (WORD) attr;
 
 	for (i = 1; i < total; i <<= 1)
@@ -1326,11 +1322,7 @@ static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	c.X = 0;
 	c.Y = 0;
 
-	#ifdef UNICODE
-		WriteConsoleOutput(coniox_console_output, ci, s, c, &r);
-	#else
-		WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
-	#endif
+	WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
 	if (ci != coniox_charinfo)
 	{
 		free(ci);
@@ -1362,7 +1354,7 @@ wchar_t getwche(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-wchar_t coniox_ansi2unicode(char ch)
+static wchar_t coniox_ansi2unicode(char ch)
 {
 	wchar_t unicodech = 0;
 
@@ -1545,11 +1537,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
 	buf = (unsigned short *) __destin;
-	#ifdef UNICODE
-		if (!ReadConsoleOutput(coniox_console_output, ci, s, c, &r))
-	#else
-		if (!ReadConsoleOutputA(coniox_console_output, ci, s, c, &r))
-	#endif
+	if (!ReadConsoleOutputA(coniox_console_output, ci, s, c, &r))
 	{
 		if (ci != coniox_charinfo)
 		{
@@ -1559,11 +1547,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	}
 	for (i = 0; i < total; i++)
 	{
-		#ifdef UNICODE
-			buf[i] = (ci[i].Char.UnicodeChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
-		#else
-			buf[i] = (ci[i].Char.AsciiChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
-		#endif
+		buf[i] = (ci[i].Char.AsciiChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 	}
 	if (ci != coniox_charinfo)
 	{
@@ -1674,18 +1658,10 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 	ci = (unsigned short *) __source;
 	for (i = 0; i < total; i++)
 	{
-		#ifdef UNICODE
-			buffer[i].Char.UnicodeChar = (wchar_t) (ci[i] & 0xFF);
-		#else
-			buffer[i].Char.AsciiChar = (unsigned char) (ci[i] & 0xFF);
-		#endif
+		buffer[i].Char.AsciiChar = (unsigned char) (ci[i] & 0xFF);
 		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
 	}
-	#ifdef UNICODE
-		if (!WriteConsoleOutput(coniox_console_output, buffer, s, c, &r))
-	#else
-		if (!WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r))
-	#endif
+	if (!WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r))
 	{
 		if (buffer != coniox_charinfo)
 		{
@@ -1733,14 +1709,10 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 
 	for (i = 0; i < total; i++)
 	{
-		#ifdef UNICODE
-			buffer[i].Char.UnicodeChar = __source[i].letter;
-		#else
-			buffer[i].Char.AsciiChar = (char) __source[i].letter;
-		#endif
+		buffer[i].Char.UnicodeChar = __source[i].letter;
 		buffer[i].Attributes = __source[i].attr;
 	}
-	if (!WriteConsoleOutput(coniox_console_output, buffer, s, c, &r))
+	if (!WriteConsoleOutputW(coniox_console_output, buffer, s, c, &r))
 	{
 		if (buffer != coniox_charinfo)
 		{
@@ -1785,7 +1757,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
 
-	if (!ReadConsoleOutput(coniox_console_output, buffer, s, c, &r))
+	if (!ReadConsoleOutputW(coniox_console_output, buffer, s, c, &r))
 	{
 		if (buffer != coniox_charinfo)
 		{
@@ -1795,11 +1767,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	}
 	for (i = 0; i < total; i++)
 	{
-		#ifdef UNICODE
-			__destin[i].letter = buffer[i].Char.UnicodeChar;
-		#else
-			__destin[i].letter = (unsigned char) buffer[i].Char.AsciiChar;
-		#endif
+		__destin[i].letter = buffer[i].Char.UnicodeChar;
 		__destin[i].attr = buffer[i].Attributes;
 	}
 	if (buffer != coniox_charinfo)
@@ -2084,7 +2052,7 @@ void coniox_init(const void* title)
 	{
 		if (directvideo)
 		{
-			ti.currmode = peekb(0x40, 0x49);
+			ti.currmode = peekb(0x40, 0x49) & 0x7F;	/* mask the BIOS no-clear flag, like the INT 10h path */
 		}
 		else
 		{
@@ -2176,14 +2144,15 @@ void coniox_init(const void* title)
 	{
 		ti.screenheight = 25;
 	}
-	ti.normattr = 7;
-	ti.attribute = 7;
 	ti.winleft = 1;
 	ti.wintop = 1;
 	ti.winright = ti.screenwidth;
 	ti.winbottom = ti.screenheight;
 	/* Initial position of the putch()/cputs() cell cache: the just-read (curx, cury) cell; gotoxy() keeps it up to date. */
 	coniox_cell = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+	/* Real startup attribute at the cursor cell, like Borland and the Windows version, instead of a fixed 7. */
+	coniox_readnormattr();
+	ti.attribute = ti.normattr;
 
 
 	//Get if under emulator
@@ -2378,7 +2347,7 @@ static coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 {
 	if (directvideo)
 	{
-		*(unsigned short coniox_far *) coniox_offset(x - 1, y - 1) = (attr << 8) | (ch & 0xFF);
+		*coniox_offset(x - 1, y - 1) = (unsigned short) ((attr << 8) | (ch & 0xFF));
 	}
 	else
 	{
@@ -2419,7 +2388,7 @@ static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		unsigned short v;
 
 		v = (unsigned short)((attr << 8) | (ch & 0xFF));
-		p = (unsigned short coniox_far *) coniox_offset(x - 1, y - 1);
+		p = coniox_offset(x - 1, y - 1);
 		if (w == (int) ti.screenwidth)
 		{
 			/* Full-screen-width block: VRAM rows are contiguous, one fill covers all rows. */
@@ -2965,7 +2934,7 @@ void delline(void)
 				dstrow += sw;
 			}
 		}
-		coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.winbottom - 1), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t) width);
+		coniox_fmemsetw(coniox_offset(ti.winleft - 1, ti.winbottom - 1), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t) width);
 	}
 	else
 	{
@@ -3011,7 +2980,7 @@ void insline(void)
 			srcrow -= sw;
 			dstrow -= sw;
 		}
-		coniox_fmemsetw((unsigned short coniox_far *) coniox_offset(ti.winleft - 1, ti.cury + ti.wintop - 2), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t) width);
+		coniox_fmemsetw(coniox_offset(ti.winleft - 1, ti.cury + ti.wintop - 2), (short)(unsigned short)((ti.attribute << 8) | ' '), (size_t) width);
 	}
 	else
 	{
@@ -3058,7 +3027,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void coniox_far *_
 	row_bytes = (size_t)width * sizeof(unsigned short);
 	total_bytes = row_bytes * (size_t)rows;
 
-	p = (unsigned short coniox_far *) coniox_offset(__left - 1, __top - 1);
+	p = coniox_offset(__left - 1, __top - 1);
 
 	dst = (unsigned short coniox_far *)__destin;
 
@@ -3111,7 +3080,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void coniox_far *_
 	row_bytes = (size_t)width * sizeof(unsigned short);
 	total_bytes = row_bytes * (size_t)rows;
 
-	p = (unsigned short coniox_far *) coniox_offset(__left - 1, __top - 1);
+	p = coniox_offset(__left - 1, __top - 1);
 
 	src = (unsigned short coniox_far *)__source;
 
@@ -3246,9 +3215,11 @@ wchar_t getwch(void)
 }
 
 static int getch_last_extended_key = 0;
+
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
+	coniox_init(NULL);
 	if (getch_last_extended_key)
 	{
 		return(getch_last_extended_key);
@@ -3259,11 +3230,9 @@ int kbhit(void)
 	if (directvideo)
 	{
 		/* One far dword read: head in the low word (0x1A), tail in the high word (0x1C); they differ iff a key is pending. */
-		{
-			unsigned long q = peekl(0x40, 0x1A);
+		unsigned long q = peekl(0x40, 0x1A);
 
-			return ((unsigned short) q != (unsigned short) (q >> 16));
-		}
+		return ((unsigned short) q != (unsigned short) (q >> 16));
 	}
 	else
 	{
@@ -3287,6 +3256,7 @@ int kbhit(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int getch(void)
 {
+	coniox_init(NULL);
 	if (getch_last_extended_key)
 	{
 		int ch = getch_last_extended_key;
@@ -3360,6 +3330,7 @@ int getch(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int ungetch(int __ch)
 {
+	coniox_init(NULL);
 	if (directvideo)
 	{
 		unsigned short start, end, head, tail, new_tail;

@@ -627,11 +627,7 @@ Reads a password.
 getpass reads a password from the system console after prompting with the null-terminated string prompt and disabling the echo. A pointer is returned to a null-terminated string of up to eight characters (not counting the null-terminator).
 @see cgets
 @param prompt prompt which will be displayed to user
-@param str string for the password. <TT>str[0]</TT> have to contain
-length of the <TT>str</TT> - 3
-@returns <TT>&str[2]</TT>, the password will be stored in <TT>str</TT>
-beginning at <TT>str[2]</TT>, in <TT>str[1]</TT> will be length of the
-string without <TT>\\0</TT>, at <TT>str[2 + str[1]]</TT> will be \\0.
+@returns pointer to a static null-terminated string of up to PASS_MAX characters holding the typed password
 */
 char *getpass(const char *__prompt);
 
@@ -718,10 +714,8 @@ void coniox_init(const void *title);
 	#define _cputws		cputws
 	#define _cwprintf	cwprintf
 	#define _cwscanf	cwscanf
-	#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 4)
-#else
-	#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 2)
 #endif
+#define gettextsize(__left, __top, __right, __bottom)	(((__right) - (__left) + 1) * ((__bottom) - (__top) + 1) * 2)
 
 
 #define KEY_SPECIAL     0x100
