@@ -482,7 +482,6 @@ int putch(int __c)
 				else
 				{
 					/* _wscroll = 0: stay on the last column, further output overwrites the edge cell. */
-					coniox_cursor_dirty = 1;
 				}
 			}
 	}
@@ -838,7 +837,6 @@ wchar_t putwch(wchar_t __c)
 				else
 				{
 					/* _wscroll = 0: stay on the last column, further output overwrites the edge cell. */
-					coniox_cursor_dirty = 1;
 				}
 			}
 			else
@@ -956,7 +954,7 @@ void coniox_init(const void *title)
 	ti.cury = (unsigned short) ((i < 1 || i > ti.screenheight) ? 1 : i);
 	ti.attribute = (unsigned short) (info.wAttributes & 0xFF);
 	ti.currmode = (unsigned short) ((ti.screenwidth <= 40) ? C40 : C80);
-	acp = GetACP();
+	acp = GetOEMCP();
 	if (GetConsoleOutputCP() != acp)
 	{
 		SetConsoleOutputCP(acp);
@@ -1357,7 +1355,11 @@ void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 	c.X = 0;
 	c.Y = 0;
 
-	WriteConsoleOutput(coniox_console_output, ci, s, c, &r);
+	#ifdef UNICODE
+		WriteConsoleOutput(coniox_console_output, ci, s, c, &r);
+	#else
+		WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
+	#endif
 	if (ci != coniox_charinfo)
 	{
 		free(ci);
@@ -1393,7 +1395,7 @@ wchar_t coniox_ansi2unicode(char ch)
 {
 	wchar_t unicodech = 0;
 
-	MultiByteToWideChar(CP_ACP, 0, &ch, 1, &unicodech, 1);
+	MultiByteToWideChar(GetOEMCP(), 0, &ch, 1, &unicodech, 1);
 	return(unicodech);
 }
 
@@ -1572,7 +1574,11 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
 	buf = (unsigned short *) __destin;
-	if (!ReadConsoleOutput(coniox_console_output, ci, s, c, &r ))
+	#ifdef UNICODE
+		if (!ReadConsoleOutput(coniox_console_output, ci, s, c, &r))
+	#else
+		if (!ReadConsoleOutputA(coniox_console_output, ci, s, c, &r))
+	#endif
 	{
 		if (ci != coniox_charinfo)
 		{
@@ -1697,7 +1703,11 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 		#endif
 		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
 	}
-	WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
+	#ifdef UNICODE
+		WriteConsoleOutput(coniox_console_output, buffer, s, c, &r);
+	#else
+		WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r);
+	#endif
 	if (buffer != coniox_charinfo)
 	{
 		free(buffer);
