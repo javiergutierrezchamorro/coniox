@@ -51,11 +51,9 @@ static int coniox_basecrt = 0x3D4;
 #if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 	static unsigned short *coniox_vram;
 	#define coniox_int86 int386
-	#define coniox_int86x int386x
 #else
 	static unsigned short coniox_far *coniox_vram;
 	#define coniox_int86 int86
-	#define coniox_int86x int86x
 #endif
 #define coniox_offset(piX, piY) (coniox_vram + ((ti.screenwidth * (piY)) + (piX)))
 static unsigned short coniox_far *coniox_cell;
@@ -70,8 +68,10 @@ static unsigned short coniox_far *coniox_cell;
 		static coniox_inline void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
 	#endif
 	#if (defined(__FLAT__))
+		/* parm [AX] only guarantees the low word: zero-extend it before building the duplicated cell word. */
 		#pragma aux coniox_fmemsetw = \
-			"movzx edx, ax" \
+			"movzx eax, ax" \
+			"mov edx, eax" \
 			"shl eax, 16" \
 			"or eax, edx" \
 			"shr ecx, 1" \
@@ -126,12 +126,14 @@ static unsigned short coniox_far *coniox_cell;
 			parm [ES DI][AX][CX] \
 			modify exact [DI CX];
 		#pragma aux coniox_putrun = \
+			"jcxz short _prdone" \
 			"cld" \
 			"_prnext:" \
 			"lodsb" \
 			"mov ah, bh" \
 			"stosw" \
 			"loop _prnext" \
+			"_prdone:" \
 			parm [ES DI][SI][BX][CX] \
 			modify exact [DI SI CX AX];
 		#pragma aux coniox_fmemcpy = \
@@ -200,7 +202,11 @@ static unsigned short coniox_far *coniox_cell;
 /* ----------------------------------------------------------------------------------------------------------------- */
 static int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
-	void *a[40] = {NULL};	/* Room for up to 20 arguments plus possible sizes */
+	#ifdef _MSC_VER
+		void *a[40] = {NULL};	/* Room for up to 20 arguments plus possible sizes */
+	#else
+		void *a[20] = {NULL};	/* sscanf is called with 20 arguments */
+	#endif
 	size_t count = 0;
 	const char *p;
 	char c;
@@ -1066,10 +1072,16 @@ int cputs(const char *__str)
 		{
 			remaining = CONIOX_MAX_CHARINFO;
 		}
-		runlen = (unsigned int) strcspn(run, "\r\n\b");
-		if (runlen > remaining)
+		/* Bounded scan, like cputws(): strcspn would walk the whole remaining string while a run never passes the window edge. */
+		runlen = 0;
+		while (runlen < remaining && run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')
 		{
-			runlen = remaining;
+			runlen++;
+		}
+		if (runlen == 0)
+		{
+			++__str;
+			continue;
 		}
 
 		for (i = 0; i < runlen; i++)
@@ -1201,6 +1213,11 @@ int cputws(const wchar_t *__str)
 		while (runlen < remaining && run[runlen] != L'\0' && run[runlen] != L'\r' && run[runlen] != L'\n' && run[runlen] != L'\b')
 		{
 			runlen++;
+		}
+		if (runlen == 0)
+		{
+			++__str;
+			continue;
 		}
 
 		for (i = 0; i < runlen; i++)
@@ -1469,11 +1486,8 @@ void delline(void)
 	r.Right = (short) (coniox_orgx + ti.winright - 1);
 	r.Bottom = (short) (coniox_orgy + ti.winbottom - 1);
 	ci.Attributes = ti.attribute;
-	#ifdef UNICODE
-		ci.Char.UnicodeChar = L' ';
-	#else
-		ci.Char.AsciiChar = ' ';
-	#endif
+	/* ScrollConsoleScreenBuffer has no ANSI variant: it always reads Char.UnicodeChar, so write the whole WCHAR, not just its low byte. */
+	ci.Char.UnicodeChar = L' ';
 	ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci);
 	/* ScrollConsoleScreenBuffer does not move the console cursor; the sync happens via coniox_flush_cursor(). */
 }
@@ -1501,11 +1515,8 @@ void insline(void)
 	r.Right = (short) (coniox_orgx + ti.winright - 1);
 	r.Bottom = (short) (coniox_orgy + ti.winbottom - 2);
 	ci.Attributes = ti.attribute;
-	#ifdef UNICODE
-		ci.Char.UnicodeChar = L' ';
-	#else
-		ci.Char.AsciiChar = ' ';
-	#endif
+	/* ScrollConsoleScreenBuffer has no ANSI variant: it always reads Char.UnicodeChar, so write the whole WCHAR, not just its low byte. */
+	ci.Char.UnicodeChar = L' ';
 	ScrollConsoleScreenBuffer(coniox_console_output, &r, NULL, c, &ci);
 	/* ScrollConsoleScreenBuffer does not move the console cursor; the sync happens via coniox_flush_cursor(). */
 }
@@ -1800,15 +1811,16 @@ void textmode(int __newmode)
 					break;
 				}
 			}
+			/* SetConsoleScreenBufferInfoEx applies the whole structure: the window and the cursor must fit the new buffer size, or the call fails. */
+			info.srWindow.Left = 0;
+			info.srWindow.Top = 0;
+			info.srWindow.Right = info.dwSize.X - 1;
+			info.srWindow.Bottom = info.dwSize.Y - 1;
+			info.dwCursorPosition.X = 0;
+			info.dwCursorPosition.Y = 0;
+			info.dwMaximumWindowSize = info.dwSize;
 			if (SetConsoleScreenBufferInfoEx(coniox_console_output, &info))
 			{
-				SMALL_RECT r;
-
-				r.Left = 0;
-				r.Top = 0;
-				r.Right = info.dwSize.X - 1;
-				r.Bottom = info.dwSize.Y - 1;
-				SetConsoleWindowInfo(coniox_console_output, TRUE, &r);
 				ti.currmode = (unsigned short) __newmode;
 			}
 		}
@@ -2219,7 +2231,7 @@ int cputs(const char *__str)
 			}
 			else if (_wscroll)
 			{
-				/* LF: keep the column, like Borland cputs. */
+				/* LF keeps the column, and delline() moves neither the cursor nor the cell cache: coniox_currentoffset still matches (curx, cury). */
 				oldx = ti.curx;
 				oldy = ti.cury;
 				ti.curx = 1;
@@ -2227,7 +2239,6 @@ int cputs(const char *__str)
 				delline();
 				ti.curx = oldx;
 				ti.cury = oldy;
-				coniox_currentoffset = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
 			}
 			/* _wscroll = 0: LF on the last line does not scroll. */
 			++__str;
@@ -2255,10 +2266,17 @@ int cputs(const char *__str)
 		}
 		remaining = winwidth - ti.curx + 1;
 
-		runlen = (unsigned int) strcspn(run, "\r\n\b");
-		if (runlen > remaining)
+		/* Bounded scan, like cputws(): strcspn would walk the whole remaining string while a run never passes the window edge. */
+		runlen = 0;
+		while (runlen < remaining && run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')
 		{
-			runlen = remaining;
+			runlen++;
+		}
+		if (runlen == 0)
+		{
+			/* Defensive: no room or only controls left that the front path already handled. Advance one to avoid a tight loop. */
+			++__str;
+			continue;
 		}
 
 		if (directvideo)
@@ -2287,7 +2305,8 @@ int cputs(const char *__str)
 				{
 					ti.curx = 1;
 					ti.cury++;
-					coniox_currentoffset += ti.screenwidth - winwidth;
+					/* From the last window column to the first: one screen row minus the winwidth - 1 columns walked back, same as putch(). */
+					coniox_currentoffset += ti.screenwidth - winwidth + 1;
 				}
 				else
 				{
@@ -2810,8 +2829,9 @@ void _setcursortype(int __cur_t)
 				}
 				else
 				{
+					/* 6..7 works for the 16-scan cells of 25-line modes and for the 8-scan cells of the 43/50-line ones; end < start would hide the cursor. */
 					cursor_start = 6;
-					cursor_end = ti.screenheight == 43 ? 0 : 7;
+					cursor_end = 7;
 				}
 				break;
 		}
@@ -2851,30 +2871,38 @@ void gotoxy(int __x, int __y)
 	}
 	ti.curx = __x;
 	ti.cury = __y;
-	coniox_cell = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+	scrx = (unsigned int) (ti.winleft + __x - 2);
+	scry = (unsigned int) (ti.wintop  + __y - 2);
 	coniox_cursor_dirty = 0;	/* gotoxy leaves the physical cursor up to date (or hidden) */
 
-	/* Only move cursor if visible */
-	if (coniox_setcursortype != _NOCURSOR)
+	if (directvideo)
 	{
-		if (directvideo)
+		/* The cell cache and the 6845 cursor address share the same linear offset: compute it just once. */
+		cursor = scry * ti.screenwidth + scrx;
+		coniox_cell = coniox_vram + cursor;
+
+		/* Only move cursor if visible */
+		if (coniox_setcursortype != _NOCURSOR)
 		{
-			scrx = ti.winleft + __x - 2;
-			scry = ti.wintop  + __y - 2;
 			pokew(0x40, 0x50, (scry << 8) | (scrx & 0xFF)); /* Put cursor position in BIOS */
-			cursor = scry * ti.screenwidth + scrx;
 			outportb(coniox_basecrt, 0x0F);
 			outportb(coniox_basecrt + 1, cursor & 0xFF);
 			outportb(coniox_basecrt, 0x0E);
 			outportb(coniox_basecrt + 1, (cursor >> 8) & 0xFF);
 		}
-		else
+	}
+	else
+	{
+		coniox_cell = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
+
+		/* Only move cursor if visible */
+		if (coniox_setcursortype != _NOCURSOR)
 		{
 			union REGS r;
 			r.h.ah = 2;
 			r.h.bh = 0;
-			r.h.dh = (unsigned char)(ti.wintop  + __y - 2);
-			r.h.dl = (unsigned char)(ti.winleft + __x - 2);
+			r.h.dh = (unsigned char) scry;
+			r.h.dl = (unsigned char) scrx;
 			coniox_int86(0x10, &r, &r);
 		}
 	}
@@ -3200,6 +3228,8 @@ static int getch_last_extended_key = 0;
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
+	unsigned long q;
+
 	coniox_init(NULL);
 	if (getch_last_extended_key)
 	{
@@ -3208,29 +3238,9 @@ int kbhit(void)
 
 	coniox_flush_cursor();
 
-	if (directvideo)
-	{
-		/* One far dword read: head in the low word (0x1A), tail in the high word (0x1C); they differ iff a key is pending. */
-		unsigned long q = peekl(0x40, 0x1A);
-
-		return ((unsigned short) q != (unsigned short) (q >> 16));
-	}
-	else
-	{
-		#if defined(__WATCOMC__)
-			union REGPACK r;
-			memset(&r, 0, sizeof(union REGPACK));
-			r.h.ah = 1;
-			intr(0x16, &r);
-			return((r.w.flags & 0x40) == 0 ? 1 : 0);
-		#else
-			union REGS r;
-			memset(&r, 0, sizeof(union REGS));
-			r.h.ah = 1;
-			coniox_int86(0x16, &r, &r);
-			return((r.x.flags & 0x40) == 0 ? 1 : 0);
-		#endif
-	}
+	/* One far dword read: head in the low word (0x1A), tail in the high word (0x1C); they differ iff a key is pending. INT 16h AH=01h answers from this same buffer, so the BIOS call is redundant here, and not every compiler's union REGS exposes the ZF. */
+	q = peekl(0x40, 0x1A);
+	return ((unsigned short) q != (unsigned short) (q >> 16));
 }
 
 
