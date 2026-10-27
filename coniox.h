@@ -84,7 +84,7 @@ VERSION HISTORY
 
 4.94 - 2023/02/07
 - Cursor handling fixed and improved performance.
-- Added C4350 mode support.---
+- Added C4350 mode support.
 - Optimized 6845 base calculation.
 - Added delay().
 
@@ -112,17 +112,25 @@ VERSION HISTORY
  - All functions are now working, including ASM pragma aux
  - Several optimizations to Windows and DOS paths
 
- 5.00 - 2026/10/22
+5.00 - 2026/10/22
  - All functions are now working, including ASM pragma aux
  - Several optimizations to Windows and DOS paths
  - Lots of tests with ZEROFILL
+
+5.01 - 2026/10/27
+ - Fixed cputs() directvideo cell cache off by one after wrapping a line.
+ - Fixed MK_FP fallback macro for real mode (linear instead of far address).
+ - Fixed kbhit() BIOS branch did not compile under Borland (no flags in union REGS).
+ - Robustified coniox_fmemsetw pragma aux against dirty upper bits of EAX.
+ - Fixed Windows textmode() when the new mode is smaller than the current buffer.
+ - Removed unused coniox_int86x macros.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (500)
+#define coniox_version (501)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
@@ -173,6 +181,12 @@ extern "C" {
 #include <dos.h>
 #include <bios.h>
 
+#if defined(__TURBOC__)
+	/* Borland spells them disable()/enable(); the directvideo paths use the Watcom/MSC _disable()/_enable() names. */
+	#define _disable()	disable()
+	#define _enable()	enable()
+#endif
+
 
 #if defined(__WATCOMC__) && defined(__DOS__)
 	#include <i86.h>
@@ -200,7 +214,13 @@ extern "C" {
 
 
 #ifndef MK_FP
-	#define MK_FP(seg,off) (((seg)<<4)+(off))
+	#if ((defined(__FLAT__)) && (!defined(__DJGPP__)))
+		/* Flat model: a real mode segment:offset maps to the linear address seg * 16 + off */
+		#define MK_FP(seg,off) (((seg)<<4)+(off))
+	#else
+		/* Real mode: a far pointer stores the segment in its high word */
+		#define MK_FP(seg,off) ((void coniox_far *) ((((unsigned long)(seg)) << 16) | ((unsigned long)(off))))
+	#endif
 #endif
 
 #if !defined(__TURBOC__)
@@ -759,16 +779,18 @@ typedef struct wchar_info
 } wchar_info;
 
 wchar_t  getwch(void);
-wchar_t  putwch(wchar_t);
 
+#if (((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32))
+	wchar_t  putwch(wchar_t);
+#endif
 
 #if defined(UNICODE)
-	wchar_t *cgetws( wchar_t *__str );
-	int      cputws( const wchar_t *__str );
-	wchar_t  ungetwch( wchar_t );
-	wchar_t  getwche(void);
-	/* cwscanf/cwprintf/putwtext/getwtext are Windows-only (DOS lacks portable swscanf/vswprintf) */
 	#if (((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32))
+		/* The whole wchar_t family is Windows-only: DOS lacks portable swscanf/vswprintf, and only getwch() exists there. */
+		wchar_t *cgetws( wchar_t *__str );
+		int      cputws( const wchar_t *__str );
+		wchar_t  ungetwch( wchar_t );
+		wchar_t  getwche(void);
 		int cwscanf( const wchar_t *__format, ... );
 		int cwprintf( const wchar_t *__format, ... );
 		int putwtext( int __left, int __top, int __right, int __bottom, const wchar_info *__source );
