@@ -26,6 +26,8 @@
 	#define coniox_inline __inline
 #elif (defined(__TURBOC__) && (__BORLANDC__ >= 0x450))
 	#define coniox_inline __inline
+#elif defined(__TURBOC__)
+	#define coniox_inline	/* Borland/Turbo C before 4.5 has no inline keyword in C mode */
 #else
 	#define coniox_inline inline
 #endif
@@ -2305,8 +2307,8 @@ int cputs(const char *__str)
 				{
 					ti.curx = 1;
 					ti.cury++;
-					/* From the last window column to the first: one screen row minus the winwidth - 1 columns walked back, same as putch(). */
-					coniox_currentoffset += ti.screenwidth - winwidth + 1;
+					/* One screen row minus the winwidth - 1 columns walked back: the run has already stepped one cell past the edge, while putch() cache stops at the written edge cell, hence no +1. */
+					coniox_currentoffset += ti.screenwidth - winwidth;
 				}
 				else
 				{

@@ -124,13 +124,17 @@ VERSION HISTORY
  - Robustified coniox_fmemsetw pragma aux against dirty upper bits of EAX.
  - Fixed Windows textmode() when the new mode is smaller than the current buffer.
  - Removed unused coniox_int86x macros.
+
+5.02 - 2026/10/27
+ - Fixed cputs() directvideo wrap: the run already steps one cell past the window edge, so the cache delta is screenwidth - winwidth, not screenwidth - winwidth + 1 like putch().
+ - coniox_inline now expands to nothing for Borland/Turbo C older than 4.5, which have no inline keyword in C mode.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (501)
+#define coniox_version (502)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
