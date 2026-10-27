@@ -128,13 +128,23 @@ VERSION HISTORY
 5.02 - 2026/10/27
  - Fixed cputs() directvideo wrap: the run already steps one cell past the window edge, so the cache delta is screenwidth - winwidth, not screenwidth - winwidth + 1 like putch().
  - coniox_inline now expands to nothing for Borland/Turbo C older than 4.5, which have no inline keyword in C mode.
+
+5.03 - 2026/10/27
+ - Fixed delay() ending early at midnight: the BDA tick counter wraps at 0x1800B0, not at 2^32.
+ - Fixed getch() returning a pending extended key for a plain 0xE0 character typed with Alt+numpad (scan code 0).
+ - Fixed coniox_int86 under DJGPP (int386 does not exist there).
+ - DOS16 coniox_putrun pragma aux now takes a far source (DS:SI), so it also works in compact and large models.
+ - DOS32 coniox_putrun inner loop uses dec/jnz instead of the slow LOOP.
+ - inportb/outportb pragma aux no longer declare DX/AL as clobbered when IN/OUT leave them intact.
+ - coniox_basecrt is now a constant, so the 6845 port numbers are folded at compile time.
+ - gotoxy() computes the cell cache once for both directvideo and BIOS paths.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (502)
+#define coniox_version (503)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
@@ -195,9 +205,9 @@ extern "C" {
 #if defined(__WATCOMC__) && defined(__DOS__)
 	#include <i86.h>
 	unsigned char inportb(unsigned int port);
-	#pragma aux inportb  = "in  al, dx" parm nomemory [dx] value [al] modify nomemory exact [dx al];
+	#pragma aux inportb  = "in  al, dx" parm nomemory [dx] value [al] modify nomemory exact [al];
 	void outportb(unsigned int port, unsigned char value);
-	#pragma aux outportb = "out dx, al" parm nomemory [dx] [al] modify nomemory exact [dx al];
+	#pragma aux outportb = "out dx, al" parm nomemory [dx] [al] modify nomemory exact [];
 #endif
 
 #if defined(__DJGPP__)

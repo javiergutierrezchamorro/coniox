@@ -48,11 +48,15 @@ static int coniox_setcursortype = _NORMALCURSOR;
 static int coniox_cursor_dirty = 0;	/* 1 = physical cursor lags behind ti.curx/ti.cury */
 
 #if ((__DOS__) || (__MSDOS__))
-static int coniox_basecrt = 0x3D4;
+#define coniox_basecrt 0x3D4
 
 #if ((defined(__FLAT__)) || (defined(__DJGPP__)))
 	static unsigned short *coniox_vram;
-	#define coniox_int86 int386
+	#if defined(__DJGPP__)
+		#define coniox_int86 int86
+	#else
+		#define coniox_int86 int386
+	#endif
 #else
 	static unsigned short coniox_far *coniox_vram;
 	#define coniox_int86 int86
@@ -67,7 +71,7 @@ static unsigned short coniox_far *coniox_cell;
 	#if (defined(__FLAT__))
 		static coniox_inline void coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
 	#else
-		static coniox_inline void coniox_putrun(unsigned short coniox_far *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
+		static coniox_inline void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, size_t piCount);
 	#endif
 	#if (defined(__FLAT__))
 		/* parm [AX] only guarantees the low word: zero-extend it before building the duplicated cell word. */
@@ -107,7 +111,8 @@ static unsigned short coniox_far *coniox_cell;
 			"or eax, edx" \
 			"or eax, ebx" \
 			"stosd" \
-			"loop _prpairs" \
+			"dec ecx" \
+			"jnz _prpairs" \
 			"_prdone:" \
 			parm [EDI][ESI][EBX][ECX] \
 			modify exact [EDI ESI ECX EDX EAX EBX];
@@ -128,15 +133,18 @@ static unsigned short coniox_far *coniox_cell;
 			parm [ES DI][AX][CX] \
 			modify exact [DI CX];
 		#pragma aux coniox_putrun = \
-			"jcxz short _prdone" \
+			"push ds" \
+			"mov ds, dx" \
 			"cld" \
+			"jcxz short _prdone" \
 			"_prnext:" \
 			"lodsb" \
 			"mov ah, bh" \
 			"stosw" \
 			"loop _prnext" \
 			"_prdone:" \
-			parm [ES DI][SI][BX][CX] \
+			"pop ds" \
+			parm [ES DI][DX SI][BX][CX] \
 			modify exact [DI SI CX AX];
 		#pragma aux coniox_fmemcpy = \
 			"push ds" \
@@ -2639,10 +2647,13 @@ void delay(unsigned int ms)
 
 		lTicks = peekl(0x40, 0x6C);	/* BDA 0040:006C tick counter */
 		lIdleTick = lTicks - 1UL;	/* forces a coniox_idle() on the first lap */
-		/* Modular subtraction: survives the midnight counter reset. */
 		while (lWait != 0)
 		{
 			lNow = peekl(0x40, 0x6C);
+			if (lNow < lTicks)
+			{
+				lNow += 0x1800B0UL;	/* the BDA counter wraps at midnight after 0x1800B0 ticks, not at 2^32 */
+			}
 
 			if ((lNow - lTicks) >= lWait)
 			{
@@ -2677,6 +2688,10 @@ void delay(unsigned int ms)
 			#else
 				lNow = ((unsigned long) r.x.cx << 16) | r.x.dx;
 			#endif
+			if (lNow < lTicks)
+			{
+				lNow += 0x1800B0UL;	/* midnight wrap, see above */
+			}
 			if ((lNow - lTicks) >= lWait)
 			{
 				break;
@@ -2877,14 +2892,14 @@ void gotoxy(int __x, int __y)
 	scry = (unsigned int) (ti.wintop  + __y - 2);
 	coniox_cursor_dirty = 0;	/* gotoxy leaves the physical cursor up to date (or hidden) */
 
-	if (directvideo)
-	{
-		/* The cell cache and the 6845 cursor address share the same linear offset: compute it just once. */
-		cursor = scry * ti.screenwidth + scrx;
-		coniox_cell = coniox_vram + cursor;
+	/* The cell cache and the 6845 cursor address share the same linear offset: compute it just once. */
+	cursor = scry * ti.screenwidth + scrx;
+	coniox_cell = coniox_vram + cursor;
 
-		/* Only move cursor if visible */
-		if (coniox_setcursortype != _NOCURSOR)
+	/* Only move cursor if visible */
+	if (coniox_setcursortype != _NOCURSOR)
+	{
+		if (directvideo)
 		{
 			pokew(0x40, 0x50, (scry << 8) | (scrx & 0xFF)); /* Put cursor position in BIOS */
 			outportb(coniox_basecrt, 0x0F);
@@ -2892,13 +2907,7 @@ void gotoxy(int __x, int __y)
 			outportb(coniox_basecrt, 0x0E);
 			outportb(coniox_basecrt + 1, (cursor >> 8) & 0xFF);
 		}
-	}
-	else
-	{
-		coniox_cell = coniox_offset(ti.winleft + ti.curx - 2, ti.wintop + ti.cury - 2);
-
-		/* Only move cursor if visible */
-		if (coniox_setcursortype != _NOCURSOR)
+		else
 		{
 			union REGS r;
 			r.h.ah = 2;
@@ -3293,7 +3302,7 @@ int getch(void)
 		pokew(0x40, 0x1A, head);
 		_enable();
 
-		if ((scancode & 0xFF) == 0 || (scancode & 0xFF) == 0xE0)
+		if (((scancode & 0xFF) == 0) || (((scancode & 0xFF) == 0xE0) && (scancode > 0xFF)))
 		{
 			getch_last_extended_key = scancode >> 8;
 			return 0;
@@ -3308,7 +3317,7 @@ int getch(void)
 		union REGS r;
 		r.h.ah = 0;
 		coniox_int86(0x16, &r, &r);
-		if ((r.h.al == 0) || (r.h.al == 0xE0))
+		if ((r.h.al == 0) || ((r.h.al == 0xE0) && (r.h.ah != 0)))
 		{
 			getch_last_extended_key = r.h.ah;
 			return 0;
