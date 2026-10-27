@@ -38,7 +38,7 @@ static coniox_inline void coniox_flush_cursor(void);
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-struct text_info ti;
+static struct text_info ti;
 int directvideo = 1;
 int _wscroll = 1;
 
@@ -200,7 +200,7 @@ static unsigned short coniox_far *coniox_cell;
 /* ----------------------------------------------------------------------------------------------------------------- */
 static int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr)
 {
-	void *a[40] = {NULL};	// Room for up to 20 arguments plus possible sizes
+	void *a[40] = {NULL};	/* Room for up to 20 arguments plus possible sizes */
 	size_t count = 0;
 	const char *p;
 	char c;
@@ -220,17 +220,17 @@ static int coniox_vsscanf(const char *buffer, const char *format, va_list argPtr
 				p++;
 				continue;
 			}
-			// Skip optional width modifiers
+			/* Skip optional width modifiers */
 			while (*p >= '0' && *p <= '9')
 			{
 				p++;
 			}
-			// Skip optional length modifiers (l, h, z, j, t, L)
+			/* Skip optional length modifiers (l, h, z, j, t, L) */
 			while (*p == 'l' || *p == 'h' || *p == 'z' || *p == 'j' || *p == 't' || *p == 'L')
 			{
 				p++;
 			}
-			// A trailing % consumes no argument
+			/* A trailing % consumes no argument */
 			if (!*p)
 			{
 				break;
@@ -294,7 +294,6 @@ void clreol(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void inittextinfo(void)
 {
-	coniox_init(NULL);
 	coniox_readnormattr();	/* re-read the real startup attribute, not a fixed 7 */
 	textattr(ti.normattr);
 }
@@ -304,7 +303,10 @@ void inittextinfo(void)
 void gettextinfo(struct text_info *__r)
 {
 	coniox_init(NULL);
-	*__r = ti;
+	if (__r != NULL)
+	{
+		*__r = ti;
+	}
 }
 
 
@@ -899,9 +901,13 @@ void coniox_init(const void *title)
 	UINT acp;
 	CONSOLE_SCREEN_BUFFER_INFO info;
 
-	/* Check if already initialized */
+	/* Check if already initialized: an explicit title is still applied */
 	if (coniox_console_output)
 	{
+		if (title)
+		{
+			SetConsoleTitleA((LPCSTR) title);
+		}
 		return;
 	}
 	coniox_console_output = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -1510,6 +1516,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 {
 	int i;
 	int total;
+	int ok;
 	SMALL_RECT r;
 	unsigned short *buf;
 	COORD s, c = { 0,0 };
@@ -1537,15 +1544,8 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
 	buf = (unsigned short *) __destin;
-	if (!ReadConsoleOutputA(coniox_console_output, ci, s, c, &r))
-	{
-		if (ci != coniox_charinfo)
-		{
-			free(ci);
-		}
-		return(0);
-	}
-	for (i = 0; i < total; i++)
+	ok = ReadConsoleOutputA(coniox_console_output, ci, s, c, &r);
+	for (i = 0; ok && i < total; i++)
 	{
 		buf[i] = (ci[i].Char.AsciiChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
 	}
@@ -1553,7 +1553,7 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	{
 		free(ci);
 	}
-	return(1);
+	return(ok ? 1 : 0);
 }
 
 
@@ -1563,7 +1563,7 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	COORD s, c = { 0, 0 };
 	SMALL_RECT r;
 	CHAR_INFO *scratch;
-	int w, h, total;
+	int w, h, total, ok;
 
 	coniox_init(NULL);
 
@@ -1596,31 +1596,20 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	r.Bottom = (short) (coniox_orgy + __bottom - 1);
 	s.X = (short) w;
 	s.Y = (short) h;
-	if (!ReadConsoleOutput(coniox_console_output, scratch, s, c, &r))
+	ok = ReadConsoleOutput(coniox_console_output, scratch, s, c, &r);
+	if (ok)
 	{
-		if (scratch != coniox_charinfo)
-		{
-			free(scratch);
-		}
-		return(0);
-	}
-	r.Left = (short) (coniox_orgx + __destleft - 1);
-	r.Top = (short) (coniox_orgy + __desttop - 1);
-	r.Right = (short) (coniox_orgx + __destleft + w - 2);
-	r.Bottom = (short) (coniox_orgy + __desttop + h - 2);
-	if (!WriteConsoleOutput(coniox_console_output, scratch, s, c, &r))
-	{
-		if (scratch != coniox_charinfo)
-		{
-			free(scratch);
-		}
-		return(0);
+		r.Left = (short) (coniox_orgx + __destleft - 1);
+		r.Top = (short) (coniox_orgy + __desttop - 1);
+		r.Right = (short) (coniox_orgx + __destleft + w - 2);
+		r.Bottom = (short) (coniox_orgy + __desttop + h - 2);
+		ok = WriteConsoleOutput(coniox_console_output, scratch, s, c, &r);
 	}
 	if (scratch != coniox_charinfo)
 	{
 		free(scratch);
 	}
-	return(1);
+	return(ok ? 1 : 0);
 }
 
 
@@ -1629,6 +1618,7 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 {
 	int i;
 	int total;
+	int ok;
 	SMALL_RECT r;
 	unsigned short *ci;
 	COORD s, c = { 0,0 };
@@ -1661,19 +1651,12 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 		buffer[i].Char.AsciiChar = (unsigned char) (ci[i] & 0xFF);
 		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
 	}
-	if (!WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r))
-	{
-		if (buffer != coniox_charinfo)
-		{
-			free(buffer);
-		}
-		return(0);
-	}
+	ok = WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r);
 	if (buffer != coniox_charinfo)
 	{
 		free(buffer);
 	}
-	return(1);
+	return(ok ? 1 : 0);
 }
 
 
@@ -1682,6 +1665,7 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 {
 	int i;
 	int total;
+	int ok;
 	SMALL_RECT r;
 	COORD s, c = { 0,0 };
 	CHAR_INFO *buffer;
@@ -1712,19 +1696,12 @@ int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info 
 		buffer[i].Char.UnicodeChar = __source[i].letter;
 		buffer[i].Attributes = __source[i].attr;
 	}
-	if (!WriteConsoleOutputW(coniox_console_output, buffer, s, c, &r))
-	{
-		if (buffer != coniox_charinfo)
-		{
-			free(buffer);
-		}
-		return(0);
-	}
+	ok = WriteConsoleOutputW(coniox_console_output, buffer, s, c, &r);
 	if (buffer != coniox_charinfo)
 	{
 		free(buffer);
 	}
-	return(1);
+	return(ok ? 1 : 0);
 }
 
 
@@ -1733,6 +1710,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 {
 	int i;
 	int total;
+	int ok;
 	SMALL_RECT r;
 	COORD s, c = { 0,0 };
 	CHAR_INFO *buffer;
@@ -1757,15 +1735,8 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
 
-	if (!ReadConsoleOutputW(coniox_console_output, buffer, s, c, &r))
-	{
-		if (buffer != coniox_charinfo)
-		{
-			free(buffer);
-		}
-		return(0);
-	}
-	for (i = 0; i < total; i++)
+	ok = ReadConsoleOutputW(coniox_console_output, buffer, s, c, &r);
+	for (i = 0; ok && i < total; i++)
 	{
 		__destin[i].letter = buffer[i].Char.UnicodeChar;
 		__destin[i].attr = buffer[i].Attributes;
@@ -1774,7 +1745,7 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	{
 		free(buffer);
 	}
-	return(1);
+	return(ok ? 1 : 0);
 }
 
 
@@ -1789,7 +1760,7 @@ void textmode(int __newmode)
 	{
 		__newmode = ti.currmode;
 	}
-	//DigitalMars crashes if SetConsoleScreenBufferInfoEx is used
+	/* DigitalMars crashes if SetConsoleScreenBufferInfoEx is used */
 	#if (!defined(__ZTC__))
 		if (__newmode != ti.currmode)
 		{
@@ -2026,6 +1997,7 @@ static void coniox_idle(void);
 static int coniox_get_is_emulator(void);
 static void coniox_blink(unsigned int blink);
 static void coniox_enhanced_palette(unsigned int pal);
+static void coniox_exit(void);
 static int coniox_is_emulator = 0;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2155,10 +2127,10 @@ void coniox_init(const void* title)
 	ti.attribute = ti.normattr;
 
 
-	//Get if under emulator
+	/* Get if under emulator */
 	coniox_is_emulator = coniox_get_is_emulator();
 
-	//Activate blink
+	/* Activate blink */
 	coniox_blink(1);
 	coniox_enhanced_palette(1);
 
@@ -2168,7 +2140,7 @@ void coniox_init(const void* title)
 		if (!coniox_exit_hooked)
 		{
 			coniox_exit_hooked = 1;
-			atexit(coniox_flush_cursor);	/* the cursor is synced lazily: sync it once more when the program ends */
+			atexit(coniox_exit);	/* sync the lazy cursor and give the DAC palette back when the program ends */
 		}
 	}
 }
@@ -2584,6 +2556,15 @@ static void coniox_enhanced_palette(unsigned int pal)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+static void coniox_exit(void)
+{
+	/* atexit() hook: plain void (void) cdecl function, valid for Watcom, Borland/Turbo C, DJGPP, Digital Mars and Microsoft C. */
+	coniox_flush_cursor();
+	coniox_enhanced_palette(0);	/* the enhanced palette is programmed in the DAC: leave the standard VGA one for the shell */
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
 static void coniox_blink(unsigned int blink)
 {
 	if ((directvideo) && (ti.currmode != MONO))
@@ -2904,7 +2885,7 @@ void gotoxy(int __x, int __y)
 void delline(void)
 {
 	coniox_init(NULL);
-	//Seems to be faster using BIOS under emulators
+	/* Seems to be faster using BIOS under emulators */
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short coniox_far *srcrow;
@@ -2958,7 +2939,7 @@ void delline(void)
 void insline(void)
 {
 	coniox_init(NULL);
-	//Seems to be faster using BIOS under emulators
+	/* Seems to be faster using BIOS under emulators */
 	if ((directvideo) && (!coniox_is_emulator))
 	{
 		/* Mirror of delline(): the block moves down, so copy bottom-up to read each row before it is overwritten. */

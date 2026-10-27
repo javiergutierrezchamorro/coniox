@@ -125,10 +125,6 @@ VERSION HISTORY
 #define coniox_version (500)
 #define coniox_build (__DATE__)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef _MSC_VER
 	/* Visual Studio 2017 (15.0) or later */
 	#if _MSC_VER > 1900
@@ -168,6 +164,10 @@ extern "C" {
 #include <stdarg.h>	/* va_list, for cvprintf */
 #include <stddef.h>	/* wchar_t in strict C (wchar_info, getwch, ...) */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #if ((__DOS__) || (__MSDOS__))
 #include <dos.h>
@@ -178,7 +178,7 @@ extern "C" {
 	#include <i86.h>
 	unsigned char inportb(unsigned int port);
 	#pragma aux inportb  = "in  al, dx" parm nomemory [dx] value [al] modify nomemory exact [dx al];
-	unsigned char outportb(unsigned int port, unsigned char value);
+	void outportb(unsigned int port, unsigned char value);
 	#pragma aux outportb = "out dx, al" parm nomemory [dx] [al] modify nomemory exact [dx al];
 #endif
 
@@ -211,10 +211,8 @@ extern "C" {
 	unsigned long outpd (int port, unsigned long value);
 	unsigned int outpw (int port, unsigned int value);
 
-	//#define outportb		outp
 	#define outport			outpw
 	#define outportd		outpd
-	//#define inportb			inp
 	#define inport			inpw
 	#define inportd			inpd
 #endif
@@ -244,7 +242,7 @@ extern "C" {
 #endif
 
 #pragma pack(push)
-//#pragma pack(1)
+/* #pragma pack(1) */
 
 /**
 Structure holding information about screen.
