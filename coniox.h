@@ -131,6 +131,9 @@ VERSION HISTORY
 
 5.03 - 2026/10/27
  - Fixed delay() ending early at midnight: the BDA tick counter wraps at 0x1800B0, not at 2^32.
+
+5.04 - 2026/10/29
+ - Fixed cgets(), cgetws() and getpass() returning with the deferred cursor unsynced: stdio output written right after landed one cell behind the last echoed character. getche()/getwche() already synced it; the line readers do now too.
  - Fixed getch() returning a pending extended key for a plain 0xE0 character typed with Alt+numpad (scan code 0).
  - Fixed coniox_int86 under DJGPP (int386 does not exist there).
  - DOS16 coniox_putrun pragma aux now takes a far source (DS:SI), so it also works in compact and large models.
@@ -144,7 +147,7 @@ VERSION HISTORY
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (503)
+#define coniox_version (504)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER

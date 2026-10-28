@@ -550,6 +550,7 @@ char *cgets(char *__str)
 	}
 	__str[1] = (char) length;
 	str[length] = 0;
+	coniox_flush_cursor();	/* the loop echoed via putch(): sync the deferred cursor, like getche() already does */
 	return str;
 }
 
@@ -662,6 +663,7 @@ char *getpass(const char *__prompt)
 		}
 	}
 	str[length] = 0;
+	coniox_flush_cursor();	/* the loop echoed via putch(): sync the deferred cursor, like getche() already does */
 	return(str);
 }
 
@@ -775,6 +777,7 @@ wchar_t *cgetws(wchar_t *__str)
 	}
 	__str[1] = (wchar_t)length;
 	str[length] = 0;
+	coniox_flush_cursor();	/* the loop echoed via putwch(): sync the deferred cursor, like getwche() already does */
 	return str;
 }
 
