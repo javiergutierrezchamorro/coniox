@@ -1712,6 +1712,7 @@ int main(void)
 	static int (*const fxlist[])(void) = { fx_intro, fx_info, fx_ansi, fx_fire, fx_stars, fx_plasma, fx_scroller, fx_matrix, fx_mandel, fx_desktop, fx_benchmark, fx_credits };
 	int i, r;
 
+	//directvideo=0;
 	textmode(C80);
 	gettextinfo(&demo_ti);
 	SW = (int) demo_ti.screenwidth;
