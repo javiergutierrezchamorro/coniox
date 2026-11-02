@@ -156,13 +156,18 @@ VERSION HISTORY
 
 5.07 - 2026/11/02
  - DOS gotoxy() programs the CRTC cursor address with two 16-bit OUT (index+data) instead of four 8-bit OUT. Added outportw() (pragma aux for Watcom, outport for Borland, outpw elsewhere; DJGPP already has it).
+
+5.08 - 2026/11/02
+ - Windows kbhit(): peeks a batch of 16 events and drops the leading non-key ones (key releases, resizes, mouse) with one ReadConsoleInput; it no longer needs a Peek + Read pair per event plus a final empty Peek, so polling after a key press costs 2 console calls instead of 3, and event floods cost far less.
+ - Windows cputs()/cputws(): the run scan and the cell build are one pass instead of two, and the scan tests the common case (char > 13) first.
+ - Windows coniox_putchxyattrwh(): plain DWORD fill instead of the memcpy doubling, so clrscr()/clreol()/delline() fills are simpler and also set the unused char padding to zero.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (507)
+#define coniox_version (508)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER

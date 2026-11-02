@@ -1051,7 +1051,7 @@ int cputs(const char *__str)
 {
 	const char *orig = __str;
 	const char *run;
-	unsigned int i;
+	unsigned int ch;
 	unsigned int runlen, remaining;
 	unsigned long attrcell;
 	int winwidth, winheight;
@@ -1126,18 +1126,18 @@ int cputs(const char *__str)
 		{
 			remaining = CONIOX_MAX_CHARINFO;
 		}
-		/* Bounded scan, like cputws(): strcspn would walk the whole remaining string while a run never passes the window edge. */
-		runlen = 0;
-		while (runlen < remaining && ((unsigned char) run[runlen] > '\r' || (run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')))
-		{
-			runlen++;
-		}
-		/* One DWORD store per cell (CHAR_INFO = { union {WCHAR; CHAR;} Char; WORD Attributes; } = 4 bytes):
-			char | padding | attribute in a single write, and the loop vectorizes. */
+		/* One bounded pass scans the run and builds its cells (strcspn would walk the whole remaining string while a run never passes the window edge).
+			One DWORD store per cell (CHAR_INFO = { union {WCHAR; CHAR;} Char; WORD Attributes; } = 4 bytes): char | padding | attribute in a single write.
+			Only chars <= 13 can be a control, so the common case costs one compare. */
 		attrcell = (unsigned long) ti.attribute << 16;
-		for (i = 0; i < runlen; i++)
+		for (runlen = 0; runlen < remaining; runlen++)
 		{
-			((unsigned long *) ci)[i] = attrcell | (unsigned char) run[i];
+			ch = (unsigned char) run[runlen];
+			if (ch <= '\r' && (ch == 0 || ch == '\r' || ch == '\n' || ch == '\b'))
+			{
+				break;
+			}
+			((unsigned long *) ci)[runlen] = attrcell | ch;
 		}
 
 		r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
@@ -1186,7 +1186,7 @@ int cputws(const wchar_t *__str)
 {
 	const wchar_t *orig = __str;
 	const wchar_t *run;
-	unsigned int i;
+	unsigned int ch;
 	unsigned int runlen, remaining;
 	unsigned long attrcell;
 	int winwidth, winheight;
@@ -1263,15 +1263,16 @@ int cputws(const wchar_t *__str)
 			remaining = CONIOX_MAX_CHARINFO;
 		}
 
-		while (runlen < remaining && run[runlen] != L'\0' && run[runlen] != L'\r' && run[runlen] != L'\n' && run[runlen] != L'\b')
-		{
-			runlen++;
-		}
-		/* One DWORD store per cell: UnicodeChar in the low word, attribute in the high word. */
+		/* One pass scans the run and builds its cells: one DWORD store per cell, UnicodeChar in the low word and attribute in the high word. */
 		attrcell = (unsigned long) ti.attribute << 16;
-		for (i = 0; i < runlen; i++)
+		for (; runlen < remaining; runlen++)
 		{
-			((unsigned long *) ci)[i] = attrcell | (unsigned short) run[i];
+			ch = (unsigned short) run[runlen];
+			if (ch <= L'\r' && (ch == 0 || ch == L'\r' || ch == L'\n' || ch == L'\b'))
+			{
+				break;
+			}
+			((unsigned long *) ci)[runlen] = attrcell | ch;
 		}
 
 		r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
@@ -1356,6 +1357,7 @@ static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 {
 	int i;
 	int total;
+	unsigned long cell;
 	SMALL_RECT r;
 	COORD s, c;
 	CHAR_INFO *ci;
@@ -1372,17 +1374,11 @@ static void coniox_putchxyattrwh(int x, int y, int ch, int attr, int w, int h)
 		return;
 	}
 
-	ci[0].Char.AsciiChar = (char) ch;
-	ci[0].Attributes = (WORD) attr;
-
-	for (i = 1; i < total; i <<= 1)
+	/* One DWORD store per cell, like cputs(): char | padding | attribute. */
+	cell = ((unsigned long) (WORD) attr << 16) | (unsigned char) ch;
+	for (i = 0; i < total; i++)
 	{
-		int copy = i;
-		if (copy > total - i)
-		{
-			copy = total - i;
-		}
-		memcpy(&ci[i], &ci[0], copy * sizeof(CHAR_INFO));
+		((unsigned long *) ci)[i] = cell;
 	}
 
 	r.Left = (short) (coniox_orgx + x - 1);
@@ -1928,8 +1924,8 @@ void _setcursortype(int __cur_t)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)
 {
-	DWORD nevents = 0;
-	INPUT_RECORD ir;
+	DWORD nevents = 0, i, done;
+	INPUT_RECORD ir[16];
 	WORD vk;
 
 	coniox_init(NULL);
@@ -1939,52 +1935,68 @@ int kbhit(void)
 	}
 	coniox_flush_cursor();
 
-	while (PeekConsoleInputA(coniox_console_input, &ir, 1, &nevents) && nevents != 0)
+	/* Peek a batch of events: the leading ones that are not a key (key releases, resizes, mouse) are dropped with a single ReadConsoleInput instead of a Peek + Read pair each. */
+	while (PeekConsoleInputA(coniox_console_input, ir, (DWORD) (sizeof(ir) / sizeof(ir[0])), &nevents) && nevents != 0)
 	{
-		if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown)
+		for (i = 0; i < nevents; i++)
 		{
-			/* A character, or one of the keys DOS reports as 0 + scan code: F1-F12, cursor block, Insert, Delete and keypad 5. */
-			vk = ir.Event.KeyEvent.wVirtualKeyCode;
-			if (ir.Event.KeyEvent.uChar.AsciiChar != 0 || (vk >= VK_F1 && vk <= VK_F12) || (vk >= VK_PRIOR && vk <= VK_DOWN) || vk == VK_INSERT || vk == VK_DELETE || vk == VK_CLEAR)
+			if (ir[i].EventType == KEY_EVENT)
 			{
-				return(1);
+				if (ir[i].Event.KeyEvent.bKeyDown)
+				{
+					/* A character, or one of the keys DOS reports as 0 + scan code: F1-F12, cursor block, Insert, Delete and keypad 5. */
+					vk = ir[i].Event.KeyEvent.wVirtualKeyCode;
+					if (ir[i].Event.KeyEvent.uChar.AsciiChar != 0 || (vk >= VK_F1 && vk <= VK_F12) || (vk >= VK_PRIOR && vk <= VK_DOWN) || vk == VK_INSERT || vk == VK_DELETE || vk == VK_CLEAR)
+					{
+						break;
+					}
+				}
+			}
+			else if (ir[i].EventType == WINDOW_BUFFER_SIZE_EVENT)
+			{
+				CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+				if (GetConsoleScreenBufferInfo(coniox_console_output, &csbi))
+				{
+					coniox_orgx = csbi.srWindow.Left;
+					coniox_orgy = csbi.srWindow.Top;
+					ti.screenwidth = (unsigned short) (csbi.srWindow.Right - csbi.srWindow.Left + 1);
+					ti.screenheight = (unsigned short) (csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
+				}
+				if (ti.winright > ti.screenwidth)
+				{
+					ti.winright = ti.screenwidth;
+				}
+				if (ti.winbottom > ti.screenheight)
+				{
+					ti.winbottom = ti.screenheight;
+				}
+				if (ti.winleft > ti.winright)
+				{
+					ti.winleft = ti.winright;
+				}
+				if (ti.wintop > ti.winbottom)
+				{
+					ti.wintop = ti.winbottom;
+				}
+				if (!coniox_inwindow(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1))
+				{
+					gotoxy(1, 1);
+				}
 			}
 		}
-		if (!ReadConsoleInputA(coniox_console_input, &ir, 1, &nevents) || nevents == 0)
+		/* Drop the i events that are not a key; the key itself (i < nevents) stays at the head of the queue for getch(). */
+		if (i != 0 && (!ReadConsoleInputA(coniox_console_input, ir, i, &done) || done == 0))
 		{
 			return(0);
 		}
-		if (ir.EventType == WINDOW_BUFFER_SIZE_EVENT)
+		if (i < nevents)
 		{
-			CONSOLE_SCREEN_BUFFER_INFO csbi;
-
-			if (GetConsoleScreenBufferInfo(coniox_console_output, &csbi))
-			{
-				coniox_orgx = csbi.srWindow.Left;
-				coniox_orgy = csbi.srWindow.Top;
-				ti.screenwidth = (unsigned short) (csbi.srWindow.Right - csbi.srWindow.Left + 1);
-				ti.screenheight = (unsigned short) (csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
-			}
-			if (ti.winright > ti.screenwidth)
-			{
-				ti.winright = ti.screenwidth;
-			}
-			if (ti.winbottom > ti.screenheight)
-			{
-				ti.winbottom = ti.screenheight;
-			}
-			if (ti.winleft > ti.winright)
-			{
-				ti.winleft = ti.winright;
-			}
-			if (ti.wintop > ti.winbottom)
-			{
-				ti.wintop = ti.winbottom;
-			}
-			if (!coniox_inwindow(ti.winleft + ti.curx - 1, ti.wintop + ti.cury - 1))
-			{
-				gotoxy(1, 1);
-			}
+			return(1);
+		}
+		if (nevents < (DWORD) (sizeof(ir) / sizeof(ir[0])))
+		{
+			return(0);	/* the batch covered the whole queue and it is now empty: no second Peek needed */
 		}
 	}
 	return(0);
