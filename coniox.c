@@ -74,54 +74,94 @@ static unsigned short coniox_far *coniox_cell;
 		static coniox_inline void coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, size_t piCount);
 	#endif
 	#if (defined(__FLAT__))
-		/* parm [AX] only guarantees the low word: zero-extend it before building the duplicated cell word. */
+		/* parm [AX] only guarantees the low word: zero-extend it before building the duplicated cell word.
+		   386+: a leading STOSW brings EDI to a dword boundary (cells are words, so only bit 1 can differ), so every STOSD of the REP is aligned. */
 		#pragma aux coniox_fmemsetw = \
 			"movzx eax, ax" \
 			"mov edx, eax" \
 			"shl eax, 16" \
 			"or eax, edx" \
-			"shr ecx, 1" \
 			"cld" \
-			"rep stosd" \
-			"jnc short no_odd" \
+			"test edi, 2" \
+			"jz short _fsal" \
+			"jecxz short _fsdone" \
 			"stosw" \
-			"no_odd:" \
+			"dec ecx" \
+			"_fsal:" \
+			"mov edx, ecx" \
+			"shr ecx, 1" \
+			"rep stosd" \
+			"test dl, 1" \
+			"jz short _fsdone" \
+			"stosw" \
+			"_fsdone:" \
 			parm [EDI][AX][ECX] \
 			modify exact [EDI EDX ECX EAX];
+		/* 386+: dword-aligned destination (leading single cell if needed), 4 chars per pass read with one dword load and written as two STOSD, then up to 3 trailing cells. */
 		#pragma aux coniox_putrun = \
 			"and ebx, 0FF00h" \
+			"cld" \
+			"test edi, 2" \
+			"jz short _pral" \
+			"test ecx, ecx" \
+			"jz short _prdone" \
+			"movzx eax, byte ptr [esi]" \
+			"inc esi" \
+			"or eax, ebx" \
+			"stosw" \
+			"dec ecx" \
+			"_pral:" \
 			"mov edx, ebx" \
 			"shl ebx, 16" \
 			"or ebx, edx" \
-			"test ecx, 1" \
-			"jz _preven" \
-			"movzx eax, byte ptr [esi]" \
-			"inc esi" \
-			"or eax, edx" \
-			"stosw" \
-			"dec ecx" \
-			"_preven:" \
-			"shr ecx, 1" \
-			"jecxz _prdone" \
-			"_prpairs:" \
-			"movzx eax, byte ptr [esi]" \
-			"movzx edx, byte ptr [esi+1]" \
-			"add esi, 2" \
-			"shl edx, 16" \
-			"or eax, edx" \
+			"push ecx" \
+			"shr ecx, 2" \
+			"jz short _prtail" \
+			"_prquad:" \
+			"mov edx, [esi]" \
+			"add esi, 4" \
+			"movzx eax, dh" \
+			"shl eax, 16" \
+			"mov al, dl" \
+			"or eax, ebx" \
+			"stosd" \
+			"shr edx, 16" \
+			"movzx eax, dh" \
+			"shl eax, 16" \
+			"mov al, dl" \
 			"or eax, ebx" \
 			"stosd" \
 			"dec ecx" \
-			"jnz _prpairs" \
+			"jnz short _prquad" \
+			"_prtail:" \
+			"pop ecx" \
+			"and ecx, 3" \
+			"jz short _prdone" \
+			"_prone:" \
+			"movzx eax, byte ptr [esi]" \
+			"inc esi" \
+			"or eax, ebx" \
+			"stosw" \
+			"dec ecx" \
+			"jnz short _prone" \
 			"_prdone:" \
 			parm [EDI][ESI][EBX][ECX] \
 			modify exact [EDI ESI ECX EDX EAX EBX];
+		/* 386+: a leading MOVSW aligns the destination to a dword when it is only word aligned (partial-width windows, user buffers). */
 		#pragma aux coniox_fmemcpy = \
-			"mov ecx, ebx" \
-			"shr ecx, 2" \
 			"cld" \
-			"rep movsd" \
 			"mov ecx, ebx" \
+			"test edi, 2" \
+			"jz short _fcal" \
+			"cmp ecx, 2" \
+			"jb short _fcal" \
+			"movsw" \
+			"sub ecx, 2" \
+			"_fcal:" \
+			"push ecx" \
+			"shr ecx, 2" \
+			"rep movsd" \
+			"pop ecx" \
 			"and ecx, 3" \
 			"rep movsb" \
 			parm [EDI][ESI][EBX] \
@@ -1088,7 +1128,7 @@ int cputs(const char *__str)
 		}
 		/* Bounded scan, like cputws(): strcspn would walk the whole remaining string while a run never passes the window edge. */
 		runlen = 0;
-		while (runlen < remaining && run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')
+		while (runlen < remaining && ((unsigned char) run[runlen] > '\r' || (run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')))
 		{
 			runlen++;
 		}
@@ -2278,7 +2318,7 @@ int cputs(const char *__str)
 
 		/* Bounded scan, like cputws(): strcspn would walk the whole remaining string while a run never passes the window edge. */
 		runlen = 0;
-		while (runlen < remaining && run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')
+		while (runlen < remaining && ((unsigned char) run[runlen] > '\r' || (run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')))
 		{
 			runlen++;
 		}

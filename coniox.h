@@ -148,13 +148,18 @@ VERSION HISTORY
  - getch() DOS: the directvideo branch no longer syncs the cursor twice (kbhit() already does), only the BIOS branch needs its own sync.
  - Removed dead code: the undefined CONIOX_FAST_PUTCH hooks in the Windows cputs()/cputws(), the unreachable runlen == 0 branches of cputs()/cputws(), and the redundant coniox_init() in the DOS getwch().
  - Windows cputs()/cputws() indentation converted to tabs.
+
+5.06 - 2026/11/02
+ - DOS32 coniox_putrun pragma aux rewritten for 386+: dword aligned destination, 4 chars per pass (one dword load, two STOSD) and a short tail, instead of 2 chars per pass.
+ - DOS32 coniox_fmemsetw and coniox_fmemcpy pragma aux now align the destination to a dword before REP STOSD/MOVSD (partial-width windows, odd columns, user buffers).
+ - DOS cputs(): the run scan tests the common case (char > 13) first, 2 compares per char instead of 5.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (505)
+#define coniox_version (506)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
