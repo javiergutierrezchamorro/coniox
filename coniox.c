@@ -84,7 +84,7 @@ static unsigned short coniox_far *coniox_cell;
 			"cld" \
 			"test edi, 2" \
 			"jz short _fsal" \
-			"jecxz short _fsdone" \
+			"jecxz _fsdone" \
 			"stosw" \
 			"dec ecx" \
 			"_fsal:" \
@@ -2909,10 +2909,9 @@ void gotoxy(int __x, int __y)
 		if (directvideo)
 		{
 			pokew(0x40, 0x50, (scry << 8) | (scrx & 0xFF)); /* Put cursor position in BIOS */
-			outportb(coniox_basecrt, 0x0F);
-			outportb(coniox_basecrt + 1, cursor & 0xFF);
-			outportb(coniox_basecrt, 0x0E);
-			outportb(coniox_basecrt + 1, (cursor >> 8) & 0xFF);
+			/* CRTC index+data in one 16-bit OUT (index at 3D4h, data at 3D5h): two port writes instead of four. */
+			outportw(coniox_basecrt, ((cursor & 0xFF) << 8) | 0x0F);
+			outportw(coniox_basecrt, (cursor & 0xFF00) | 0x0E);
 		}
 		else
 		{

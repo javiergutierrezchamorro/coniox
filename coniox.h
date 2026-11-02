@@ -153,13 +153,16 @@ VERSION HISTORY
  - DOS32 coniox_putrun pragma aux rewritten for 386+: dword aligned destination, 4 chars per pass (one dword load, two STOSD) and a short tail, instead of 2 chars per pass.
  - DOS32 coniox_fmemsetw and coniox_fmemcpy pragma aux now align the destination to a dword before REP STOSD/MOVSD (partial-width windows, odd columns, user buffers).
  - DOS cputs(): the run scan tests the common case (char > 13) first, 2 compares per char instead of 5.
+
+5.07 - 2026/11/02
+ - DOS gotoxy() programs the CRTC cursor address with two 16-bit OUT (index+data) instead of four 8-bit OUT. Added outportw() (pragma aux for Watcom, outport for Borland, outpw elsewhere; DJGPP already has it).
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (506)
+#define coniox_version (507)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
@@ -223,6 +226,12 @@ extern "C" {
 	#pragma aux inportb  = "in  al, dx" parm nomemory [dx] value [al] modify nomemory exact [al];
 	void outportb(unsigned int port, unsigned char value);
 	#pragma aux outportb = "out dx, al" parm nomemory [dx] [al] modify nomemory exact [];
+	void outportw(unsigned int port, unsigned short value);
+	#pragma aux outportw = "out dx, ax" parm nomemory [dx] [ax] modify nomemory exact [];
+#elif defined(__TURBOC__)
+	#define outportw	outport
+#elif !defined(__DJGPP__)
+	#define outportw	outpw
 #endif
 
 #if defined(__DJGPP__)
