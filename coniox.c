@@ -1009,287 +1009,269 @@ static coniox_inline void coniox_readnormattr(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int cputs(const char *__str)
 {
-    const char *orig = __str;
-    const char *run;
-    unsigned int i;
-    unsigned int runlen, remaining;
-    unsigned long attrcell;
-    int winwidth, winheight;
-    int oldx, oldy;
-    COORD c = { 0, 0 };
-    SMALL_RECT r;
-    COORD s;
-    CHAR_INFO *ci = coniox_charinfo;
+	const char *orig = __str;
+	const char *run;
+	unsigned int i;
+	unsigned int runlen, remaining;
+	unsigned long attrcell;
+	int winwidth, winheight;
+	int oldx, oldy;
+	COORD c = { 0, 0 };
+	SMALL_RECT r;
+	COORD s;
+	CHAR_INFO *ci = coniox_charinfo;
 
-    if (__str == NULL)
-    {
-        return(0);
-    }
+	if (__str == NULL)
+	{
+		return(0);
+	}
 
-    coniox_init(NULL);
-    #ifdef CONIOX_FAST_PUTCH
-    coniox_flush_cells();	/* putch() puede tener celdas pendientes en (curx, cury): volcarlas antes de escribir aquí */
-    #endif
+	coniox_init(NULL);
 
-    winwidth  = ti.winright - ti.winleft + 1;
-    winheight = ti.winbottom - ti.wintop + 1;
+	winwidth  = ti.winright - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop + 1;
 
-    while (*__str)
-    {
-        /* Carriage return: back to start of line. WriteConsoleOutput neither reads nor moves the console cursor; the deferred sync paints it. */
-        if (*__str == '\r')
-        {
-            ti.curx = 1;
-            ++__str;
-            continue;
-        }
+	while (*__str)
+	{
+		/* Carriage return: back to start of line. WriteConsoleOutput neither reads nor moves the console cursor; the deferred sync paints it. */
+		if (*__str == '\r')
+		{
+			ti.curx = 1;
+			++__str;
+			continue;
+		}
 
-        /* Line feed: advance or scroll the window. */
-        if (*__str == '\n')
-        {
-            if (ti.cury < winheight)
-            {
-                ti.cury++;
-            }
-            else if (_wscroll)
-            {
-                /* LF: keep the column, like Borland cputs (delline() only reads ti). */
-                oldx = ti.curx;
-                oldy = ti.cury;
-                ti.curx = 1;
-                ti.cury = 1;
-                delline();
-                ti.curx = oldx;
-                ti.cury = oldy;
-            }
-            /* _wscroll = 0: LF on the last line does not scroll. */
-            ++__str;
-            continue;
-        }
+		/* Line feed: advance or scroll the window. */
+		if (*__str == '\n')
+		{
+			if (ti.cury < winheight)
+			{
+				ti.cury++;
+			}
+			else if (_wscroll)
+			{
+				/* LF: keep the column, like Borland cputs (delline() only reads ti). */
+				oldx = ti.curx;
+				oldy = ti.cury;
+				ti.curx = 1;
+				ti.cury = 1;
+				delline();
+				ti.curx = oldx;
+				ti.cury = oldy;
+			}
+			/* _wscroll = 0: LF on the last line does not scroll. */
+			++__str;
+			continue;
+		}
 
-        /* Backspace: move back without erasing. */
-        if (*__str == '\b')
-        {
-            if (ti.curx > 1)
-            {
-                ti.curx--;
-            }
-            ++__str;
-            continue;
-        }
+		/* Backspace: move back without erasing. */
+		if (*__str == '\b')
+		{
+			if (ti.curx > 1)
+			{
+				ti.curx--;
+			}
+			++__str;
+			continue;
+		}
 
-        /* Group printable characters up to the next control, the window edge or the batch size: one WriteConsoleOutputA per run. */
-        run = __str;
-        if (ti.curx > winwidth)
-        {
-            ti.curx = winwidth;
-        }
-        remaining = winwidth - ti.curx + 1;
-        if (remaining > CONIOX_MAX_CHARINFO)
-        {
-            remaining = CONIOX_MAX_CHARINFO;
-        }
-        /* Bounded scan, like cputws(): strcspn would walk the whole remaining string while a run never passes the window edge. */
-        runlen = 0;
-        while (runlen < remaining && run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')
-        {
-            runlen++;
-        }
-        if (runlen == 0)
-        {
-            ++__str;
-            continue;
-        }
+		/* Group printable characters up to the next control, the window edge or the batch size: one WriteConsoleOutputA per run. */
+		run = __str;
+		if (ti.curx > winwidth)
+		{
+			ti.curx = winwidth;
+		}
+		remaining = winwidth - ti.curx + 1;
+		if (remaining > CONIOX_MAX_CHARINFO)
+		{
+			remaining = CONIOX_MAX_CHARINFO;
+		}
+		/* Bounded scan, like cputws(): strcspn would walk the whole remaining string while a run never passes the window edge. */
+		runlen = 0;
+		while (runlen < remaining && run[runlen] != 0 && run[runlen] != '\r' && run[runlen] != '\n' && run[runlen] != '\b')
+		{
+			runlen++;
+		}
+		/* One DWORD store per cell (CHAR_INFO = { union {WCHAR; CHAR;} Char; WORD Attributes; } = 4 bytes):
+			char | padding | attribute in a single write, and the loop vectorizes. */
+		attrcell = (unsigned long) ti.attribute << 16;
+		for (i = 0; i < runlen; i++)
+		{
+			((unsigned long *) ci)[i] = attrcell | (unsigned char) run[i];
+		}
 
-        /* One DWORD store per cell (CHAR_INFO = { union {WCHAR; CHAR;} Char; WORD Attributes; } = 4 bytes):
-            char | padding | attribute in a single write, and the loop vectorizes. */
-        attrcell = (unsigned long) ti.attribute << 16;
-        for (i = 0; i < runlen; i++)
-        {
-            ((unsigned long *) ci)[i] = attrcell | (unsigned char) run[i];
-        }
+		r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
+		r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
+		r.Right  = (short) (r.Left + runlen - 1);
+		r.Bottom = r.Top;
+		s.X = (short) runlen;
+		s.Y = 1;
+		WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
+		ti.curx += runlen;
 
-        r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
-        r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
-        r.Right  = (short) (r.Left + runlen - 1);
-        r.Bottom = r.Top;
-        s.X = (short) runlen;
-        s.Y = 1;
-        WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
-        ti.curx += runlen;
-
-        /* A run never crosses the window edge: the wrap is decided once. */
-        if (ti.curx > winwidth)
-        {
-            if (_wscroll)
-            {
-                if (ti.cury < winheight)
-                {
-                    ti.curx = 1;
-                    ti.cury++;
-                }
-                else
-                {
-                    ti.curx = 1;
-                    ti.cury = 1;
-                    delline();
-                    ti.cury = winheight;
-                }
-            }
-            else
-            {
-                ti.curx = winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
-            }
-        }
-        __str += runlen;
-    }
-    /* Deferred physical cursor sync, exactly like DOS cputs() and putch(): the real cursor is programmed
-        at the next wait point (kbhit/getch/cgets/getpass/delay) via coniox_flush_cursor(), or at exit. */
-    coniox_cursor_dirty = 1;
-    return (int)(__str - orig);
+		/* A run never crosses the window edge: the wrap is decided once. */
+		if (ti.curx > winwidth)
+		{
+			if (_wscroll)
+			{
+				if (ti.cury < winheight)
+				{
+					ti.curx = 1;
+					ti.cury++;
+				}
+				else
+				{
+					ti.curx = 1;
+					ti.cury = 1;
+					delline();
+					ti.cury = winheight;
+				}
+			}
+			else
+			{
+				ti.curx = winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
+			}
+		}
+		__str += runlen;
+	}
+	/* Deferred physical cursor sync, exactly like DOS cputs() and putch(): the real cursor is programmed
+		at the next wait point (kbhit/getch/cgets/getpass/delay) via coniox_flush_cursor(), or at exit. */
+	coniox_cursor_dirty = 1;
+	return (int)(__str - orig);
 }
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int cputws(const wchar_t *__str)
 {
-    const wchar_t *orig = __str;
-    const wchar_t *run;
-    unsigned int i;
-    unsigned int runlen, remaining;
-    unsigned long attrcell;
-    int winwidth, winheight;
-    int oldx, oldy;
-    COORD c = { 0, 0 };
-    SMALL_RECT r;
-    COORD s;
-    CHAR_INFO *ci = coniox_charinfo;
+	const wchar_t *orig = __str;
+	const wchar_t *run;
+	unsigned int i;
+	unsigned int runlen, remaining;
+	unsigned long attrcell;
+	int winwidth, winheight;
+	int oldx, oldy;
+	COORD c = { 0, 0 };
+	SMALL_RECT r;
+	COORD s;
+	CHAR_INFO *ci = coniox_charinfo;
 
-    if (__str == NULL)
-    {
-        return(0);
-    }
+	if (__str == NULL)
+	{
+		return(0);
+	}
 
-    coniox_init(NULL);
-    #ifdef CONIOX_FAST_PUTCH
-    coniox_flush_cells();	/* putch() puede tener celdas pendientes en (curx, cury): volcarlas antes de escribir aquí */
-    #endif
+	coniox_init(NULL);
 
-    winwidth  = ti.winright - ti.winleft + 1;
-    winheight = ti.winbottom - ti.wintop + 1;
+	winwidth  = ti.winright - ti.winleft + 1;
+	winheight = ti.winbottom - ti.wintop + 1;
 
-    while (*__str)
-    {
-        /* Carriage return: back to start of line (deferred sync). */
-        if (*__str == L'\r')
-        {
-            ti.curx = 1;
-            ++__str;
-            continue;
-        }
+	while (*__str)
+	{
+		/* Carriage return: back to start of line (deferred sync). */
+		if (*__str == L'\r')
+		{
+			ti.curx = 1;
+			++__str;
+			continue;
+		}
 
-        /* Line feed: advance or scroll the window. */
-        if (*__str == L'\n')
-        {
-            if (ti.cury < winheight)
-            {
-                ti.cury++;
-            }
-            else if (_wscroll)
-            {
-                /* LF: keep the column, like Borland cputws. */
-                oldx = ti.curx;
-                oldy = ti.cury;
-                ti.curx = 1;
-                ti.cury = 1;
-                delline();
-                ti.curx = oldx;
-                ti.cury = oldy;
-            }
-            /* _wscroll = 0: LF on the last line does not scroll. */
-            ++__str;
-            continue;
-        }
+		/* Line feed: advance or scroll the window. */
+		if (*__str == L'\n')
+		{
+			if (ti.cury < winheight)
+			{
+				ti.cury++;
+			}
+			else if (_wscroll)
+			{
+				/* LF: keep the column, like Borland cputws. */
+				oldx = ti.curx;
+				oldy = ti.cury;
+				ti.curx = 1;
+				ti.cury = 1;
+				delline();
+				ti.curx = oldx;
+				ti.cury = oldy;
+			}
+			/* _wscroll = 0: LF on the last line does not scroll. */
+			++__str;
+			continue;
+		}
 
-        /* Backspace: move back without erasing. */
-        if (*__str == L'\b')
-        {
-            if (ti.curx > 1)
-            {
-                ti.curx--;
-            }
-            ++__str;
-            continue;
-        }
+		/* Backspace: move back without erasing. */
+		if (*__str == L'\b')
+		{
+			if (ti.curx > 1)
+			{
+				ti.curx--;
+			}
+			++__str;
+			continue;
+		}
 
-        /* Unicode twin of cputs(): one WriteConsoleOutputW per run. */
-        run = __str;
-        runlen = 0;
-        if (ti.curx > winwidth)
-        {
-            ti.curx = winwidth;
-        }
-        remaining = winwidth - ti.curx + 1;
-        if (remaining > CONIOX_MAX_CHARINFO)
-        {
-            remaining = CONIOX_MAX_CHARINFO;
-        }
+		/* Unicode twin of cputs(): one WriteConsoleOutputW per run. */
+		run = __str;
+		runlen = 0;
+		if (ti.curx > winwidth)
+		{
+			ti.curx = winwidth;
+		}
+		remaining = winwidth - ti.curx + 1;
+		if (remaining > CONIOX_MAX_CHARINFO)
+		{
+			remaining = CONIOX_MAX_CHARINFO;
+		}
 
-        while (runlen < remaining && run[runlen] != L'\0' && run[runlen] != L'\r' && run[runlen] != L'\n' && run[runlen] != L'\b')
-        {
-            runlen++;
-        }
-        if (runlen == 0)
-        {
-            ++__str;
-            continue;
-        }
+		while (runlen < remaining && run[runlen] != L'\0' && run[runlen] != L'\r' && run[runlen] != L'\n' && run[runlen] != L'\b')
+		{
+			runlen++;
+		}
+		/* One DWORD store per cell: UnicodeChar in the low word, attribute in the high word. */
+		attrcell = (unsigned long) ti.attribute << 16;
+		for (i = 0; i < runlen; i++)
+		{
+			((unsigned long *) ci)[i] = attrcell | (unsigned short) run[i];
+		}
 
-        /* One DWORD store per cell: UnicodeChar in the low word, attribute in the high word. */
-        attrcell = (unsigned long) ti.attribute << 16;
-        for (i = 0; i < runlen; i++)
-        {
-            ((unsigned long *) ci)[i] = attrcell | (unsigned short) run[i];
-        }
+		r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
+		r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
+		r.Right  = (short) (r.Left + runlen - 1);
+		r.Bottom = r.Top;
+		s.X = (short) runlen;
+		s.Y = 1;
+		WriteConsoleOutputW(coniox_console_output, ci, s, c, &r);
+		ti.curx += runlen;
 
-        r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
-        r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
-        r.Right  = (short) (r.Left + runlen - 1);
-        r.Bottom = r.Top;
-        s.X = (short) runlen;
-        s.Y = 1;
-        WriteConsoleOutputW(coniox_console_output, ci, s, c, &r);
-        ti.curx += runlen;
-
-        /* A run never crosses the window edge: the wrap is decided once. */
-        if (ti.curx > winwidth)
-        {
-            if (_wscroll)
-            {
-                if (ti.cury < winheight)
-                {
-                    ti.curx = 1;
-                    ti.cury++;
-                }
-                else
-                {
-                    ti.curx = 1;
-                    ti.cury = 1;
-                    delline();
-                    ti.cury = winheight;
-                }
-            }
-            else
-            {
-                ti.curx = winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
-            }
-        }
-        __str += runlen;
-    }
-    /* Deferred physical cursor sync, exactly like DOS cputs(): the real cursor is programmed
-        at the next wait point via coniox_flush_cursor(), or at exit. */
-    coniox_cursor_dirty = 1;
-    return (int)(__str - orig);
+		/* A run never crosses the window edge: the wrap is decided once. */
+		if (ti.curx > winwidth)
+		{
+			if (_wscroll)
+			{
+				if (ti.cury < winheight)
+				{
+					ti.curx = 1;
+					ti.cury++;
+				}
+				else
+				{
+					ti.curx = 1;
+					ti.cury = 1;
+					delline();
+					ti.cury = winheight;
+				}
+			}
+			else
+			{
+				ti.curx = winwidth;	/* _wscroll = 0: the next run overwrites the edge cell */
+			}
+		}
+		__str += runlen;
+	}
+	/* Deferred physical cursor sync, exactly like DOS cputs(): the real cursor is programmed
+		at the next wait point via coniox_flush_cursor(), or at exit. */
+	coniox_cursor_dirty = 1;
+	return (int)(__str - orig);
 }
 
 
@@ -1635,14 +1617,14 @@ int movetext(int __left, int __top, int __right, int __bottom, int __destleft, i
 	r.Bottom = (short) (coniox_orgy + __bottom - 1);
 	s.X = (short) w;
 	s.Y = (short) h;
-	ok = ReadConsoleOutput(coniox_console_output, scratch, s, c, &r);
+	ok = ReadConsoleOutputW(coniox_console_output, scratch, s, c, &r);
 	if (ok)
 	{
 		r.Left = (short) (coniox_orgx + __destleft - 1);
 		r.Top = (short) (coniox_orgy + __desttop - 1);
 		r.Right = (short) (coniox_orgx + __destleft + w - 2);
 		r.Bottom = (short) (coniox_orgy + __desttop + h - 2);
-		ok = WriteConsoleOutput(coniox_console_output, scratch, s, c, &r);
+		ok = WriteConsoleOutputW(coniox_console_output, scratch, s, c, &r);
 	}
 	if (scratch != coniox_charinfo)
 	{
@@ -2300,13 +2282,6 @@ int cputs(const char *__str)
 		{
 			runlen++;
 		}
-		if (runlen == 0)
-		{
-			/* Defensive: no room or only controls left that the front path already handled. Advance one to avoid a tight loop. */
-			++__str;
-			continue;
-		}
-
 		if (directvideo)
 		{
 			/* Fast path: the whole run straight to VRAM. */
@@ -2652,73 +2627,47 @@ static void coniox_blink(unsigned int blink)
 /* ----------------------------------------------------------------------------------------------------------------- */
 void delay(unsigned int ms)
 {
-	unsigned long lTicks;
-	unsigned long lWait, lNow;
+	union REGS r;
+	unsigned long lTicks, lWait, lNow;
+	unsigned long lIdleTick = 0xFFFFFFFFUL;	/* the tick counter never reaches this value: forces a coniox_idle() on the first lap */
 
 	coniox_flush_cursor();
 
 	lWait = (((unsigned long) ms * 91UL) + 4999UL) / 5000UL;	/* ms -> ticks at 18.2 Hz, rounded up */
-
-	if (directvideo)
+	lTicks = 0xFFFFFFFFUL;
+	while (lWait)
 	{
-		unsigned long lIdleTick;
-
-		lTicks = peekl(0x40, 0x6C);	/* BDA 0040:006C tick counter */
-		lIdleTick = lTicks - 1UL;	/* forces a coniox_idle() on the first lap */
-		while (lWait != 0)
+		if (directvideo)
 		{
-			lNow = peekl(0x40, 0x6C);
-			if (lNow < lTicks)
-			{
-				lNow += 0x1800B0UL;	/* the BDA counter wraps at midnight after 0x1800B0 ticks, not at 2^32 */
-			}
-
-			if ((lNow - lTicks) >= lWait)
-			{
-				break;
-			}
-			/* coniox_idle() only when the tick changes (18.2 Hz): the spin used to raise 3 software INTs per lap. */
-			if (lNow != lIdleTick)
-			{
-				lIdleTick = lNow;
-				coniox_idle();
-			}
+			lNow = peekl(0x40, 0x6C);	/* BDA 0040:006C tick counter */
 		}
-	}
-	else
-	{
-		union REGS r;
-		unsigned long lIdleTick = 0xFFFFFFFFUL;
-
-		r.h.ah = 0;	/* INT 1Ah AH=00h: read ticks */
-		coniox_int86(0x1A, &r, &r);
-		#if defined(__WATCOMC__)
-			lTicks = ((unsigned long) r.w.cx << 16) | r.w.dx;
-		#else
-			lTicks = ((unsigned long) r.x.cx << 16) | r.x.dx;
-		#endif
-		while (lWait)
+		else
 		{
-			r.h.ah = 0;
+			r.h.ah = 0;	/* INT 1Ah AH=00h: read ticks */
 			coniox_int86(0x1A, &r, &r);
 			#if defined(__WATCOMC__)
 				lNow = ((unsigned long) r.w.cx << 16) | r.w.dx;
 			#else
 				lNow = ((unsigned long) r.x.cx << 16) | r.x.dx;
 			#endif
-			if (lNow < lTicks)
-			{
-				lNow += 0x1800B0UL;	/* midnight wrap, see above */
-			}
-			if ((lNow - lTicks) >= lWait)
-			{
-				break;
-			}
-			if (lNow != lIdleTick)
-			{
-				lIdleTick = lNow;
-				coniox_idle();
-			}
+		}
+		if (lTicks == 0xFFFFFFFFUL)
+		{
+			lTicks = lNow;	/* first lap: start of the wait */
+		}
+		if (lNow < lTicks)
+		{
+			lNow += 0x1800B0UL;	/* the BDA counter wraps at midnight after 0x1800B0 ticks, not at 2^32 */
+		}
+		if ((lNow - lTicks) >= lWait)
+		{
+			break;
+		}
+		/* coniox_idle() only when the tick changes (18.2 Hz): the spin used to raise 3 software INTs per lap. */
+		if (lNow != lIdleTick)
+		{
+			lIdleTick = lNow;
+			coniox_idle();
 		}
 	}
 }
@@ -3248,7 +3197,6 @@ void clrscr(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t getwch(void)
 {
-	coniox_init(NULL);
 	return((wchar_t) getch());
 }
 
@@ -3283,8 +3231,6 @@ int getch(void)
 		getch_last_extended_key = 0;
 		return ch;
 	}
-
-	coniox_flush_cursor();
 
 	if (directvideo)
 	{
@@ -3333,6 +3279,8 @@ int getch(void)
 	else
 	{
 		union REGS r;
+
+		coniox_flush_cursor();
 		r.h.ah = 0;
 		coniox_int86(0x16, &r, &r);
 		if ((r.h.al == 0) || ((r.h.al == 0xE0) && (r.h.ah != 0)))

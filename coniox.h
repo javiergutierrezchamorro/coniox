@@ -141,13 +141,20 @@ VERSION HISTORY
  - inportb/outportb pragma aux no longer declare DX/AL as clobbered when IN/OUT leave them intact.
  - coniox_basecrt is now a constant, so the 6845 port numbers are folded at compile time.
  - gotoxy() computes the cell cache once for both directvideo and BIOS paths.
+
+5.05 - 2026/11/01
+ - Fixed Windows movetext() losing Unicode cells (putwch()/cputws()) in non-UNICODE builds: it went through the charset dependent ReadConsoleOutput/WriteConsoleOutput, now it always uses the wide variants.
+ - delay() DOS: the BDA and the INT 1Ah tick sources now share one wait loop instead of two copies.
+ - getch() DOS: the directvideo branch no longer syncs the cursor twice (kbhit() already does), only the BIOS branch needs its own sync.
+ - Removed dead code: the undefined CONIOX_FAST_PUTCH hooks in the Windows cputs()/cputws(), the unreachable runlen == 0 branches of cputs()/cputws(), and the redundant coniox_init() in the DOS getwch().
+ - Windows cputs()/cputws() indentation converted to tabs.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (504)
+#define coniox_version (505)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
