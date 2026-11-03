@@ -161,13 +161,19 @@ VERSION HISTORY
  - Windows kbhit(): peeks a batch of 16 events and drops the leading non-key ones (key releases, resizes, mouse) with one ReadConsoleInput; it no longer needs a Peek + Read pair per event plus a final empty Peek, so polling after a key press costs 2 console calls instead of 3, and event floods cost far less.
  - Windows cputs()/cputws(): the run scan and the cell build are one pass instead of two, and the scan tests the common case (char > 13) first.
  - Windows coniox_putchxyattrwh(): plain DWORD fill instead of the memcpy doubling, so clrscr()/clreol()/delline() fills are simpler and also set the unused char padding to zero.
+
+5.09 - 2026/11/02
+ - DOS cputs(): coniox_putrun() now scans and writes the run in one pass and returns the cells written, instead of a C scan loop followed by the write. DOS32 (386+) moves 4 chars per pass with a SWAR test for control chars and never loads a dword across a 4K page; DOS16 gets a one-pass LODSB/STOSW loop.
+ - putch(): printable chars are tested first (one compare for chars above 13) and the three control cases moved to a switch.
+ - DOS gotoxy(): no port writes when the BIOS data area already holds the target position.
+ - DOS coniox_init(): the VRAM base is selected once instead of three times.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (508)
+#define coniox_version (509)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
