@@ -145,14 +145,7 @@ static unsigned short coniox_far *coniox_cell;
 			"jz short _prdone" \
 			"movzx eax, byte ptr [esi]" \
 			"cmp al, 13" \
-			"ja short _prput" \
-			"je short _prdone" \
-			"cmp al, 10" \
-			"je short _prdone" \
-			"cmp al, 8" \
-			"je short _prdone" \
-			"test al, al" \
-			"jz short _prdone" \
+			"jbe short _prctl" \
 			"_prput:" \
 			"inc esi" \
 			"or eax, ebx" \
@@ -161,6 +154,14 @@ static unsigned short coniox_far *coniox_cell;
 			"test edi, 2" \
 			"jnz short _prsingle" \
 			"jmp short _prqcheck" \
+			"_prctl:" \
+			"je short _prdone" \
+			"cmp al, 10" \
+			"je short _prdone" \
+			"cmp al, 8" \
+			"je short _prdone" \
+			"test al, al" \
+			"jnz short _prput" \
 			"_prdone:" \
 			"pop eax" \
 			"sub eax, ecx" \
@@ -202,18 +203,20 @@ static unsigned short coniox_far *coniox_cell;
 			"_prnext:" \
 			"lodsb" \
 			"cmp al, 13" \
-			"ja short _prput" \
+			"jbe short _prctl" \
+			"_prput:" \
+			"mov ah, bh" \
+			"stosw" \
+			"loop _prnext" \
+			"jmp short _prdone" \
+			"_prctl:" \
 			"je short _prdone" \
 			"cmp al, 10" \
 			"je short _prdone" \
 			"cmp al, 8" \
 			"je short _prdone" \
 			"or al, al" \
-			"jz short _prdone" \
-			"_prput:" \
-			"mov ah, bh" \
-			"stosw" \
-			"loop _prnext" \
+			"jnz short _prput" \
 			"_prdone:" \
 			"pop ax" \
 			"sub ax, cx" \
@@ -476,8 +479,7 @@ int putch(int __c)
 
 	coniox_init(NULL);
 
-	winwidth  = ti.winright  - ti.winleft + 1;
-	winheight = ti.winbottom - ti.wintop  + 1;
+	winwidth = ti.winright - ti.winleft + 1;
 
 	/* Printable first: only CR, LF and BS are controls, so every char above 13 skips the three tests. */
 	if (__c > '\r' || (__c != '\r' && __c != '\n' && __c != '\b'))
@@ -505,6 +507,7 @@ int putch(int __c)
 		}
 		else if (_wscroll)
 		{
+			winheight = ti.winbottom - ti.wintop + 1;
 			if (ti.cury < winheight)
 			{
 				#if ((__DOS__) || (__MSDOS__))
@@ -541,6 +544,7 @@ int putch(int __c)
 				coniox_cursor_dirty = 1;
 				break;
 			case '\n':
+				winheight = ti.winbottom - ti.wintop + 1;
 				if (ti.cury < winheight)
 				{
 					#if ((__DOS__) || (__MSDOS__))
@@ -1642,7 +1646,8 @@ int gettext(int __left, int __top, int __right, int __bottom, void *__destin)
 	ok = ReadConsoleOutputA(coniox_console_output, ci, s, c, &r);
 	for (i = 0; ok && i < total; i++)
 	{
-		buf[i] = (ci[i].Char.AsciiChar & 0xFF) + ((ci[i].Attributes & 0xFF) << 8);
+		/* One DWORD load per cell: char in bits 0-7, attribute in bits 16-23. */
+		buf[i] = (unsigned short) ((((unsigned long *) ci)[i] & 0xFF) | ((((unsigned long *) ci)[i] >> 8) & 0xFF00));
 	}
 	if (ci != coniox_charinfo)
 	{
@@ -1743,8 +1748,8 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 	ci = (unsigned short *) __source;
 	for (i = 0; i < total; i++)
 	{
-		buffer[i].Char.AsciiChar = (unsigned char) (ci[i] & 0xFF);
-		buffer[i].Attributes = (ci[i] >> 8) & 0xFF;
+		/* One DWORD store per cell, like cputs(): char | padding | attribute. */
+		((unsigned long *) buffer)[i] = (unsigned long) (ci[i] & 0xFF) | ((unsigned long) (ci[i] >> 8) << 16);
 	}
 	ok = WriteConsoleOutputA(coniox_console_output, buffer, s, c, &r);
 	if (buffer != coniox_charinfo)

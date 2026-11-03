@@ -167,13 +167,18 @@ VERSION HISTORY
  - putch(): printable chars are tested first (one compare for chars above 13) and the three control cases moved to a switch.
  - DOS gotoxy(): no port writes when the BIOS data area already holds the target position.
  - DOS coniox_init(): the VRAM base is selected once instead of three times.
+
+5.10 - 2026/11/03
+ - DOS16/DOS32 coniox_putrun pragma aux: printable chars now fall through the control test instead of taking a jump, which is the expensive case on an 8088 (16 cycles taken, 4 not taken), a 286 and a 386.
+ - putch(): the window height is only computed when a wrap or a line feed needs it.
+ - Windows gettext()/puttext(): one DWORD access per cell instead of two field accesses.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (509)
+#define coniox_version (510)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
