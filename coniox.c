@@ -1763,70 +1763,18 @@ int puttext(int __left, int __top, int __right, int __bottom, void *__source)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+typedef char coniox_wchar_info_size_check[(sizeof(wchar_info) == sizeof(CHAR_INFO)) ? 1 : -1];
+
 int putwtext(int __left, int __top, int __right, int __bottom, const wchar_info *__source)
 {
-	int i;
-	int total;
 	int ok;
 	SMALL_RECT r;
 	COORD s, c = { 0,0 };
-	CHAR_INFO *buffer;
 
 
 	coniox_init(NULL);
 	/* Borland-style validation: rectangle inside the absolute screen. */
 	if (__source == NULL || __left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top)
-	{
-		return(0);
-	}
-	total = (__right - __left + 1) * (__bottom - __top + 1);
-	buffer = (total <= CONIOX_MAX_CHARINFO) ? coniox_charinfo : (CHAR_INFO *) malloc((size_t) total * sizeof(CHAR_INFO));
-	if (buffer == NULL)
-	{
-		return(0);
-	}
-
-	r.Left = (short) (coniox_orgx + __left - 1);
-	r.Top = (short) (coniox_orgy + __top - 1);
-	r.Right = (short) (coniox_orgx + __right - 1);
-	r.Bottom = (short) (coniox_orgy + __bottom - 1);
-	s.X = (short)(__right - __left + 1);
-	s.Y = (short)(__bottom - __top + 1);
-
-	for (i = 0; i < total; i++)
-	{
-		buffer[i].Char.UnicodeChar = __source[i].letter;
-		buffer[i].Attributes = __source[i].attr;
-	}
-	ok = WriteConsoleOutputW(coniox_console_output, buffer, s, c, &r);
-	if (buffer != coniox_charinfo)
-	{
-		free(buffer);
-	}
-	return(ok ? 1 : 0);
-}
-
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__destin)
-{
-	int i;
-	int total;
-	int ok;
-	SMALL_RECT r;
-	COORD s, c = { 0,0 };
-	CHAR_INFO *buffer;
-
-
-	coniox_init(NULL);
-	/* Borland-style validation: rectangle inside the absolute screen. */
-	if (__destin == NULL || __left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top)
-	{
-		return(0);
-	}
-	total = (__right - __left + 1) * (__bottom - __top + 1);
-	buffer = (total <= CONIOX_MAX_CHARINFO) ? coniox_charinfo : (CHAR_INFO *) malloc((size_t) total * sizeof(CHAR_INFO));
-	if (buffer == NULL)
 	{
 		return(0);
 	}
@@ -1837,20 +1785,35 @@ int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__des
 	s.X = (short) (__right - __left + 1);
 	s.Y = (short) (__bottom - __top + 1);
 
-	ok = ReadConsoleOutputW(coniox_console_output, buffer, s, c, &r);
-	for (i = 0; ok && i < total; i++)
-	{
-		__destin[i].letter = buffer[i].Char.UnicodeChar;
-		__destin[i].attr = buffer[i].Attributes;
-	}
-	if (buffer != coniox_charinfo)
-	{
-		free(buffer);
-	}
+	/* wchar_info and CHAR_INFO share the layout (WCHAR + WORD, 4 bytes): the console reads/writes the caller buffer directly, no conversion pass nor scratch copy. */
+	ok = WriteConsoleOutputW(coniox_console_output, (const CHAR_INFO *) __source, s, c, &r);
 	return(ok ? 1 : 0);
 }
+/* ----------------------------------------------------------------------------------------------------------------- */
+int getwtext(int __left, int __top, int __right, int __bottom, wchar_info *__destin)
+{
+	int ok;
+	SMALL_RECT r;
+	COORD s, c = { 0,0 };
 
 
+	coniox_init(NULL);
+	/* Borland-style validation: rectangle inside the absolute screen. */
+	if (__destin == NULL || __left < 1 || __top < 1 || __right > ti.screenwidth || __bottom > ti.screenheight || __right < __left || __bottom < __top)
+	{
+		return(0);
+	}
+	r.Left = (short) (coniox_orgx + __left - 1);
+	r.Top = (short) (coniox_orgy + __top - 1);
+	r.Right = (short) (coniox_orgx + __right - 1);
+	r.Bottom = (short) (coniox_orgy + __bottom - 1);
+	s.X = (short) (__right - __left + 1);
+	s.Y = (short) (__bottom - __top + 1);
+
+	/* wchar_info and CHAR_INFO share the layout (WCHAR + WORD, 4 bytes): the console reads/writes the caller buffer directly, no conversion pass nor scratch copy. */
+	ok = ReadConsoleOutputW(coniox_console_output, (CHAR_INFO *) __destin, s, c, &r);
+	return(ok ? 1 : 0);
+}
 /* ----------------------------------------------------------------------------------------------------------------- */
 void textmode(int __newmode)
 {

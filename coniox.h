@@ -182,13 +182,16 @@ VERSION HISTORY
 
 5.13 - 2026/11/17
  - coniox_enhanced_palette() directvideo: the DAC write index auto-increments, so it is programmed once per run of consecutive registers (4 times instead of 16): 52 OUT instead of 64.
+
+5.14 - 2026/11/17
+ - Windows putwtext()/getwtext(): wchar_info and CHAR_INFO have the same 4 byte layout, so the console now reads/writes the caller buffer directly (no scratch buffer, no malloc, no per cell conversion loop).
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (513)
+#define coniox_version (514)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
