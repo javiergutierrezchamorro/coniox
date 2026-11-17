@@ -69,6 +69,7 @@ static unsigned short coniox_far *coniox_cell;
 #if defined(__WATCOMC__)
 	static coniox_inline void coniox_fmemsetw(void coniox_far *m, short val, size_t count);
 	static coniox_inline void coniox_fmemcpy(void coniox_far *dst, const void coniox_far *src, size_t count);
+	static coniox_inline void coniox_fmemout(unsigned int port, const void coniox_far *src, size_t count);
 	#if (defined(__FLAT__))
 		static coniox_inline unsigned int coniox_putrun(unsigned short *piDst, const char *piSrc, unsigned int piAttr, size_t piCount);
 	#else
@@ -188,6 +189,12 @@ static unsigned short coniox_far *coniox_cell;
 			"rep movsb" \
 			parm [EDI][ESI][EBX] \
 			modify exact [ECX EDI ESI];
+		/* port in DX (low word of EDX), source in ESI, byte count in ECX: one REP OUTSB to a fixed I/O port (DAC data, etc.). */
+		#pragma aux coniox_fmemout = \
+			"cld" \
+			"rep outsb" \
+			parm [EDX][ESI][ECX] \
+			modify exact [ESI ECX];
 	#else
 		#pragma aux coniox_fmemsetw = \
 			"cld" \
@@ -237,6 +244,22 @@ static unsigned short coniox_far *coniox_cell;
 			"pop ds" \
 			parm [ES DI][DX SI][CX] \
 			modify exact [CX SI DI];
+		/* port in DX, far source in AX:SI, byte count in CX.
+		   Pure 8086 loop (LODSB/OUT/LOOP): REP OUTSB is 186+ and rejected when the
+		   compiler CPU setting is 8086 (default DOS16 without -3/-4). */
+		#pragma aux coniox_fmemout = \
+			"push ds" \
+			"mov ds, ax" \
+			"cld" \
+			"jcxz short _fmodone" \
+			"_fmonext:" \
+			"lodsb" \
+			"out dx, al" \
+			"loop _fmonext" \
+			"_fmodone:" \
+			"pop ds" \
+			parm [DX][AX SI][CX] \
+			modify exact [SI CX AX];
 	#endif
 #else
 	#define coniox_fmemcpy      _fmemmove
@@ -256,6 +279,17 @@ static unsigned short coniox_far *coniox_cell;
 		while (count--)
 		{
 			*buf++ = val;
+		}
+	}
+
+	/* Byte stream to a fixed I/O port (DAC data, ATTR, etc.). */
+	static coniox_inline void coniox_fmemout(unsigned int port, const void coniox_far *src, size_t count)
+	{
+		const unsigned char coniox_far *p = (const unsigned char coniox_far *) src;
+
+		while (count--)
+		{
+			outportb(port, *p++);
 		}
 	}
 
@@ -2588,16 +2622,16 @@ static void coniox_enhanced_palette(unsigned int pal)
 
 	if (directvideo)
 	{
-		for (i = 0; i < 16; i++)
-		{
-			if ((i == 0) || (coniox_dac[i] != coniox_dac[i - 1] + 1))
-			{
-				outportb(0x3C8, coniox_dac[i]);	/* DAC: register to write; it auto-increments, so only each run of consecutive registers needs it */
-			}
-			outportb(0x3C9, coniox_rgb[i][0]);	/* R */
-			outportb(0x3C9, coniox_rgb[i][1]);	/* G */
-			outportb(0x3C9, coniox_rgb[i][2]);	/* B */
-		}
+		/* Text-mode attribute → DAC map is fixed and non-linear: 0-5, 20, 7, 56-63.
+		   Four index writes + four bulk data bursts (no runtime run detection). */
+		outportb(0x3C8, 0);
+		coniox_fmemout(0x3C9, &coniox_rgb[0][0], 18);	/* attrs 0-5  → DAC 0-5   */
+		outportb(0x3C8, 20);
+		coniox_fmemout(0x3C9, &coniox_rgb[6][0], 3);	/* attr  6   → DAC 20    */
+		outportb(0x3C8, 7);
+		coniox_fmemout(0x3C9, &coniox_rgb[7][0], 3);	/* attr  7   → DAC 7     */
+		outportb(0x3C8, 56);
+		coniox_fmemout(0x3C9, &coniox_rgb[8][0], 24);	/* attrs 8-15 → DAC 56-63 */
 	}
 	else
 	{
