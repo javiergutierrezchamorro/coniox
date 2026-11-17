@@ -185,13 +185,27 @@ VERSION HISTORY
 
 5.14 - 2026/11/17
  - Windows putwtext()/getwtext(): wchar_info and CHAR_INFO have the same 4 byte layout, so the console now reads/writes the caller buffer directly (no scratch buffer, no malloc, no per cell conversion loop).
+
+5.15 - 2026/11/17
+ - Deep review: verified portable/platform paths, cursor deferral, cell cache after wrap, extended-key (0 + scan) handling for getch/getche, delay() midnight BDA wrap, Unicode cell transfer and movetext using wide APIs. No remaining functional defects found. Documentation and version bumped for the review.
+
+5.16 - 2026/11/17
+ - Optimizations focused on directvideo=1 and Windows hot paths:
+   - DOS C fallback (non-Watcom) coniox_putrun: pointer walking + common-case-first test (ch > 13) instead of indexed loop.
+   - DOS C fallback coniox_fmemsetw: residual 2/1 handling after the 4-unroll without a second while.
+   - Windows cputs()/cputws(): common-case-first control test; skip WriteConsoleOutput when runlen==0 (no empty API call).
+
+5.17 - 2026/11/17
+ - All private helpers confirmed static. Small ones now coniox_inline (coniox_putwchxyattr, coniox_ansi2unicode).
+ - Pragma aux review: registers and nomemory already optimal (inportb/outportb/outportw use nomemory; memory writers correctly omit it; modify exact lists only clobbered regs; DOS16 DS push/pop not listed).
+ - Fixed Watcom compile: coniox_inline macro is defined before the Windows forward declarations that use it; wchar.h is included before wchar_t is named.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (514)
+#define coniox_version (517)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER

@@ -132,11 +132,10 @@ static int demo_pollkey(void)
 	return KEY_SKIP;
 }
 
-/* Waits roughly one BIOS tick (55 ms) per count, polling the keyboard. Returns the key event, if any. */
-/* It also counts one frame per call and, when demo_fps is set, refreshes the live FPS counter on the */
-/* top right corner: effects drawing directly on screen get it through this puttext(), while fb_flush() */
-/* composites the very same cells into every off-screen frame, so full-screen blits never erase it */
-/* and it cannot flicker. */
+/* Wait roughly 'ticks' milliseconds (delay(1) each), polling the keyboard. Returns any key event.
+   Counts one frame per call; when demo_fps is set, refreshes the live FPS counter on the top right.
+   Direct-drawing effects get it via puttext(); fb_flush() composites the same cells into every
+   off-screen frame so full-screen blits never erase it and it cannot flicker. */
 static int demo_wait(int ticks)
 {
 	int k;
@@ -195,6 +194,11 @@ static void fb_set(int x, int y, int ch, int attr)
 		demo_fb[(y * SW) + x] = (unsigned short) (((attr & 0xFF) << 8) | (ch & 0xFF));
 	}
 }
+
+/* Unchecked: caller guarantees 0 <= x < SW and 0 <= y < SH. Used in full-frame hot loops. */
+#define fb_set_fast(x, y, ch, attr) \
+	(demo_fb[((y) * SW) + (x)] = (unsigned short) ((((attr) & 0xFF) << 8) | ((ch) & 0xFF)))
+
 
 static void fb_clear(void)
 {
@@ -548,36 +552,49 @@ static int fx_ansi(void)
 		ch = (unsigned char) *p;
 		if (ch == 0x1B)
 		{
-			v = 0;
-			p += 2;                    /* skip ESC and '[' */
-			while (*p >= '0' && *p <= '9')
+			/* CSI SGR: ESC [ n[;n...] m  — support multi-parameter sequences */
+			if (p[1] != '[')
 			{
-				v = (v * 10) + (*p - '0');
-				p++;
+				continue;
 			}
-			/* p now points at 'm': the loop increment steps over it */
-			if (v == 0)
+			p += 2;
+			for (;;)
 			{
-				fg = 7;
-				bg = 0;
-				bright = 0;
-				blink = 0;
-			}
-			else if (v == 1)
-			{
-				bright = 1;
-			}
-			else if (v == 5)
-			{
-				blink = 1;
-			}
-			else if (v >= 30 && v <= 37)
-			{
-				fg = demo_sgr[v - 30];
-			}
-			else if (v >= 40 && v <= 47)
-			{
-				bg = demo_sgr[v - 40];
+				v = 0;
+				while (*p >= '0' && *p <= '9')
+				{
+					v = (v * 10) + (*p - '0');
+					p++;
+				}
+				if (v == 0)
+				{
+					fg = 7;
+					bg = 0;
+					bright = 0;
+					blink = 0;
+				}
+				else if (v == 1)
+				{
+					bright = 1;
+				}
+				else if (v == 5)
+				{
+					blink = 1;
+				}
+				else if (v >= 30 && v <= 37)
+				{
+					fg = demo_sgr[v - 30];
+				}
+				else if (v >= 40 && v <= 47)
+				{
+					bg = demo_sgr[v - 40];
+				}
+				if (*p == ';')
+				{
+					p++;
+					continue;
+				}
+				break;    /* typically 'm'; outer for() advances past it */
 			}
 			continue;
 		}
@@ -640,11 +657,20 @@ static int fx_fire(void)
 	for (f = 0; f < 520; f++)
 	{
 		/* Seed (or starve) the two bottom heat rows: values live inside the ramp range, so the base glows instead of clamping to a flat wall. */
-		for (x = 0; x < SW; x++)
+		if (f < 430)
 		{
-			v = (f < 430) ? (12 + demo_rand(4)) : 0;
-			heat[SH][x] = (unsigned char) v;
-			heat[SH + 1][x] = (unsigned char) v;
+			for (x = 0; x < SW; x++)
+			{
+				v = 12 + demo_rand(4);
+				heat[SH][x] = (unsigned char) v;
+				heat[SH + 1][x] = (unsigned char) v;
+			}
+		}
+		else
+		{
+			/* Starve the base: zero both seed rows in one pass. */
+			memset(heat[SH], 0, (size_t) SW);
+			memset(heat[SH + 1], 0, (size_t) SW);
 		}
 
 		/* Average upward propagation, wrapping at the edges: a fixed plus a random cooling unit makes the flames die out in about ten rows. */
@@ -674,7 +700,7 @@ static int fx_fire(void)
 				{
 					v = 15;
 				}
-				fb_set(x, y, framp[v][0], framp[v][1]);
+				fb_set_fast(x, y, framp[v][0], framp[v][1]);
 			}
 		}
 
@@ -726,19 +752,19 @@ static int fx_stars(void)
 			{
 				if (z > 100)
 				{
-					fb_set(px, py, '.', 0x08);
+					fb_set_fast(px, py, '.', 0x08);
 				}
 				else if (z > 60)
 				{
-					fb_set(px, py, '.', 0x07);
+					fb_set_fast(px, py, '.', 0x07);
 				}
 				else if (z > 25)
 				{
-					fb_set(px, py, '+', 0x0F);
+					fb_set_fast(px, py, '+', 0x0F);
 				}
 				else
 				{
-					fb_set(px, py, '*', 0x0B);
+					fb_set_fast(px, py, '*', 0x0B);
 				}
 			}
 			z -= (1 + (i & 3));
@@ -797,7 +823,7 @@ static int fx_plasma(void)
 					ii = 7;
 				}
 				ic = (((v + 512) / 64 + t) & 7);
-				fb_set(x, y, pramp[ii], ppal[ic]);
+				fb_set_fast(x, y, pramp[ii], ppal[ic]);
 			}
 		}
 		fb_flush();
@@ -952,7 +978,7 @@ static int fx_matrix(void)
 					{
 						a = 0x08;
 					}
-					fb_set(x, y, mchars[mchr[x]], a);
+					fb_set_fast(x, y, mchars[mchr[x]], a);
 				}
 			}
 			if (((f & 3) == 0) && (demo_rand(3) == 0))
@@ -1023,11 +1049,11 @@ static int fx_mandel(void)
 			}
 			if (it >= 48)
 			{
-				fb_set(x, y, '@', 0x0F);    /* inside the set: bright silhouette */
+				fb_set_fast(x, y, '@', 0x0F);    /* inside the set: bright silhouette */
 			}
 			else
 			{
-				fb_set(x, y, mramp[it > 8 ? 8 : it], mpal[it % 14]);
+				fb_set_fast(x, y, mramp[it > 8 ? 8 : it], mpal[it % 14]);
 			}
 		}
 		fb_flush_row(y);
@@ -1136,7 +1162,7 @@ static int demo_type(int x, int y, const char *s, int attr)
 
 static int fx_desktop(void)
 {
-	static unsigned short ballbuf[10 * 6];
+	static unsigned short ballbuf[8 * 3];
 	static const char *about[6] =
 	{
 		"CONIOX V5.0 - TEXT MODE CONIO",
@@ -1712,7 +1738,7 @@ int main(void)
 	static int (*const fxlist[])(void) = { fx_intro, fx_info, fx_ansi, fx_fire, fx_stars, fx_plasma, fx_scroller, fx_matrix, fx_mandel, fx_desktop, fx_benchmark, fx_credits };
 	int i, r;
 
-	//directvideo=0;
+	/* directvideo = 0; */
 	textmode(C80);
 	gettextinfo(&demo_ti);
 	SW = (int) demo_ti.screenwidth;

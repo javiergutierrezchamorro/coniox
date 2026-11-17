@@ -9,18 +9,6 @@
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 #define CONIOX_MAX_CHARINFO     (160 * 100)
-#if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
-	static wchar_t coniox_ansi2unicode(char ch);
-	static void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
-	#include <wchar.h>
-	wchar_t *cgetws(wchar_t *__str);
-	int cputws(const wchar_t *__str);
-	int cwscanf(const wchar_t *__format, ...);
-	int cwprintf(const wchar_t *__format, ...);
-	wchar_t getwche(void);
-	wchar_t ungetwch(wchar_t __ch);
-#endif
-
 
 #if defined(__WATCOMC__)
 	#define coniox_inline __inline
@@ -30,6 +18,18 @@
 	#define coniox_inline	/* Borland/Turbo C before 4.5 has no inline keyword in C mode */
 #else
 	#define coniox_inline inline
+#endif
+
+#if ((__WIN32__) || (__WINDOWS__) || (__NT__)) || (_WIN32)
+	#include <wchar.h>
+	static coniox_inline wchar_t coniox_ansi2unicode(char ch);
+	static coniox_inline void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr);
+	wchar_t *cgetws(wchar_t *__str);
+	int cputws(const wchar_t *__str);
+	int cwscanf(const wchar_t *__format, ...);
+	int cwprintf(const wchar_t *__format, ...);
+	wchar_t getwche(void);
+	wchar_t ungetwch(wchar_t __ch);
 #endif
 
 static coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr);
@@ -267,6 +267,7 @@ static unsigned short coniox_far *coniox_cell;
 	{
 		short coniox_far *buf = (short coniox_far *) m;
 
+		/* Unroll by 4; most clears (clreol, clrscr lines, delline bottom) are long enough to benefit. */
 		while (count >= 4)
 		{
 			buf[0] = val;
@@ -276,9 +277,15 @@ static unsigned short coniox_far *coniox_cell;
 			buf += 4;
 			count -= 4;
 		}
-		while (count--)
+		if (count & 2)
 		{
-			*buf++ = val;
+			buf[0] = val;
+			buf[1] = val;
+			buf += 2;
+		}
+		if (count & 1)
+		{
+			*buf = val;
 		}
 	}
 
@@ -293,24 +300,35 @@ static unsigned short coniox_far *coniox_cell;
 		}
 	}
 
-	/* Scans and writes the run in one pass; returns the number of cells written (it stops at the first NUL, BS, LF or CR, or after piCount chars). */
+	/* Scans and writes the run in one pass; returns the number of cells written (it stops at the first NUL, BS, LF or CR, or after piCount chars).
+	   Pointer form instead of indexing: better code generation on older compilers (Turbo C, early Watcom without pragma). */
 	static coniox_inline unsigned int coniox_putrun(unsigned short coniox_far *piDst, const char coniox_far *piSrc, unsigned int piAttr, unsigned int piCount)
 	{
-		unsigned int n;
-		unsigned short cellword;
-		unsigned char ch;
+		unsigned short cellword = (unsigned short) (piAttr & 0xFF00);
+		unsigned short coniox_far *dst = piDst;
+		const char coniox_far *src = piSrc;
+		unsigned int n = 0;
 
-		cellword = (unsigned short) (piAttr & 0xFF00);
-		for (n = 0; n < piCount; n++)
+		while (n < piCount)
 		{
-			ch = (unsigned char) piSrc[n];
-			if (ch <= '\r' && (ch == 0 || ch == '\r' || ch == '\n' || ch == '\b'))
+			unsigned char ch = (unsigned char) *src;
+			/* Common case first: printable > 13 costs one compare. */
+			if (ch > '\r')
+			{
+				*dst++ = cellword | ch;
+				src++;
+				n++;
+				continue;
+			}
+			if (ch == 0 || ch == '\r' || ch == '\n' || ch == '\b')
 			{
 				break;
 			}
-			piDst[n] = cellword | ch;
+			*dst++ = cellword | ch;
+			src++;
+			n++;
 		}
-		return(n);
+		return n;
 	}
 
 #endif
@@ -1205,28 +1223,36 @@ int cputs(const char *__str)
 		{
 			remaining = CONIOX_MAX_CHARINFO;
 		}
-		/* One bounded pass scans the run and builds its cells (strcspn would walk the whole remaining string while a run never passes the window edge).
-			One DWORD store per cell (CHAR_INFO = { union {WCHAR; CHAR;} Char; WORD Attributes; } = 4 bytes): char | padding | attribute in a single write.
-			Only chars <= 13 can be a control, so the common case costs one compare. */
+		/* One bounded pass scans the run and builds its cells.
+			One DWORD store per cell (CHAR_INFO layout): char | padding | attribute.
+			Common case (ch > 13) costs a single compare. */
 		attrcell = (unsigned long) ti.attribute << 16;
 		for (runlen = 0; runlen < remaining; runlen++)
 		{
 			ch = (unsigned char) run[runlen];
-			if (ch <= '\r' && (ch == 0 || ch == '\r' || ch == '\n' || ch == '\b'))
+			if (ch > '\r')
+			{
+				((unsigned long *) ci)[runlen] = attrcell | ch;
+				continue;
+			}
+			if (ch == 0 || ch == '\r' || ch == '\n' || ch == '\b')
 			{
 				break;
 			}
 			((unsigned long *) ci)[runlen] = attrcell | ch;
 		}
 
-		r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
-		r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
-		r.Right  = (short) (r.Left + runlen - 1);
-		r.Bottom = r.Top;
-		s.X = (short) runlen;
-		s.Y = 1;
-		WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
-		ti.curx += runlen;
+		if (runlen)
+		{
+			r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
+			r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
+			r.Right  = (short) (r.Left + runlen - 1);
+			r.Bottom = r.Top;
+			s.X = (short) runlen;
+			s.Y = 1;
+			WriteConsoleOutputA(coniox_console_output, ci, s, c, &r);
+			ti.curx += runlen;
+		}
 
 		/* A run never crosses the window edge: the wrap is decided once. */
 		if (ti.curx > winwidth)
@@ -1342,26 +1368,35 @@ int cputws(const wchar_t *__str)
 			remaining = CONIOX_MAX_CHARINFO;
 		}
 
-		/* One pass scans the run and builds its cells: one DWORD store per cell, UnicodeChar in the low word and attribute in the high word. */
+		/* One pass scans the run and builds its cells: one DWORD store per cell (UnicodeChar low, attribute high).
+		   Common case (ch > 13) costs a single compare. */
 		attrcell = (unsigned long) ti.attribute << 16;
 		for (; runlen < remaining; runlen++)
 		{
 			ch = (unsigned short) run[runlen];
-			if (ch <= L'\r' && (ch == 0 || ch == L'\r' || ch == L'\n' || ch == L'\b'))
+			if (ch > L'\r')
+			{
+				((unsigned long *) ci)[runlen] = attrcell | ch;
+				continue;
+			}
+			if (ch == 0 || ch == L'\r' || ch == L'\n' || ch == L'\b')
 			{
 				break;
 			}
 			((unsigned long *) ci)[runlen] = attrcell | ch;
 		}
 
-		r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
-		r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
-		r.Right  = (short) (r.Left + runlen - 1);
-		r.Bottom = r.Top;
-		s.X = (short) runlen;
-		s.Y = 1;
-		WriteConsoleOutputW(coniox_console_output, ci, s, c, &r);
-		ti.curx += runlen;
+		if (runlen)
+		{
+			r.Left   = (short) (coniox_orgx + ti.winleft + ti.curx - 2);
+			r.Top    = (short) (coniox_orgy + ti.wintop + ti.cury - 2);
+			r.Right  = (short) (r.Left + runlen - 1);
+			r.Bottom = r.Top;
+			s.X = (short) runlen;
+			s.Y = 1;
+			WriteConsoleOutputW(coniox_console_output, ci, s, c, &r);
+			ti.curx += runlen;
+		}
 
 		/* A run never crosses the window edge: the wrap is decided once. */
 		if (ti.curx > winwidth)
@@ -1414,12 +1449,11 @@ static coniox_inline void coniox_putchxyattr(int x, int y, int ch, int attr)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-static void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
+static coniox_inline void coniox_putwchxyattr(int x, int y, wchar_t ch, int attr)
 {
 	CHAR_INFO ci;
 	SMALL_RECT r;
 	COORD c = { 0, 0 }, s = { 1, 1 };
-
 
 	r.Left = (short) (coniox_orgx + x - 1);
 	r.Top = (short) (coniox_orgy + y - 1);
@@ -1503,7 +1537,7 @@ wchar_t getwche(void)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-static wchar_t coniox_ansi2unicode(char ch)
+static coniox_inline wchar_t coniox_ansi2unicode(char ch)
 {
 	wchar_t unicodech = 0;
 
