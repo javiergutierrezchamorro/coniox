@@ -46,6 +46,7 @@ int _wscroll = 1;
 
 static int coniox_setcursortype = _NORMALCURSOR;
 static int coniox_cursor_dirty = 0;	/* 1 = physical cursor lags behind ti.curx/ti.cury */
+static int getch_last_extended_key = 0;	/* scan code pending after getch() returned 0 for an extended key */
 
 #if ((__DOS__) || (__MSDOS__))
 #define coniox_basecrt 0x3D4
@@ -693,9 +694,11 @@ int cscanf(const char *__format, ...)
 int getche(void)
 {
 	int ch;
+	int isext;
 
+	isext = getch_last_extended_key;	/* a pending scan code is not a character: it is not echoed */
 	ch = getch();
-	if (ch != 0 && ch != EOF)
+	if (!isext && ch != 0 && ch != EOF)
 	{
 		putch(ch);
 		coniox_flush_cursor();
@@ -1453,9 +1456,10 @@ wchar_t getwch(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 wchar_t getwche(void)
 {
+	int isext = getch_last_extended_key;
 	wchar_t ch = getwch();
 
-	if (ch != 0 && ch != (wchar_t) EOF)
+	if (!isext && ch != 0 && ch != (wchar_t) EOF)
 	{
 		putwch(ch);
 		coniox_flush_cursor();
@@ -1475,8 +1479,6 @@ static wchar_t coniox_ansi2unicode(char ch)
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-static int getch_last_extended_key = 0;
-
 int getch(void)
 {
 	INPUT_RECORD ir;
@@ -2203,7 +2205,7 @@ void coniox_init(const void* title)
 		}
 		else
 		{
-			ti.screenheight = 25;	/* INT 10h AH=0Fh reports no row count: assume 25 */
+			ti.screenheight = peekb(0x40, 0x84) + 1;	/* INT 10h AH=0Fh reports no row count: use the BDA one, validated below */
 		}
 	}
 	/* BDA 0040:0084 is only meaningful on EGA/VGA-class systems.
@@ -2625,7 +2627,10 @@ static void coniox_enhanced_palette(unsigned int pal)
 	{
 		for (i = 0; i < 16; i++)
 		{
-			outportb(0x3C8, coniox_dac[i]);	/* DAC: register to write */
+			if ((i == 0) || (coniox_dac[i] != coniox_dac[i - 1] + 1))
+			{
+				outportb(0x3C8, coniox_dac[i]);	/* DAC: register to write; it auto-increments, so only each run of consecutive registers needs it */
+			}
 			outportb(0x3C9, coniox_rgb[i][0]);	/* R */
 			outportb(0x3C9, coniox_rgb[i][1]);	/* G */
 			outportb(0x3C9, coniox_rgb[i][2]);	/* B */
@@ -2843,10 +2848,8 @@ void _setcursortype(int __cur_t)
 				cursor_end = cellheight - 1;
 				break;
 		}
-		outportb(coniox_basecrt, 0x0A);
-		outportb(coniox_basecrt + 1, cursor_start);
-		outportb(coniox_basecrt, 0x0B);
-		outportb(coniox_basecrt + 1, cursor_end);
+		outportw(coniox_basecrt, (cursor_start << 8) | 0x0A);	/* index 3D4h + data 3D5h in one 16-bit OUT, like gotoxy() */
+		outportw(coniox_basecrt, (cursor_end << 8) | 0x0B);
 
 		/* Re-program the cursor address: while the cursor was hidden gotoxy()
 			skipped the CRTC update, so 0x0E/0x0F can hold a stale position.
@@ -3276,8 +3279,6 @@ wchar_t getwch(void)
 {
 	return((wchar_t) getch());
 }
-
-static int getch_last_extended_key = 0;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 int kbhit(void)

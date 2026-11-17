@@ -172,13 +172,23 @@ VERSION HISTORY
  - DOS16/DOS32 coniox_putrun pragma aux: printable chars now fall through the control test instead of taking a jump, which is the expensive case on an 8088 (16 cycles taken, 4 not taken), a 286 and a 386.
  - putch(): the window height is only computed when a wrap or a line feed needs it.
  - Windows gettext()/puttext(): one DWORD access per cell instead of two field accesses.
+
+5.11 - 2026/11/17
+ - DOS _setcursortype() directvideo programs the CRTC cursor shape with two 16-bit OUT (index+data) instead of four 8-bit OUT, like gotoxy().
+
+5.12 - 2026/11/17
+ - Fixed getche()/getwche() echoing the scan code of an extended key (second call after the 0): only real characters are echoed.
+ - DOS coniox_init() with directvideo=0 now reads the row count from the BDA (0040:0084) instead of assuming 25, so 43/50 line modes work through BIOS too.
+
+5.13 - 2026/11/17
+ - coniox_enhanced_palette() directvideo: the DAC write index auto-increments, so it is programmed once per run of consecutive registers (4 times instead of 16): 52 OUT instead of 64.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (510)
+#define coniox_version (513)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
