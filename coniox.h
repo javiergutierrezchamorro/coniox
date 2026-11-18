@@ -199,13 +199,22 @@ VERSION HISTORY
  - All private helpers confirmed static. Small ones now coniox_inline (coniox_putwchxyattr, coniox_ansi2unicode).
  - Pragma aux review: registers and nomemory already optimal (inportb/outportb/outportw use nomemory; memory writers correctly omit it; modify exact lists only clobbered regs; DOS16 DS push/pop not listed).
  - Fixed Watcom compile: coniox_inline macro is defined before the Windows forward declarations that use it; wchar.h is included before wchar_t is named.
+
+5.18 - 2026/11/18
+ - The "already initialized?" test is now an inline macro (coniox_ready) instead of a call to coniox_init() in every public function: one call and return less in putch(), gotoxy(), textcolor(), wherex() and the rest.
+ - cvprintf()/cprintf(): a format without '%' goes straight to cputs() (no formatting pass, no 254 char truncation) and the result is the cputs() count instead of a strlen() pass.
+ - putch()/putwch()/cputs()/cputws(): the CR, LF, BS and line wrap logic lives in small static inline helpers (coniox_cr, coniox_lf, coniox_bs, coniox_wrap, coniox_scrollup) instead of four copies. DOS cputs() now wraps with the same cell cache moves as putch(), without recomputing the offset.
+ - The window width and height are cached (coniox_winwidth, coniox_winheight, refreshed by coniox_winsize()) instead of being recomputed on every putch()/cputs(). They live outside text_info, whose layout is public.
+ - coniox_vram, coniox_cell and the cputs() cursor pointer share one coniox_cellptr type: near in FLAT/DJGPP (coniox_far is empty there), far in real mode.
+ - DOS movetext(): new coniox_fmemcpyr() (STD + REP MOVSD/MOVSW, backwards) replaces the cell by cell C loop for the horizontal overlap, and a full-width move down is one backwards block instead of a copy per row.
+ - coniodemo benchmark: each test repeats its original workload for at least one second (clock() ticks at 18.2 Hz on DOS) and reports ms and operations per second; the cputs wrapping test is now timed; the gotoxy test no longer times the random number generator.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (517)
+#define coniox_version (518)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER

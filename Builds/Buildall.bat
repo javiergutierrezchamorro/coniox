@@ -78,9 +78,9 @@ DEL conioxid_ocw32.exe
 WCL386 -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r  -fpi87 -fp6 -mf -s -ri -zm /bt=nt /l=nt /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\conioxid.c ..\coniox.c
 REN conioxid.exe conioxid_ocw32.exe
 rem *** DOS16 ***
-DEL conioxid_ocd16.exe
-WCL -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp4 -0 -ms -s -ri -zm /bt=dos /l=dos /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\conioxid.c ..\coniox.c
-REN conioxid.exe conioxid_ocd16.exe
+DEL conioxid_ocd16.com
+WCL -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp4 -0 -mt -s -ri -zm /bt=dos /l=com /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\conioxid.c ..\coniox.c
+REN conioxid.com conioxid_ocd16.com
 rem *** DOS32 ***
 DEL conioxid_ocd32.exe
 WCL386 -w3 -oneatx -ohirbk -ol -ol+ -oi -ei -zp16 -6r -fpi87 -fp6 -mf -s -ri -zm /bt=dos /l=pmodewi /fhwe /"OPTION ELIMINATE" /"OPTION VFREMOVAL" ..\conioxid.c ..\coniox.c

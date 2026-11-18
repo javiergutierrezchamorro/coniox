@@ -21,7 +21,7 @@
 /*     3. 3D starfield warp                                                                                          */
 /*     4. Double sine scroller with bouncing module box                                                              */
 /*     5. TUI desktop showcasing window/clrscr/gettext/puttext/delline/insline/ungetch/cursor                        */
-/*     6. Speed benchmark: 50000 putch, 1000 cputs, 1000 cprintf plus puttext/gettext/movetext/gotoxy/clrscr         */
+/*     6. Speed benchmark: putch, cputs, cprintf, puttext, gettext, movetext, gotoxy and clrscr, 1 second each       */
 /*     7. Closing credits                                                                                            */
 /*                                                                                                                   */
 /*  Controls: ANY KEY = skip to the next effect, ESC = quit the demo.                                                */
@@ -949,254 +949,201 @@ static int fx_desktop(void)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 6: CONIO speed benchmark, integrated from the classic coniodemo. The original 50000 putch,                */
-/* 1000 cputs and 1000 cprintf tests keep their exact conditions, and new timed tests cover                          */
-/* puttext, gettext, movetext, gotoxy + putch and clrscr. The FPS overlay is disabled: its own                       */
-/* writes would pollute the measurements.                                                                            */
+/* Effect 6: CONIO speed benchmark, integrated from the classic coniodemo. Every test keeps the exact workload of the  */
+/* original (50000 putch, 1000 cputs, 1000 cprintf, ...) but it is repeated until it has run for DEMO_BENCH_CLOCKS,    */
+/* because clock() only advances every 55 ms on DOS: a run of a few ticks is mostly rounding error. Each test starts   */
+/* on a clock edge and reports clocks, milliseconds and operations per second. The window and the colors are set up    */
+/* outside the timed region, the gotoxy test walks the screen with additions instead of a division based random        */
+/* generator, and the FPS overlay is disabled: its own writes would pollute the measurements.                          */
 /* ----------------------------------------------------------------------------------------------------------------- */
+#define DEMO_BENCH_CLOCKS   ((clock_t) CLOCKS_PER_SEC)
+
 static int fx_benchmark(void)
 {
-	clock_t start, stop;
-	unsigned int i;
-	int k;
+	static const struct { const char *what; const char *unit; unsigned int ops; } bench[] =
+	{
+		{ "50000 254 (\xFE) chars using putch",                "putch",        50000U },
+		{ "1000 cputs with automatic wrapping and scrolling",  "cputs",        1000U },
+		{ "1000 cputs",                                        "cputs",        1000U },
+		{ "1000 cprintf",                                      "cprintf",      1000U },
+		{ "100 puttext of the whole screen",                   "puttext",      100U },
+		{ "100 gettext of the whole screen",                   "gettext",      100U },
+		{ "100 movetext of the whole screen",                  "movetext",     100U },
+		{ "10000 gotoxy + putch",                              "gotoxy+putch", 10000U },
+		{ "250 clrscr",                                        "clrscr",       250U }
+	};
+	clock_t start, stop, now;
+	unsigned long loops, ms;
+	unsigned int i, test;
+	int k, x, y;
 
 	demo_fps = 0;
 	_wscroll = 1;
 	_setcursortype(_NOCURSOR);
+	k = KEY_NONE;
 
-	/* 50000 chars using putch(). */
-	window(1, 2, SW, SH - 1);
-	textbackground(BLUE);
-	clrscr();
+	for (test = 0; test < sizeof(bench) / sizeof(bench[0]); test++)
+	{
+		/* Setup, outside the timed region. */
+		switch (test)
+		{
+			case 0:
+				window(1, 2, SW, SH - 1);
+				textbackground(BLUE);
+				clrscr();
+				textcolor(WHITE);
+				clrscr();
+				break;
+			case 1:
+				window(1, 2, SW, SH - 1);
+				textbackground(BLUE);
+				clrscr();
+				window(5, 5, SW - 5, SH - 5);
+				textcolor(WHITE);
+				textbackground(MAGENTA);
+				clrscr();
+				break;
+			case 2:
+				window(6, 6, SW - 6, SH - 6);
+				textcolor(WHITE);
+				textbackground(GREEN);
+				clrscr();
+				break;
+			case 3:
+				window(7, 7, SW - 7, SH - 7);
+				textcolor(WHITE);
+				textbackground(RED);
+				clrscr();
+				break;
+			case 4:
+				window(1, 2, SW, SH - 1);
+				textbackground(BLUE);
+				clrscr();
+				for (i = 0; i < (unsigned int) (SW * SH); i++)
+				{
+					demo_fb[i] = (unsigned short) (0x2000 | ((i * 7) & 0xFF));
+				}
+				break;
+			case 7:
+				window(1, 1, SW, SH);
+				textattr(0x07);
+				clrscr();
+				_wscroll = 0;	/* a putch() on the last cell must not scroll in the middle of the measure */
+				break;
+			case 8:
+				window(1, 2, SW, SH - 1);
+				textbackground(BLUE);
+				textcolor(YELLOW);
+				break;
+		}
 
-	start = clock();
-	textcolor(WHITE);
-	clrscr();
-	for (i = 0; i < 50000U; i++)
-	{
-		putch(254);
-	}
-	stop = clock();
-	textcolor(YELLOW);
-	cputs("\r\nThose was 50000 254 (\xFE) chars using putch\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
+		/* Start on a clock edge, then repeat the original workload until it has run long enough. */
+		now = clock();
+		do
+		{
+			start = clock();
+		} while (start == now);
+		loops = 0;
+		do
+		{
+			switch (test)
+			{
+				case 0:
+					for (i = 0; i < 50000U; i++)
+					{
+						putch(254);
+					}
+					break;
+				case 1:
+					for (i = 0; i < 1000; i++)
+					{
+						cputs("All functions support automatic scrolling on screen or window ");
+					}
+					break;
+				case 2:
+					for (i = 0; i < 1000; i++)
+					{
+						cputs("Some cputs here and there\r\n");
+					}
+					break;
+				case 3:
+					for (i = 0; i < 1000; i++)
+					{
+						cprintf("Line %u with cprintf writting here\r\n", i);
+					}
+					break;
+				case 4:
+					for (i = 0; i < 100; i++)
+					{
+						puttext(1, 1, SW, SH, demo_fb);
+					}
+					break;
+				case 5:
+					for (i = 0; i < 100; i++)
+					{
+						gettext(1, 1, SW, SH, demo_fb);
+					}
+					break;
+				case 6:
+					for (i = 0; i < 100; i++)
+					{
+						movetext(1, 1, SW, SH - 1, 1, 2);
+					}
+					break;
+				case 7:
+					x = 0;
+					y = 0;
+					for (i = 0; i < 10000; i++)
+					{
+						x += 37;
+						if (x >= SW)
+						{
+							x -= SW;
+						}
+						y += 11;
+						if (y >= SH)
+						{
+							y -= SH;
+						}
+						gotoxy(x + 1, y + 1);
+						putch(254);
+					}
+					break;
+				case 8:
+					for (i = 0; i < 250; i++)
+					{
+						clrscr();
+					}
+					break;
+			}
+			loops++;
+			stop = clock();
+		} while (stop - start < DEMO_BENCH_CLOCKS);
 
-	/* 1000 cputs with automatic wrapping and scrolling. */
-	window(1, 2, SW, SH - 1);
-	textbackground(BLUE);
-	clrscr();
-
-	window(5, 5, SW - 5, SH - 5);
-	textcolor(WHITE);
-	textbackground(MAGENTA);
-	clrscr();
-	for (i = 0; i < 1000; i++)
-	{
-		cputs("All functions support automatic scrolling on screen or window ");
+		ms = ((unsigned long) (stop - start) * 1000UL) / (unsigned long) CLOCKS_PER_SEC;
+		_wscroll = 1;
+		textcolor(YELLOW);
+		if (test == 7)
+		{
+			gotoxy(1, 1);
+		}
+		cprintf("\r\nThose was %lu x %s\r\n", loops, bench[test].what);
+		cprintf("It took %ld clocks (%d clocks are a second), %lu ms\r\n", (long) (stop - start), (int) CLOCKS_PER_SEC, ms);
+		if (ms != 0)
+		{
+			cprintf("%lu %s per second\r\n", (loops * bench[test].ops * 1000UL) / ms, bench[test].unit);
+		}
+		textcolor(YELLOW + BLINK);
+		cputs("---- Press any key to continue ----");
+		do
+		{
+			k = demo_wait(1);
+		} while (k == KEY_NONE);
+		if (k == KEY_QUIT)
+		{
+			break;
+		}
 	}
-	textcolor(YELLOW);
-	cputs("\r\nAll functions support automatic scrolling on screen or window\r\n");
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
-
-	/* 1000 cputs with explicit newlines. */
-	start = clock();
-	window(6, 6, SW - 6, SH - 6);
-	textcolor(WHITE);
-	textbackground(GREEN);
-	clrscr();
-	for (i = 0; i < 1000; i++)
-	{
-		cputs("Some cputs here and there\r\n");
-	}
-	stop = clock();
-	textcolor(YELLOW);
-	cputs("\r\nThose was 1000 cputs\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
-
-	/* 1000 cprintf with formatting. */
-	start = clock();
-	window(7, 7, SW - 7, SH - 7);
-	textcolor(WHITE);
-	textbackground(RED);
-	clrscr();
-	for (i = 0; i < 1000; i++)
-	{
-		cprintf("Line %u with cprintf writting here\r\n", i);
-	}
-	stop = clock();
-	textcolor(YELLOW);
-	cputs("\r\nThose was 1000 cprintf\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
-
-	/* 100 whole screen puttext blits. */
-	window(1, 2, SW, SH - 1);
-	textbackground(BLUE);
-	clrscr();
-	for (i = 0; i < (unsigned int) (SW * SH); i++)
-	{
-		demo_fb[i] = (unsigned short) (0x2000 | ((i * 7) & 0xFF));
-	}
-	start = clock();
-	for (i = 0; i < 100; i++)
-	{
-		puttext(1, 1, SW, SH, demo_fb);
-	}
-	stop = clock();
-	textcolor(YELLOW);
-	cputs("\r\nThose was 100 puttext of the whole screen\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
-
-	/* 100 whole screen gettext reads. */
-	start = clock();
-	for (i = 0; i < 100; i++)
-	{
-		gettext(1, 1, SW, SH, demo_fb);
-	}
-	stop = clock();
-	textcolor(YELLOW);
-	cputs("\r\nThose was 100 gettext of the whole screen\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
-
-	/* 100 whole screen movetext scrolls. */
-	start = clock();
-	for (i = 0; i < 100; i++)
-	{
-		movetext(1, 1, SW, SH - 1, 1, 2);
-	}
-	stop = clock();
-	textcolor(YELLOW);
-	cputs("\r\nThose was 100 movetext of the whole screen\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
-
-	/* 10000 positioned chars using gotoxy() + putch(). */
-	window(1, 1, SW, SH);
-	textattr(0x07);
-	clrscr();
-	start = clock();
-	for (i = 0; i < 10000; i++)
-	{
-		gotoxy(1 + demo_rand(SW), 1 + demo_rand(SH));
-		putch(254);
-	}
-	stop = clock();
-	textcolor(YELLOW);
-	gotoxy(1, 1);
-	cputs("\r\nThose was 10000 gotoxy + putch\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
-	if (k == KEY_QUIT)
-	{
-		_wscroll = 0;
-		window(1, 1, SW, SH);
-		return k;
-	}
-
-	/* 250 clrscr of the working window. */
-	window(1, 2, SW, SH - 1);
-	textbackground(BLUE);
-	textcolor(YELLOW);
-	start = clock();
-	for (i = 0; i < 250; i++)
-	{
-		clrscr();
-	}
-	stop = clock();
-	cputs("\r\nThose was 250 clrscr\r\n");
-	cprintf("It took %ld clocks (%d clocks are a second)\r\n", stop - start, (int) CLOCKS_PER_SEC);
-	textcolor(YELLOW + BLINK);
-	cputs("---- Press any key to continue ----");
-	do
-	{
-		k = demo_wait(1);
-	} while (k == KEY_NONE);
 
 	_wscroll = 0;
 	window(1, 1, SW, SH);
