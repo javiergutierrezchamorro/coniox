@@ -18,16 +18,11 @@
 /*  Effects:                                                                                                         */
 /*     1. Shining CONIOX logo with typewriter intro                                                                  */
 /*     2. CONIO information report in a framed window with the logo                                                  */
-/*     3. Photograph converted to ANSI art (embedded SGR escape sequence)                                            */
-/*     4. Classic textmode fire                                                                                      */
-/*     5. 3D starfield warp                                                                                          */
-/*     6. Color cycling plasma                                                                                       */
-/*     7. Double sine scroller with bouncing module box                                                              */
-/*     8. Matrix rain                                                                                                */
-/*     9. ASCII Mandelbrot (16.12 fixed point)                                                                       */
-/*    10. TUI desktop showcasing window/clrscr/gettext/puttext/delline/insline/ungetch/cursor                        */
-/*    11. Speed benchmark: 50000 putch, 1000 cputs, 1000 cprintf plus puttext/gettext/movetext/gotoxy/clrscr         */
-/*    12. Closing credits                                                                                            */
+/*     3. 3D starfield warp                                                                                          */
+/*     4. Double sine scroller with bouncing module box                                                              */
+/*     5. TUI desktop showcasing window/clrscr/gettext/puttext/delline/insline/ungetch/cursor                        */
+/*     6. Speed benchmark: 50000 putch, 1000 cputs, 1000 cprintf plus puttext/gettext/movetext/gotoxy/clrscr         */
+/*     7. Closing credits                                                                                            */
 /*                                                                                                                   */
 /*  Controls: ANY KEY = skip to the next effect, ESC = quit the demo.                                                */
 /*  A live FPS counter is shown on the top right corner of the animated effects                                      */
@@ -214,11 +209,6 @@ static void fb_flush(void)
 		memcpy(demo_fb + SW - 8, demo_fpsbuf, sizeof(demo_fpsbuf));
 	}
 	puttext(1, 1, SW, SH, demo_fb);
-}
-
-static void fb_flush_row(int y)
-{
-	puttext(1, y + 1, SW, y + 1, demo_fb + (y * SW));
 }
 
 static void fb_text(int x, int y, const char *s, int attr)
@@ -494,233 +484,7 @@ static int fx_info(void)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/*  Effect 3: photograph image-to-ANSI conversion. A real photograph is stored                                       */
-/* as a single embedded ANSI SGR escape sequence using upper/lower half blocks and the 16 CGA colors,                */
-/* interpreted at run time into the off-screen buffer with no floats and no extra buffers, revealed                  */
-/* row by row.                                                                                                       */
-/* ----------------------------------------------------------------------------------------------------------------- */
-
-/* ANSI SGR 30-37/40-47 order (black red green yellow blue magenta cyan white) to CGA 0-7 (black blue green cyan red */
-/* magenta yellow white): the permutation is self-inverse. */
-static const unsigned char demo_sgr[8] = { 0x00, 0x04, 0x02, 0x06, 0x01, 0x05, 0x03, 0x07 };
-
-static const char demo_ansi[] =
-	"\x1B[30m                           \x1B[1m\x1B[37m\xDC\x1B[0m\x1B[30m                                                    \n"
-	"                                                    \x1B[37m\xDC\xDC\x1B[30m             \x1B[37m\xDC\x1B[30m            \n"
-	"\x1B[34m\xDF\xDF\x1B[37m\x1B[44m\xDC\x1B[34m\x1B[40m\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\x1B[1m\x1B[37m\x1B[44m\xDC\x1B[0m\x1B[34m\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\xDF\n"
-	"\x1B[30m\x1B[44m                                                \x1B[37m\xDF\x1B[30m                               \n"
-	"                       \x1B[1m\x1B[37m\xDF\x1B[0m\x1B[30m\x1B[44m                  \x1B[37m\xDF\x1B[30m                                     \n"
-	"               \x1B[37m\xDF\x1B[30m                  \x1B[37m\xDF\x1B[30m                                       \x1B[37m\xDC\xDC\x1B[30m    \n"
-	"  \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[37m\x1B[45m\xDC\x1B[30m\x1B[44m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[30m   \x1B[35m\xDF\x1B[37m\xDF\n"
-	"\x1B[30m\x1B[45m  \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m   \x1B[35m\x1B[44m\xDF\x1B[30m\x1B[45m \n"
-	"                                                                                \n"
-	"                                                                                \n"
-	" \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[37m\x1B[45m\xDF\x1B[1m\x1B[30m\xDF\x1B[0m\x1B[45m\xDF\x1B[1m\x1B[30m\xDF\x1B[0m\x1B[45m\xDF\x1B[1m\x1B[30m\xDF\x1B[0m\x1B[45m\xDF\x1B[1m\x1B[30m\xDF\x1B[0m\x1B[45m\xDF\x1B[1m\x1B[30m\xDF\xDF\x1B[0m\x1B[35m\xDC\xDC\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\x1B[30m\x1B[45m \x1B[35m\x1B[41m\xDC\n"
-	"\x1B[30m                                    \x1B[37m\xDF\x1B[31m\x1B[40m\xDC\x1B[37m\xDC\xDC\x1B[1m\x1B[30m\xDC\x1B[0m\x1B[30m        \x1B[1m\xDC\xDC\x1B[0m\x1B[30m   \x1B[31m\xDC\x1B[1m\x1B[30m\x1B[41m\xDF\x1B[37m\xDF\x1B[0m\x1B[41m\xDF\xDF\x1B[1m\x1B[30m\xDF\xDF\xDF\xDF\xDF\x1B[0m\x1B[41m\xDF\x1B[1m\xDF\x1B[0m\x1B[30m\x1B[41m              \n"
-	"              \x1B[1m\x1B[31m\xDF\xDF\xDF\x1B[0m\x1B[30m\x1B[41m           \x1B[37m\xDF\xDF\xDF\x1B[1m\x1B[30m\xDF\xDF\xDF\x1B[40m\xDB\xDC\x1B[0m\x1B[30m                   \x1B[1m\x1B[47m\xDF\xDF\xDF\x1B[0m\x1B[30m\x1B[47m \x1B[1m\x1B[37m\xDC\x1B[0m\x1B[30m \x1B[37m\x1B[41m\xDF\x1B[30m                  \n"
-	"    \x1B[33m\xDF\x1B[30m \x1B[33m\xDF\x1B[30m \x1B[1m\x1B[31m\xDF\x1B[0m\x1B[30m\x1B[41m \x1B[33m\xDF\x1B[30m \x1B[1m\x1B[31m\xDF\x1B[40m\xDB\x1B[37m\xDB\xDB\x1B[47m\xDF\x1B[31m\xDC\x1B[30m\x1B[41m\xDF\xDF\x1B[0m\x1B[30m\x1B[47m  \x1B[1m\xDC\xDF\xDF\xDF\x1B[40m\xDB\xDC\xDC\xDC\xDC\xDC\x1B[0m\x1B[30m                           \x1B[1m\xDC\xDC\xDC\xDC\xDC\xDC\xDC\x1B[0m\x1B[30m \x1B[31m\xDC\x1B[30m\x1B[41m            \n"
-	"\x1B[33m\xDF\xDF\xDF\x1B[30m\x1B[43m \x1B[1m\x1B[31m\x1B[41m\xDF\x1B[0m\x1B[30m\x1B[43m \x1B[1m\x1B[31m\xDF\x1B[40m\xDB\x1B[41m\xDF\x1B[0m\x1B[30m\x1B[43m \x1B[1m\x1B[31m\xDF\x1B[40m\xDB\x1B[0m\x1B[30m\x1B[47m \x1B[1m\x1B[31m\xDF\x1B[37m\xDC\xDC\xDC\x1B[0m\x1B[30m\x1B[47m \x1B[1m\xDC\x1B[0m\x1B[30m\x1B[47m \x1B[1m\x1B[40m\xDC\xDC\x1B[0m\x1B[30m                                              \x1B[33m\x1B[41m\xDF\xDF\xDF\x1B[30m\x1B[43m \x1B[33m\x1B[41m\xDF\xDF\xDF\x1B[30m\x1B[43m \x1B[33m\x1B[41m\xDF\x1B[30m \x1B[33m\xDF\x1B[30m \n"
-	"\x1B[43m  \x1B[1m\x1B[31m\xDF\x1B[0m\x1B[30m\x1B[43m \x1B[1m\x1B[31m\xDF\x1B[40m\xDB\x1B[43m\xDF\x1B[40m\xDB\xDB\xDB\x1B[43m\xDF\x1B[40m\xDB\xDC\xDC\x1B[37m\x1B[43m\xDF\x1B[33m\x1B[40m\xDF\x1B[37m\xDF\x1B[33m\xDF\x1B[0m\x1B[30m                                                 \x1B[33m\xDF\x1B[1m\x1B[31m\x1B[43m\xDF\x1B[0m\x1B[30m\x1B[43m   \x1B[1m\x1B[31m\xDF\x1B[0m\x1B[30m\x1B[43m       \n"
-	"  \x1B[1m\x1B[31m\xDF\xDC\xDF\x1B[40m\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDF\xDF\x1B[0m\xDC\x1B[1m\xDC\x1B[0m\xDC\x1B[1m\x1B[33m\xDC\x1B[0m\x1B[30m  \x1B[37m\xDF\x1B[1m\x1B[30m\xDF\x1B[0m\xDF\x1B[1m\x1B[30m\xDF\x1B[0m\x1B[30m                                   \x1B[1m\xDF\x1B[0m\xDF\x1B[1m\x1B[30m\xDF\x1B[0m\x1B[30m     \x1B[43m   \x1B[1m\x1B[31m\xDF\x1B[0m\x1B[30m\x1B[43m   \x1B[1m\x1B[31m\xDF\x1B[0m\x1B[30m\x1B[43m     \n"
-	"\x1B[40m    \x1B[1m\xDF\x1B[0m\x1B[30m \x1B[1m\xDF\x1B[0m\x1B[30m             \x1B[1m\xDC\xDF\x1B[0m\xDF\xDC\x1B[30m                                   \x1B[1m\x1B[47m\xDF\x1B[0m\xDF\x1B[1m\x1B[30m\x1B[47m\xDF\x1B[0m\x1B[30m                  \n"
-	"\x1B[1m\xDF\xDF\xDF\xDB\xDF\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDF\x1B[0m\x1B[30m                                                                   \n"
-	"\x1B[1m\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDF\x1B[0m\x1B[30m                                                                   \n"
-	"\x1B[1m\xDF\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDB\xDC\xDF\x1B[0m\x1B[30m                                                                     \n"
-	"\x1B[1m\xDF\xDC\xDF\xDC\xDB\xDC\xDF\xDC\x1B[0m\x1B[30m                                                                        \n"
-	"                                                                                \n"
-	"                                                                                \n"
-	"                                                                                ";
-
-static int fx_ansi(void)
-{
-	const char *p;
-	int ch, v, x, y, fg, bg, bright, blink, k;
-
-	_setcursortype(_NOCURSOR);
-	demo_fps = 0;
-	fb_clear();
-	fb_flush();
-
-	x = 0;
-	y = 0;
-	fg = 7;
-	bg = 0;
-	bright = 0;
-	blink = 0;
-	for (p = demo_ansi; *p != 0; p++)
-	{
-		ch = (unsigned char) *p;
-		if (ch == 0x1B)
-		{
-			/* CSI SGR: ESC [ n[;n...] m  — support multi-parameter sequences */
-			if (p[1] != '[')
-			{
-				continue;
-			}
-			p += 2;
-			for (;;)
-			{
-				v = 0;
-				while (*p >= '0' && *p <= '9')
-				{
-					v = (v * 10) + (*p - '0');
-					p++;
-				}
-				if (v == 0)
-				{
-					fg = 7;
-					bg = 0;
-					bright = 0;
-					blink = 0;
-				}
-				else if (v == 1)
-				{
-					bright = 1;
-				}
-				else if (v == 5)
-				{
-					blink = 1;
-				}
-				else if (v >= 30 && v <= 37)
-				{
-					fg = demo_sgr[v - 30];
-				}
-				else if (v >= 40 && v <= 47)
-				{
-					bg = demo_sgr[v - 40];
-				}
-				if (*p == ';')
-				{
-					p++;
-					continue;
-				}
-				break;    /* typically 'm'; outer for() advances past it */
-			}
-			continue;
-		}
-		if (ch == '\n')
-		{
-			x = 0;
-			y++;
-			continue;
-		}
-		fb_set(x, y, ch, (blink << 7) | (bg << 4) | (bright << 3) | fg);
-		x++;
-	}
-
-	/* Row by row reveal: SKIP shows the rest at once, ESC leaves, otherwise hold and go. */
-	k = KEY_NONE;
-	for (y = 0; y < SH && k == KEY_NONE; y++)
-	{
-		fb_flush_row(y);
-		k = demo_wait(1);
-	}
-	if (k == KEY_QUIT)
-	{
-		return k;
-	}
-	if (k == KEY_SKIP)
-	{
-		fb_flush();
-	}
-	k = demo_wait(300);
-	if (k == KEY_QUIT)
-	{
-		return k;
-	}
-	return demo_wipeout();
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 4: classic textmode fire. Heat propagates upwards with random cooling;                                     */
-/* values are painted through a char/color ramp.                                                                     */
-/* ----------------------------------------------------------------------------------------------------------------- */
-static int fx_fire(void)
-{
-	static unsigned char heat[DEMO_ROWS + 2][DEMO_COLS];
-	static const unsigned char framp[16][2] =
-	{
-		{ ' ', 0x00 }, { '.', 0x04 }, { ':', 0x04 }, { '-', 0x04 },
-		{ '=', 0x0C }, { '+', 0x0C }, { '*', 0x06 }, { '#', 0x06 },
-		{ '%', 0x0E }, { '&', 0x0E }, { '$', 0x0E }, { '@', 0x0E },
-		{ '@', 0x0F }, { '@', 0x0F }, { '@', 0x0F }, { '@', 0x0F }
-	};
-	int x, y, xl, xr, v, f, k;
-
-	_setcursortype(_NOCURSOR);
-	demo_fps = 1;
-	fb_clear();
-	fb_flush();
-	memset(heat, 0, sizeof(heat));
-
-	k = KEY_NONE;
-	for (f = 0; f < 520; f++)
-	{
-		/* Seed (or starve) the two bottom heat rows: values live inside the ramp range, so the base glows instead of clamping to a flat wall. */
-		if (f < 430)
-		{
-			for (x = 0; x < SW; x++)
-			{
-				v = 12 + demo_rand(4);
-				heat[SH][x] = (unsigned char) v;
-				heat[SH + 1][x] = (unsigned char) v;
-			}
-		}
-		else
-		{
-			/* Starve the base: zero both seed rows in one pass. */
-			memset(heat[SH], 0, (size_t) SW);
-			memset(heat[SH + 1], 0, (size_t) SW);
-		}
-
-		/* Average upward propagation, wrapping at the edges: a fixed plus a random cooling unit makes the flames die out in about ten rows. */
-		for (y = 0; y < SH; y++)
-		{
-			for (x = 0; x < SW; x++)
-			{
-				xl = (x == 0) ? (SW - 1) : (x - 1);
-				xr = (x == SW - 1) ? 0 : (x + 1);
-				v = heat[y + 1][x] + heat[y + 1][xl] + heat[y + 1][xr] + heat[y + 2][x];
-				v = (v >> 2) - 1 - (demo_rand(3) == 0);
-				if (v < 0)
-				{
-					v = 0;
-				}
-				heat[y][x] = (unsigned char) v;
-			}
-		}
-
-		/* Paint through the fire ramp. */
-		for (y = 0; y < SH; y++)
-		{
-			for (x = 0; x < SW; x++)
-			{
-				v = heat[y][x];
-				if (v > 15)
-				{
-					v = 15;
-				}
-				fb_set_fast(x, y, framp[v][0], framp[v][1]);
-			}
-		}
-
-		fb_flush();
-		k = demo_wait(1);
-		if (k != KEY_NONE)
-		{
-			break;
-		}
-	}
-
-	if (k == KEY_QUIT)
-	{
-		return k;
-	}
-	return demo_wipeout();
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 5: 3D starfield warp. Fixed point projection, speed and brightness by depth.                               */
+/* Effect 3: 3D starfield warp. Fixed point projection, speed and brightness by depth.                               */
 /* ----------------------------------------------------------------------------------------------------------------- */
 static int fx_stars(void)
 {
@@ -792,57 +556,7 @@ static int fx_stars(void)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 6: color cycling plasma. Four summed sine waves drive a character ramp                                     */
-/* plus a rotating 8-color attribute palette.                                                                        */
-/* ----------------------------------------------------------------------------------------------------------------- */
-static int fx_plasma(void)
-{
-	static const unsigned char ppal[8] = { 0x01, 0x09, 0x0B, 0x0F, 0x0B, 0x09, 0x0D, 0x05 };
-	static const char pramp[8] = { ' ', '.', ':', '-', '=', '+', '*', '#' };
-	int x, y, t, v, ic, ii, k;
-
-	_setcursortype(_NOCURSOR);
-	demo_fps = 1;
-	fb_clear();
-	fb_flush();
-
-	k = KEY_NONE;
-	for (t = 0; t < 560; t++)
-	{
-		for (y = 0; y < SH; y++)
-		{
-			for (x = 0; x < SW; x++)
-			{
-				v = demo_sin[(x * 2 + t * 3) & 255]
-				  + demo_sin[(y * 5 + t * 2) & 255]
-				  + demo_sin[((x + y) * 3 - t * 4 + 4096) & 255]
-				  + demo_sin[((x * x + y * y) / 3 + t * 5) & 255];
-				ii = (v + 508) / 128;
-				if (ii > 7)
-				{
-					ii = 7;
-				}
-				ic = (((v + 512) / 64 + t) & 7);
-				fb_set_fast(x, y, pramp[ii], ppal[ic]);
-			}
-		}
-		fb_flush();
-		k = demo_wait(1);
-		if (k != KEY_NONE)
-		{
-			break;
-		}
-	}
-
-	if (k == KEY_QUIT)
-	{
-		return k;
-	}
-	return demo_wipeout();
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 7: double sine scroller with a bouncing module box.                                                        */
+/* Effect 4: double sine scroller with a bouncing module box.                                                        */
 /* ----------------------------------------------------------------------------------------------------------------- */
 static const char demo_msg[] =
 	"CONIOX V5.0 *** THE ULTIMATE TEXTMODE CONIO LIBRARY *** DIRECT VIDEO AT FULL BLAST *** 100 PERCENT BORLAND STYLE *** GREETINGS TO ALL DOS CODERS AND DEMOSCENERS AROUND THE WORLD *** KEEP THE SCENE ALIVE!!! ***   ";
@@ -929,154 +643,7 @@ static int fx_scroller(void)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 8: matrix rain. Staggered falling columns with white head, green body, dark tail.                          */
-/* ----------------------------------------------------------------------------------------------------------------- */
-static int fx_matrix(void)
-{
-	static const char mchars[] = "01<>#$%&*+=/\\|ABCDEFXYZ";
-	static int mhead[DEMO_COLS], mspd[DEMO_COLS], mlen[DEMO_COLS], mchr[DEMO_COLS];
-	int x, y, i, f, k, a, mcl;
-
-	_setcursortype(_NOCURSOR);
-	demo_fps = 1;
-	fb_clear();
-	fb_flush();
-	mcl = (int) strlen(mchars);
-
-	for (x = 0; x < SW; x++)
-	{
-		mhead[x] = -demo_rand(70);
-		mspd[x] = 1 + demo_rand(3);
-		mlen[x] = 6 + demo_rand(10);
-		mchr[x] = demo_rand(mcl);
-	}
-
-	k = KEY_NONE;
-	for (f = 0; f < 560; f++)
-	{
-		fb_clear();
-		for (x = 0; x < SW; x++)
-		{
-			for (i = 0; i < mlen[x]; i++)
-			{
-				y = mhead[x] - i;
-				if (y >= 0 && y < SH)
-				{
-					if (i == 0)
-					{
-						a = 0x0F;
-					}
-					else if (i == 1)
-					{
-						a = 0x0A;
-					}
-					else if (i < mlen[x] - 2)
-					{
-						a = 0x02;
-					}
-					else
-					{
-						a = 0x08;
-					}
-					fb_set_fast(x, y, mchars[mchr[x]], a);
-				}
-			}
-			if (((f & 3) == 0) && (demo_rand(3) == 0))
-			{
-				mchr[x] = demo_rand(mcl);
-			}
-			mhead[x] += mspd[x];
-			if (mhead[x] - mlen[x] > SH)
-			{
-				mhead[x] = -demo_rand(50);
-				mspd[x] = 1 + demo_rand(3);
-				mlen[x] = 6 + demo_rand(10);
-			}
-		}
-		fb_flush();
-		k = demo_wait(1);
-		if (k != KEY_NONE)
-		{
-			break;
-		}
-	}
-
-	if (k == KEY_QUIT)
-	{
-		return k;
-	}
-	return demo_wipeout();
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 9: ASCII Mandelbrot in 16.12 fixed point, revealed row by row.                                             */
-/* ----------------------------------------------------------------------------------------------------------------- */
-static int fx_mandel(void)
-{
-	static const unsigned char mpal[14] =
-	{
-		0x01, 0x09, 0x0B, 0x03, 0x02, 0x0A, 0x0E, 0x06, 0x0C, 0x04, 0x05, 0x0D, 0x0F, 0x07
-	};
-	static const char mramp[9] = { ' ', '.', ':', '-', '=', '+', '*', '#', '%' };
-	long cx, cy, zx, zy, zx2, zy2, tx;
-	int x, y, it, k;
-
-	_setcursortype(_NOCURSOR);
-	demo_fps = 0;
-	fb_clear();
-	fb_flush();
-
-	k = KEY_NONE;
-	for (y = 0; y < SH; y++)
-	{
-		cy = -4710L + ((long) y * 392L);
-		for (x = 0; x < SW; x++)
-		{
-			cx = -8192L + ((long) x * 137L);
-			zx = 0;
-			zy = 0;
-			for (it = 0; it < 48; it++)
-			{
-				zx2 = (zx * zx) >> 12;
-				zy2 = (zy * zy) >> 12;
-				if (zx2 + zy2 > 16384L)
-				{
-					break;
-				}
-				tx = zx2 - zy2 + cx;
-				zy = ((zx * zy) >> 12) + cy;
-				zx = tx;
-			}
-			if (it >= 48)
-			{
-				fb_set_fast(x, y, '@', 0x0F);    /* inside the set: bright silhouette */
-			}
-			else
-			{
-				fb_set_fast(x, y, mramp[it > 8 ? 8 : it], mpal[it % 14]);
-			}
-		}
-		fb_flush_row(y);
-		if ((y & 1) == 1)
-		{
-			k = demo_wait(1);
-			if (k == KEY_QUIT)
-			{
-				return k;
-			}
-		}
-	}
-
-	k = demo_wait(240);
-	if (k == KEY_QUIT)
-	{
-		return k;
-	}
-	return demo_wipeout();
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 10: TUI desktop. Showcases window(), clrscr(), textattr(), putch(), cprintf(),                             */
+/* Effect 5: TUI desktop. Showcases window(), clrscr(), textattr(), putch(), cprintf(),                             */
 /* ungetch()/getch(), wherex()/wherey(), delline()/insline(), the cursor types and                                   */
 /* gettext()/puttext() save & restore.                                                                               */
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1382,7 +949,7 @@ static int fx_desktop(void)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 11: CONIO speed benchmark, integrated from the classic coniodemo. The original 50000 putch,                */
+/* Effect 6: CONIO speed benchmark, integrated from the classic coniodemo. The original 50000 putch,                */
 /* 1000 cputs and 1000 cprintf tests keep their exact conditions, and new timed tests cover                          */
 /* puttext, gettext, movetext, gotoxy + putch and clrscr. The FPS overlay is disabled: its own                       */
 /* writes would pollute the measurements.                                                                            */
@@ -1641,20 +1208,16 @@ static int fx_benchmark(void)
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-/* Effect 12: closing credits.                                                                                       */
+/* Effect 7: closing credits.                                                                                       */
 /* ----------------------------------------------------------------------------------------------------------------- */
 static int fx_credits(void)
 {
-	static const char *cred_fx[8] =
+	static const char *cred_fx[4] =
 	{
-		"PORSCHE PHOTO TO ANSI",
-		"TEXTMODE FIRE",
 		"3D STARFIELD WARP",
-		"COLOR CYCLING PLASMA",
 		"DOUBLE SINE SCROLLER",
-		"MATRIX RAIN",
-		"FIXED POINT MANDELBROT",
-		"TUI DESKTOP SHOWCASE"
+		"TUI DESKTOP SHOWCASE",
+		"SPEED BENCHMARK"
 	};
 	static const char *cred_api[6] =
 	{
@@ -1687,32 +1250,32 @@ static int fx_credits(void)
 			fb_text_centered(2, "C O N I O X   D E M O", 0x0F);
 			fb_text_centered(3, "DOS16 / DOS32 / WIN32 / WIN64", 0x08);
 		}
-		for (i = 0; i < 8; i++)
+		for (i = 0; i < 4; i++)
 		{
 			if (t > 20 + (i * 11))
 			{
 				fb_text_centered(5 + i, cred_fx[i], demo_rainbow[i % 14]);
 			}
 		}
-		if (t > 104)
+		if (t > 70)
 		{
-			fb_text_centered(13, "CONIO.H API EXERCISED", 0x0B);
+			fb_text_centered(10, "CONIO.H API EXERCISED", 0x0B);
 		}
 		for (i = 0; i < 6; i++)
 		{
-			if (t > 120 + (i * 12))
+			if (t > 85 + (i * 12))
 			{
-				fb_text_centered(14 + i, cred_api[i], 0x07);
+				fb_text_centered(11 + i, cred_api[i], 0x07);
 			}
 		}
-		if (t > 190)
+		if (t > 160)
 		{
-			fb_text_centered(21, "WATCOM - BORLAND - DJGPP - MSVC - MINGW - CLANG - PELLES", 0x08);
+			fb_text_centered(18, "WATCOM - BORLAND - DJGPP - MSVC - MINGW - CLANG - PELLES", 0x08);
 		}
-		if (t > 210)
+		if (t > 180)
 		{
 			blink = ((t / 10) & 1) ? 0x70 : 0x07;
-			fb_text_centered(22, "PRESS ANY KEY TO EXIT - THANK YOU", blink);
+			fb_text_centered(20, "PRESS ANY KEY TO EXIT - THANK YOU", blink);
 		}
 
 		fb_flush();
@@ -1735,7 +1298,10 @@ static int fx_credits(void)
 /* ----------------------------------------------------------------------------------------------------------------- */
 int main(void)
 {
-	static int (*const fxlist[])(void) = { fx_intro, fx_info, fx_ansi, fx_fire, fx_stars, fx_plasma, fx_scroller, fx_matrix, fx_mandel, fx_desktop, fx_benchmark, fx_credits };
+	static int (*const fxlist[])(void) = {
+		fx_intro, fx_info, fx_stars, fx_scroller,
+		fx_desktop, fx_benchmark, fx_credits
+	};
 	int i, r;
 
 	/* directvideo = 0; */

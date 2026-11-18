@@ -114,6 +114,7 @@ static int paddle_x;
 static int ball_x, ball_y, ball_dx, ball_dy;
 static int ball_stuck, ball_timer;
 static int clear_pending;
+static int paddle_row;                /* Fila interior de la pala (= fwy)              */
 
 static const int rowcolor[MAXROWS] = { LIGHTRED, RED, MAGENTA, LIGHTMAGENTA,
 				       BROWN, YELLOW, LIGHTCYAN, GREEN };
@@ -1305,7 +1306,7 @@ static void settings_draw(int sel, int n, int row)
 	int i, bx1, by1;
 
 	bx1 = center_x(34);
-	by1 = center_y(SET_N_MAX + 6);
+	by1 = center_y(n + 6);
 	if (row < 0)
 	{
 		draw_box(bx1, by1, bx1 + 33, by1 + n + 3, 0x1E, "SETTINGS");
@@ -1390,8 +1391,14 @@ static void settings_screen(void)
 			{
 				case 0:
 					opt_speed += back;
-					if (opt_speed < 1) opt_speed = 9;
-					if (opt_speed > 9) opt_speed = 1;
+					if (opt_speed < 1)
+					{
+						opt_speed = 9;
+					}
+					else if (opt_speed > 9)
+					{
+						opt_speed = 1;
+					}
 					settings_draw(sel, n, sel);
 					snd_menu();
 					break;
@@ -1576,8 +1583,6 @@ static void about_screen(void)
 /*  uno vertical (dy) por tick, comprobando colision celda a celda (sin tunelado).     */
 /* ================================================================================= */
 
-static int paddle_row;
-
 /* --------------------------------------------------------------------------------- */
 static void game_geometry(void)
 {
@@ -1751,6 +1756,7 @@ static void panel_draw(void)
 {
 	int x1 = scrw - PANELW + 2;
 	int h = scrh - 4;
+	int i;
 
 	full_window();
 	window(x1, 3, x1 + PANELW - 3, 3 + h - 1);
@@ -1769,7 +1775,7 @@ static void panel_draw(void)
 		clreol();
 		gotoxy(1, 5);
 		textattr(0x0E);
-		for (x1 = 0; x1 < lives; x1++)
+		for (i = 0; i < lives; i++)
 		{
 			cprintf("==");
 		}
@@ -2062,7 +2068,11 @@ static int ball_step(void)
 	{
 		r = move_one(0, ball_dy);
 	}
-	ball_draw();
+	/* Si la bola se ha perdido (r==0) no la redibujamos fuera del campo. */
+	if (r != 0)
+	{
+		ball_draw();
+	}
 	return r;
 }
 
@@ -2728,7 +2738,8 @@ static int demo_s12(void)
 	c1 = (long) clock();
 	delay(500);
 	c2 = (long) clock();
-	ms = (long) (((double) (c2 - c1)) * 1000.0 / (double) CLOCKS_PER_SEC);
+	/* Integer-only: ms ~= ticks * 1000 / CLOCKS_PER_SEC */
+	ms = (c2 - c1) * 1000L / (long) CLOCKS_PER_SEC;
 	cprintfxy(8, 8, "DELAY(500) MEASURED %ld MS WITH CLOCK().", ms);
 	cprintfxy(8, 10, "ON DOS THE BIOS TICK IS 55 MS (COARSE BUT SURE).");
 	cprintfxy(8, 11, "ON WIN32 CONIOX USES Sleep() (FINE).");
@@ -2802,6 +2813,8 @@ int main(void)
 	inittextinfo();
 	read_screen();
 	startmode = tinfo.currmode;
+	/* Sincroniza opt_mode con el modo real de la consola al arrancar. */
+	opt_mode = (scrh >= 43) ? 1 : 0;
 	records_load();
 	srand((unsigned) time(NULL));
 	_setcursortype(_NOCURSOR);
