@@ -76,7 +76,18 @@ static coniox_cellptr coniox_cell;	/* cell under the logical cursor, kept by put
    (low 1MB) buffer that the real-mode VBE BIOS can read and write. Real-mode builds already have
    every far pointer in that range; protected-mode builds (DJGPP, Watcom DOS32) must allocate a
    dedicated DOS-memory block.
-*/
+
+   coniox_int86x is the segment-aware twin of coniox_int86: int86x (real-mode, DJGPP/DPMI) or
+   int386x (Watcom FLAT). coniox_w() selects the WORDREGS member of union REGS, which is .x in
+   real-mode Watcom / Borland / DJGPP and .w in 32-bit Watcom (its .x is DWORDREGS there).
+
+   coniox_dpmi_alloc_dos / coniox_dpmi_free_dos go straight to DPMI 0x0100 / 0x0101 instead of
+   wrapping _dos_allocmem/_dos_freemem: the libc wrapper changed signature between Open Watcom
+   1.9 (2 args: size, &seg) and 2.0 (3 args: size, &seg, &sel), while the raw DPMI service is the
+   same in every version and in DJGPP. */
+#if (defined(__DJGPP__))
+	#include <dpmi.h>
+#endif
 #if ((defined(__FLAT__)) && (!defined(__DJGPP__)))
 	#define coniox_int86x int386x
 #else
@@ -2136,10 +2147,16 @@ void delay(unsigned int ms)
 #if ((__DOS__) || (__MSDOS__))
 
 static void coniox_idle(void);
+static int coniox_get_is_emulator(void);
 static int coniox_detect_dosbox_vesa(void);
+#if (defined(__DJGPP__)) || (defined(__FLAT__))
+static int coniox_dpmi_alloc_dos(unsigned int bytes, unsigned int *seg, unsigned int *sel);
+static void coniox_dpmi_free_dos(unsigned int sel);
+#endif
 static void coniox_blink(unsigned int blink);
 static void coniox_enhanced_palette(unsigned int pal);
 static void coniox_exit(void);
+static int coniox_is_emulator = 0;
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void coniox_init(const void* title)
@@ -2247,6 +2264,9 @@ void coniox_init(const void* title)
 	coniox_readnormattr();
 	ti.attribute = ti.normattr;
 
+
+	/* Get if under emulator */
+	coniox_is_emulator = coniox_get_is_emulator();
 
 	/* Activate blink */
 	coniox_blink(1);
@@ -2539,6 +2559,186 @@ static void coniox_idle(void)
 
 }
 
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+/* DPMI 0x0100 (allocate DOS memory block): AX=0x0100, BX=paragraphs, returns AX=real-mode segment,
+   DX=protected-mode selector, CF set on error. The same call works under DJGPP (via __dpmi_int) and
+   Watcom DOS32 (via int386x(0x31)). Real-mode builds skip the function entirely. */
+#if (defined(__DJGPP__)) || (defined(__FLAT__))
+static int coniox_dpmi_alloc_dos(unsigned int bytes, unsigned int *seg, unsigned int *sel)
+{
+#if (defined(__DJGPP__))
+	int local_sel = 0;
+	unsigned long rm_seg = __dpmi_allocate_dos_memory((bytes + 15) >> 4, &local_sel);
+	if (rm_seg == (unsigned long) -1)
+	{
+		return 1;
+	}
+	*seg = (unsigned int) rm_seg;
+	*sel = (unsigned int) local_sel;
+	return 0;
+#else
+	union REGS inregs, outregs;
+	memset(&inregs, 0, sizeof(inregs));
+	coniox_w(inregs).ax = 0x0100;
+	coniox_w(inregs).bx = (unsigned short) ((bytes + 15) >> 4);
+	int386x(0x31, &inregs, &outregs, NULL);
+	if (coniox_w(outregs).cflag)
+	{
+		return 1;
+	}
+	*seg = coniox_w(outregs).ax;
+	*sel = coniox_w(outregs).dx;
+	return 0;
+#endif
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+/* DPMI 0x0101 (free DOS memory block): AX=0x0101, DX=selector. */
+static void coniox_dpmi_free_dos(unsigned int sel)
+{
+#if (defined(__DJGPP__))
+	__dpmi_free_dos_memory((int) sel);
+#else
+	union REGS inregs, outregs;
+	memset(&inregs, 0, sizeof(inregs));
+	coniox_w(inregs).ax = 0x0101;
+	coniox_w(inregs).dx = (unsigned short) sel;
+	int386x(0x31, &inregs, &outregs, NULL);
+#endif
+}
+#endif /* (defined(__DJGPP__)) || (defined(__FLAT__)) */
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+/* DOSBox / vDos detection via VESA VBE 1.x/2.0+.
+   DOSBox (and derivatives: DOSBox-X, DOSBox Staging) report an OEM string that contains "DOSBox".
+   vDos reports itself as "vDos" (sometimes upper-cased "VDOS"). The OEM string lives either inside
+   the VbeInfoBlock (VBE 2.0+ extended block, requested by writing "VBE2" at offset 0 before the call)
+   or in a far buffer pointed to by OemStringPtr (VBE 1.x). We scan the whole 512-byte block, which is
+   enough for VBE 2.0+ on every emulator tested.
+
+   The same INT 10h call works under real mode, DJGPP (DPMI) and Watcom DOS32 because coniox_int86x,
+   coniox_w, coniox_dpmi_alloc_dos and coniox_dpmi_free_dos already abstract the differences. In real
+   mode the local far buffer is itself in conventional memory, so we can skip the DOS-memory alloc. */
+static int coniox_detect_dosbox_vesa(void)
+{
+	static const char coniox_dosbox[6] = { 'D','O','S','B','o','x' };
+	static const char coniox_vdos_lo[4] = { 'v','D','o','s' };
+	static const char coniox_vdos_hi[4] = { 'V','D','O','S' };
+	unsigned char buffer[512];
+	unsigned char coniox_far *block;
+	unsigned int seg = 0;
+#if (defined(__DJGPP__)) || (defined(__FLAT__))
+	unsigned int sel = 0;
+#endif
+	union REGS inregs, outregs;
+	struct SREGS sregs;
+	int i, j;
+	int ret = 0;
+	static const unsigned char marker[4] = { 'V','B','E','2' };
+
+#if (defined(__DJGPP__)) || (defined(__FLAT__))
+	/* Protected mode: allocate a conventional-memory block the BIOS can touch. coniox_dpmi_alloc_dos
+	   issues DPMI 0x0100 directly, so it does not depend on the Watcom _dos_allocmem signature
+	   (2 args in OW 1.9, 3 args in OW 2.0). */
+	if (coniox_dpmi_alloc_dos(512, &seg, &sel) != 0)
+	{
+		return 0;
+	}
+	block = (unsigned char coniox_far *) MK_FP(seg, 0);
+#else
+	/* Real mode: the stack buffer is already in conventional memory, addressed directly by ES:DI. */
+	block = (unsigned char coniox_far *) buffer;
+#endif
+	/* block is __far in real mode: use the far-aware helpers instead of memset/memcpy,
+	   which take near void * and would truncate the segment half of the pointer (W112). */
+	coniox_fmemsetw(block, 0, 256);			/* 256 shorts = 512 bytes of zeros */
+	coniox_fmemcpy(block, marker, sizeof(marker));
+
+	memset(&inregs, 0, sizeof(inregs));
+	memset(&sregs, 0, sizeof(sregs));
+	coniox_w(inregs).ax = 0x4F00;
+#if (defined(__DJGPP__)) || (defined(__FLAT__))
+	/* seg already holds the real-mode segment returned by the DPMI alloc; offset inside the paragraph is 0. */
+	coniox_w(inregs).di = 0;
+#else
+	/* Real mode: point ES:DI at the local far buffer (segment + offset of the stack array). */
+	seg = FP_SEG(block);
+	coniox_w(inregs).di = FP_OFF(block);
+#endif
+	sregs.es = (unsigned short) seg;
+	coniox_int86x(0x10, &inregs, &outregs, &sregs);
+
+	if (coniox_w(outregs).ax == 0x004F)
+	{
+#if (defined(__DJGPP__)) || (defined(__FLAT__))
+		_fmemcpy(buffer, block, 512);
+#endif
+		/* Sanity check: a real VBE BIOS leaves the "VESA" signature at offset 0. */
+		if (buffer[0] == 'V' && buffer[1] == 'E' && buffer[2] == 'S' && buffer[3] == 'A')
+		{
+			for (i = 0; i <= (int)(sizeof(buffer) - sizeof(coniox_dosbox)); i++)
+			{
+				if (buffer[i]   == (unsigned char) coniox_dosbox[0] &&
+				    buffer[i+1] == (unsigned char) coniox_dosbox[1] &&
+				    buffer[i+2] == (unsigned char) coniox_dosbox[2] &&
+				    buffer[i+3] == (unsigned char) coniox_dosbox[3] &&
+				    buffer[i+4] == (unsigned char) coniox_dosbox[4] &&
+				    buffer[i+5] == (unsigned char) coniox_dosbox[5])
+				{
+					ret = 1;
+					break;
+				}
+			}
+			if (!ret)
+			{
+				for (j = 0; j <= (int)(sizeof(buffer) - sizeof(coniox_vdos_lo)); j++)
+				{
+					if ((buffer[j]   == (unsigned char) coniox_vdos_lo[0] &&
+					     buffer[j+1] == (unsigned char) coniox_vdos_lo[1] &&
+					     buffer[j+2] == (unsigned char) coniox_vdos_lo[2] &&
+					     buffer[j+3] == (unsigned char) coniox_vdos_lo[3]) ||
+					    (buffer[j]   == (unsigned char) coniox_vdos_hi[0] &&
+					     buffer[j+1] == (unsigned char) coniox_vdos_hi[1] &&
+					     buffer[j+2] == (unsigned char) coniox_vdos_hi[2] &&
+					     buffer[j+3] == (unsigned char) coniox_vdos_hi[3]))
+					{
+						ret = 1;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+#if (defined(__DJGPP__)) || (defined(__FLAT__))
+	coniox_dpmi_free_dos(sel);
+#endif
+	return ret;
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+static int coniox_get_is_emulator(void)
+{
+	unsigned char result;
+
+	/* Fast path: the 0x4F4 port is DOSBox's documented detection port (write 0x00, read back 0xFF).
+	   Cheap (two port I/Os) and covers vanilla DOSBox, but DOSBox-X, DOSBox Staging and vDos
+	   do not implement it, so a non-hit falls through to the slower VESA VBE OEM scan. */
+	outportb(0x04F4, 0x00);
+	result = inportb(0x04F4);
+	if (result == 0xFF)
+	{
+		return 1;
+	}
+
+	/* Slow path: VESA VBE OEM string scan. Catches DOSBox variants that do not hook 0x4F4
+	   and still reports DOSBox itself when 0x4F4 happens to be wired to a real device on hardware. */
+	return coniox_detect_dosbox_vesa();
+}
 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2945,7 +3145,7 @@ void delline(void)
 {
 	coniox_ready();
 	/* Seems to be faster using BIOS under emulators */
-	if (directvideo)
+	if ((directvideo) && (!coniox_is_emulator))
 	{
 		unsigned short coniox_far *srcrow;
 		unsigned short coniox_far *dstrow;
@@ -2999,7 +3199,7 @@ void insline(void)
 {
 	coniox_ready();
 	/* Seems to be faster using BIOS under emulators */
-	if (directvideo)
+	if ((directvideo) && (!coniox_is_emulator))
 	{
 		/* Mirror of delline(): the block moves down, so copy bottom-up to read each row before it is overwritten. */
 		unsigned short coniox_far *srcrow;
