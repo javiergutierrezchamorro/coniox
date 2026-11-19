@@ -267,13 +267,16 @@ VERSION HISTORY
  - DOS delline() directvideo=1 full-width branch: the blank-fill target was coniox_offset(winleft-1, winbottom-1), a fresh screenwidth*(winbottom-1) multiply. Replaced with dstrow + (blockbytes/sizeof(unsigned short)), reusing the byte count already computed for the block fmemcpy — the blank row is exactly blockbytes past dstrow (the row just past the moved block). No new multiply. Matches the non-full-width branch which already avoided the multiply via the row-by-row loop's incremental dstrow += sw.
  - DOS insline() directvideo=1 full-width branch: was a row-by-row bottom-up fmemcpy() loop (winbottom-ytop iterations), the one dv=1 path without delline()'s full-width block optimization. Added the mirror: when width==sw AND ytop<winbottom, one coniox_fmemcpyr(srcblk+sw, srcblk, rowbytes*(winbottom-ytop)) backward block copy (rows are contiguous and the move is toward higher addresses, so backward is overlap-safe) + one coniox_fmemsetw(srcblk, ...) blank of the freed cursor row. srcblk = coniox_offset(winleft-1, ytop-1) is the cursor's row; the freed top row after the down-shift is exactly srcblk (no second coniox_offset multiply). Arithmetic verified identical to the row loop for the cursor-at-row-R and cursor-at-bottom cases; the ytop<winbottom guard excludes the 0-row case (cursor at the bottom row → row loop blanks the bottom row, same as before). Brings insline() to parity with delline()'s F5 block path.
  - Watcom DOS32 audit: the cputs() directvideo=1 run-scan+fill is already fused in the coniox_putrun #pragma aux (SWAR dword load + 0x0E0E0E0E test + 2 STOSD in one pass); movetext(), textattr(), wherex()/wherey() are already optimal (REP MOVSD, one store, direct ti.curx/cury return); the gotoxy() CRTC write is already short-circuited via the BDA peek. Ruled out: removing the coniox_putrun pragma page-crossing guard (the 4-instr/quad guard is unconditional in the pragma but the C fallback gates it DJGPP-only; removing it risks a fault on demand-paging DPMI 1.0 hosts — the guard is safety-critical and the ~0.2 ms saving on a 2000-char cputs is not worth the crash risk; deferred to a Watcom runtime test); the coniox_init two-peekw→one-peekl keyboard-bounds read (trivial init-only, and peekl risks 8086 DOS16 which has no 32-bit loads); a row-pointer table for coniox_offset (the multiply never appears in an inner loop — putch/cputs use the incremental coniox_cell cache, the rect ops call coniox_offset once then step with p+=sw).
+
+5.26 - 2026/11/19
+ - Independent review of directvideo=1 and Windows hot paths (putch/cputs/cputws/gotoxy/textattr/gettext/puttext/movetext/delline/insline/clrscr/kbhit/getch/_setcursortype). Confirmed no unused private statics, no dead helpers, no residual recomputations of window geometry outside the coniox_winwidth/coniox_winheight cache, and no further safe micro-optimizations that would change observable behaviour. Version bumped for the review pass.
 */
 
 #pragma once
 #ifndef _CONIOX_H_
 #define _CONIOX_H_
 
-#define coniox_version (525)
+#define coniox_version (526)
 #define coniox_build (__DATE__)
 
 #ifdef _MSC_VER
