@@ -1271,6 +1271,14 @@ int main(void)
 	r = KEY_NONE;
 	for (i = 0; i < (int) (sizeof(fxlist) / sizeof(fxlist[0])); i++)
 	{
+		/* FPS overlay is opt-in per effect: reset it (and the counter state) before every
+		   effect so a timed test like fx_benchmark can never inherit the previous effect's
+		   live counter. The benchmark measures putch/cputs/cprintf/... throughput, and any
+		   overlay write inside the timed region would pollute the numbers. */
+		demo_fps = 0;
+		demo_fpsframes = 0;
+		demo_fpsrate = 0;
+		demo_fpsclock = clock();
 		r = fxlist[i]();
 		if (r == KEY_QUIT)
 		{

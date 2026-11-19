@@ -108,6 +108,7 @@ static int fwx, fwy;                  /* Interior del campo en celdas           
 /* Estado de la partida                                                               */
 static unsigned char brick[GH + 1][GW + 1];   /* 0 libre, 1 normal, 2 dura, 3 solido   */
 static int bricks_left;
+static int brick_rows;                 /* Filas de ladrillos del nivel actual           */
 static long score;
 static int lives, level;
 static int paddle_x;
@@ -284,25 +285,62 @@ static void screen_bg(int attr)
 
 /* --------------------------------------------------------------------------------- */
 /* Caja con marco y relleno. Si title != NULL se centra sobre el borde superior.      */
+/*                                                                                    */
+/* Las tres filas (techo, cuerpo, suelo) se construyen una vez y se pintan con una    */
+/* sola llamada a cputsxy por fila. Antes eran ~width putch() por fila: para el campo */
+/* 66x46 eran unos 3000 putch(), ahora 46 cputs(). En Win32 cada putch es un           */
+/* WriteConsoleOutputA, asi que el ahorro es grande; en DOS directvideo coniox_putrun */
+/* copia la tirada en una pasada.                                                     */
 /* --------------------------------------------------------------------------------- */
 static void draw_box(int x1, int y1, int x2, int y2, int attr, const char *title)
 {
-	int x, y, tl;
+	char top[128], mid[128], bot[128];
+	int width, inner, y, tl;
 
 	if (x2 < x1 || y2 < y1 || x1 < 1 || y1 < 1 || x2 > scrw || y2 > scrh)
 	{
 		return;
 	}
-	textattr(attr);
-	for (y = y1; y <= y2; y++)
+	width = x2 - x1 + 1;
+	if (width > (int) sizeof(top) - 1)
 	{
-		gotoxy(x1, y);
-		putch((y == y1) ? B_TL : ((y == y2) ? B_BL : B_VT));
-		for (x = x1 + 1; x <= x2 - 1; x++)
+		width = (int) sizeof(top) - 1;   /* scrw <= 80: nunca se reacha, pero queda a salvo */
+	}
+	textattr(attr);
+	if (width == 1)
+	{
+		/* Caja degenerada de una columna: solo el borde vertical. */
+		top[0] = B_VT; top[1] = 0;
+		cputsxy(x1, y1, top);
+		for (y = y1 + 1; y < y2; y++)
 		{
-			putch((y == y1 || y == y2) ? B_HZ : ' ');
+			cputsxy(x1, y, top);
 		}
-		putch((y == y1) ? B_TR : ((y == y2) ? B_BR : B_VT));
+	}
+	else
+	{
+		inner = width - 2;
+		top[0] = B_TL;
+		memset(top + 1, B_HZ, (size_t) inner);
+		top[width - 1] = B_TR;
+		top[width] = 0;
+		mid[0] = B_VT;
+		memset(mid + 1, ' ', (size_t) inner);
+		mid[width - 1] = B_VT;
+		mid[width] = 0;
+		bot[0] = B_BL;
+		memset(bot + 1, B_HZ, (size_t) inner);
+		bot[width - 1] = B_BR;
+		bot[width] = 0;
+		cputsxy(x1, y1, top);
+		for (y = y1 + 1; y < y2; y++)
+		{
+			cputsxy(x1, y, mid);
+		}
+		if (y2 > y1)
+		{
+			cputsxy(x1, y2, bot);
+		}
 	}
 	if (title != NULL)
 	{
@@ -853,7 +891,7 @@ static void records_default(void)
 static void records_load(void)
 {
 	FILE *f;
-	int i;
+	int i, j;
 	long sc;
 
 	records_default();
@@ -875,6 +913,21 @@ static void records_load(void)
 		hi[i].score = sc;
 	}
 	fclose(f);
+	/* Orden descendente por puntuacion: un ARKANOID.DAT editado a mano puede venir
+	   desordenado, y entonces el chequeo score > hi[2].score de game_over() fallaria. */
+	for (i = 0; i < 3; i++)
+	{
+		for (j = i + 1; j < 3; j++)
+		{
+			if (hi[j].score > hi[i].score)
+			{
+				unsigned char tmp[sizeof(hi[0])];
+				memcpy(tmp, &hi[i], sizeof(tmp));
+				memcpy(&hi[i], &hi[j], sizeof(tmp));
+				memcpy(&hi[j], tmp, sizeof(tmp));
+			}
+		}
+	}
 }
 
 /* --------------------------------------------------------------------------------- */
@@ -1100,7 +1153,7 @@ static void intro_screen(void)
 		textattr(0x1E);
 		cprintfxy(center_x(14), ty + 7, "CONIOX EDITION");
 		textattr(0x1B);
-		cprintfxy(center_x(37), ty + 9, "A SHOWCASE FOR CONIOX v%d.%02d (%.11s)",
+		cprintfxy(center_x(41), ty + 9, "A SHOWCASE FOR CONIOX v%d.%02d (%.11s)",
 			  coniox_version / 100, coniox_version % 100, coniox_build);
 		textattr(0x17);
 		cprintfxy(2, 2, "GAME BUILD %.11s %.8s", __DATE__, __TIME__);
@@ -1617,6 +1670,7 @@ static void init_level(void)
 	{
 		rows = MAXROWS;
 	}
+	brick_rows = rows;            /* lo usa bricks_draw_all para no pintar filas vacias */
 	pat = ((level - 1) % 5) + 1;
 	bricks_left = 0;
 	for (r = 1; r <= GH; r++)
@@ -1692,7 +1746,8 @@ static void bricks_draw_all(void)
 {
 	int ix, iy;
 
-	for (iy = 2; iy <= MAXROWS + 1; iy++)
+	/* Solo hasta brick_rows+1: las filas inferiores estan vacias y game_redraw ya las limpia. */
+	for (iy = 2; iy <= brick_rows + 1; iy++)
 	{
 		for (ix = 2; ix <= fwx - 1; ix++)
 		{
@@ -1930,9 +1985,10 @@ static int paddle_dx_for(int hitx)
 	int s = (t < 0) ? -1 : 1;
 	int m = (t < 0) ? -t : t;
 
+	/* Centro: conserva la direccion horizontal (ball_dx nunca es 0: vale +-1 o +-2). */
 	if (m == 0)
 	{
-		return (ball_dx != 0) ? ball_dx : 1;
+		return ball_dx;
 	}
 	if (m >= 3)
 	{
@@ -2108,9 +2164,10 @@ static int ball_interval(void)
 /* --------------------------------------------------------------------------------- */
 static void center_msg(const char *s, int attr)
 {
-	int ix = (fwx - (int) strlen(s)) / 2 + 1;
+	int len = (int) strlen(s);
+	int ix = (fwx - len) / 2 + 1;
 	int iy = paddle_row - 5;
-	int i;
+	char spaces[64];
 
 	if (ix < 1)
 	{
@@ -2119,11 +2176,15 @@ static void center_msg(const char *s, int attr)
 	textattr(attr);
 	cputsxy(ABX(ix), ABY(iy), s);
 	delay(700);
-	textattr(0x07);
-	for (i = 0; s[i]; i++)
+	/* Borra con una sola tirada de espacios en lugar de un putchxy por caracter. */
+	if (len > (int) sizeof(spaces) - 1)
 	{
-		putchxy(ABX(ix + i), ABY(iy), ' ');
+		len = (int) sizeof(spaces) - 1;
 	}
+	memset(spaces, ' ', (size_t) len);
+	spaces[len] = 0;
+	textattr(0x07);
+	cputsxy(ABX(ix), ABY(iy), spaces);
 }
 
 /* --------------------------------------------------------------------------------- */
@@ -2153,9 +2214,13 @@ static void pause_overlay(void)
 static int lose_ball(void)
 {
 	ball_erase();
-	/* La bola muere sobre la linea de borde: reparala.                              */
-	textattr(0x0B);
-	putchxy(ABX(ball_x), fld_y2, B_HZ);
+	/* La bola muere sobre la linea de borde: reparala. Solo entre las esquinas,        */
+	/* o un B_HZ taparia un B_BL/B_BR si la bola cayo en la primera/ultima columna.     */
+	if (ball_x > 1 && ball_x < fwx)
+	{
+		textattr(0x0B);
+		putchxy(ABX(ball_x), fld_y2, B_HZ);
+	}
 	jingle(0);
 	lives--;
 	panel_draw();
@@ -2170,6 +2235,7 @@ static int lose_ball(void)
 	ball_dy = -1;
 	ball_x = paddle_x + PW / 2;
 	ball_y = paddle_row - 1;
+	ball_timer = 1;            /* Lanzamiento inmediato al pulsar SPACE, como game_start */
 	ball_draw();
 	return 1;
 }
@@ -2690,6 +2756,10 @@ static int demo_s10(void)
 	do
 	{
 		c = read_key();
+		if (c == KEY_ESC)
+		{
+			return 0;            /* ESC = END TOUR, como en el resto del recorrido */
+		}
 	} while ((c & KEY_SPECIAL) || c < 32 || c > 126);
 	cprintfxy(8, 10, "KEY '%c' DETECTED AFTER %d POLLS.", c, n);
 	ungetch(c);
